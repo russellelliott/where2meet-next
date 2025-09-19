@@ -9,13 +9,20 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@firebase/auth": "^1.11.0",
+    "@firebase/database": "^1.1.0",
+    "@react-google-maps/api": "^2.20.7",
+    "firebase": "^12.3.0",
+    "next": "15.5.3",
+    "polygon-clipping": "^0.15.7",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "next": "15.5.3"
+    "react-toastify": "^11.0.5",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3",
     "eslint": "^9",
-    "eslint-config-next": "15.5.3",
-    "@eslint/eslintrc": "^3"
+    "eslint-config-next": "15.5.3"
   }
 }
