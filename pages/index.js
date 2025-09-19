@@ -9,15 +9,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const MeetupMap = dynamic(() => import("../components/MeetupMap"), { ssr: false });
-const Map = dynamic(() => import("../components/Map"), { ssr: false });
-const CreateMap = dynamic(() => import("../components/CreateMap"), { ssr: false });
-const MyMaps = dynamic(() => import("../components/MyMaps"), { ssr: false });
 const GoogleMapsProvider = dynamic(() => import("../components/GoogleMapsContext").then(mod => mod.GoogleMapsProvider), { ssr: false });
-
-// Wrapper component to get URL parameters (for /map/[mapId])
-function MapRoute({ mapId }) {
-  return <Map mapId={mapId} />;
-}
 
 function AppContent() {
   const [user, setUser] = useState(null);
@@ -113,7 +105,7 @@ function AppContent() {
                     background: '#ff4444',
                     color: 'white',
                   }}
-                  // onClick={handleSignOut}
+                  onClick={handleSignOut}
                 >
                   Sign Out
                 </button>
@@ -133,11 +125,7 @@ function AppContent() {
           </div>
         </nav>
         <div style={contentStyle}>
-          {/* Next.js routing: render components based on path */}
-          {router.pathname === '/' && <MeetupMap />}
-          {router.pathname === '/create-map' && <CreateMap />}
-          {router.pathname === '/my-maps' && <MyMaps />}
-          {/* For /map/[mapId], use a dynamic route page in Next.js */}
+          <MeetupMap />
         </div>
       </div>
       <ToastContainer

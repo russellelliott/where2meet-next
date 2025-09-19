@@ -8,7 +8,16 @@ function MyMaps() {
   const [loading, setLoading] = useState(true);
   const [ownedMaps, setOwnedMaps] = useState([]);
   const [collaborativeMaps, setCollaborativeMaps] = useState([]);
-  const user = auth.currentUser;
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setUser(user);
+      setAuthLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const fetchMaps = async () => {
@@ -52,6 +61,15 @@ function MyMaps() {
 
     fetchMaps();
   }, [user]);
+
+  if (authLoading) {
+    return (
+      <div style={styles.container}>
+        <h2>My Maps</h2>
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
