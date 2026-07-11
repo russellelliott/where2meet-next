@@ -21,7 +21,7 @@ export default async function handler(req, res) {
     }
   });
 
-  const baseUrl = process.env.CLIENT_BASE_URL || 'http://localhost:3000';
+  const baseUrl = process.env.CLIENT_BASE_URL || 'http://localhost:3002';
   const senderMailOptions = {
     from: process.env.EMAIL_FROM,
     to: senderEmail,
