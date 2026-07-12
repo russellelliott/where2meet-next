@@ -30,11 +30,11 @@ export default function MapPage() {
 
   if (!mapId) return null;
 
-  return (
-        <div>
-          <div style={{ marginTop: '60px', height: 'calc(100vh - 60px)', overflow: 'hidden' }}>
-            <Map mapId={mapId} />
-          </div>
+   return (
+          <div>
+            <div style={{ marginTop: '60px', height: 'calc(100vh - 70px)', overflow: 'hidden' }}>
+              <Map mapId={mapId} />
+            </div>
           <ToastContainer />
         </div>
     );

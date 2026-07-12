@@ -7,8 +7,10 @@ const MasterMap = dynamic(() => import("../components/MasterMap"), { ssr: false 
 
 export default function Home() {
   return (
-     <div>
-       <MasterMap />
+      <div>
+        <div style={{ marginTop: '60px', height: 'calc(100vh - 70px)', overflow: 'hidden' }}>
+          <MasterMap />
+        </div>
        <ToastContainer
          position="top-right"
          autoClose={3000}
