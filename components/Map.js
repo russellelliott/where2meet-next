@@ -1098,22 +1098,22 @@ function Map({ mapId }) {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-              <button
-                onClick={cancelPoiInfoEdit}
-                style={{
-                  padding: '8px 16px',
-                  fontSize: '14px',
-                  border: '1px solid #ccc',
-                  borderRadius: '4px',
-                  backgroundColor: 'white',
-                  cursor: 'pointer'
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleDeletePoi(deleteConfirm)}
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+               <button
+                 onClick={() => setDeleteConfirm(null)}
+                 style={{
+                   padding: '8px 16px',
+                   fontSize: '14px',
+                   border: '1px solid #ccc',
+                   borderRadius: '4px',
+                   backgroundColor: 'white',
+                   cursor: 'pointer'
+                  }}
+                >
+                 Cancel
+                </button>
+               <button
+                 onClick={() => handleDeletePoi(deleteConfirm)}
                 style={{
                   padding: '8px 16px',
                   fontSize: '14px',
