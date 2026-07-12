@@ -264,7 +264,7 @@ function Map({ mapId }) {
     if (establishmentComponent) {
       name = establishmentComponent.long_name;
     } else {
-      const streetNumber = place.address_components?.find(c => component.types.includes('street_number'))?.long_name;
+       const streetNumber = place.address_components?.find(c => c.types.includes('street_number'))?.long_name;
       const route = place.address_components?.find(c => c.types.includes('route'))?.long_name;
       if (streetNumber && route) {
         name = `${streetNumber} ${route}`;
