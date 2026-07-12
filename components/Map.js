@@ -17,6 +17,16 @@ const containerStyle = {
 
 const DEFAULT_CENTER = { lat: 37.7749, lng: -122.4194 };
 
+// Google Maps icon URLs based on access and scope
+const POI_ICONS = {
+  'private-selective': 'https://maps.google.com/mapfiles/ms/icons/orange-dot.png',
+  'private-all':       'https://maps.google.com/mapfiles/ms/icons/purple-dot.png',
+  'public-selective':  'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+  'public-all':        'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
+};
+
+const DEFAULT_POI_ICON = 'https://maps.google.com/mapfiles/ms/icons/red-dot.png';
+
 
 function Map({ mapId }) {
   const [shareEmail, setShareEmail] = useState("");
@@ -34,6 +44,8 @@ function Map({ mapId }) {
   const [accessStatus, setAccessStatus] = useState(null);
   const [mapInfo, setMapInfo] = useState(null);
   const [userLocationLoaded, setUserLocationLoaded] = useState(false);
+  const [poiMarkers, setPoiMarkers] = useState([]);
+  const [loadingPOIs, setLoadingPOIs] = useState(false);
   const autocompleteRef = useRef(null);
   const mapRef = useRef(null);
   const updateTimeoutRef = useRef(null);
@@ -101,7 +113,7 @@ function Map({ mapId }) {
     checkAccess();
   }, [user, mapId]);
 
-  // Load markers
+  // Load markers from the current map's subcollection
   useEffect(() => {
     if (!mapId || !user) return setLoading(false);
 
@@ -116,6 +128,58 @@ function Map({ mapId }) {
     return () => unsubscribe();
   }, [mapId, user]);
 
+  // Load POIs from user's POI collection with visibility filtering
+  useEffect(() => {
+    if (!user || !mapId) return;
+    
+    let cancelled = false;
+    setLoadingPOIs(true);
+
+    const loadPOIs = async () => {
+      try {
+        const poiSnapshot = await getDocs(collection(db, 'users', user.uid, 'poi'));
+        
+        if (cancelled) return;
+
+        // Filter POIs based on visibility rules:
+        // - Public POIs (access === 'public') are always visible
+        // - Selective POIs (scope === 'selective') are visible only if mapId is in allowedMapIds
+        const visiblePOIs = poiSnapshot.docs
+          .map(docSnap => ({ ...docSnap.data(), id: docSnap.id }))
+          .filter(poi => {
+            const visibility = poi.visibility || {};
+            const access = visibility.access || 'private';
+            const scope = visibility.scope || 'selective';
+            
+            // Public + All: visible everywhere
+            if (access === 'public' && scope === 'all') return true;
+            // Public + Selective: only if this mapId is in allowedMapIds
+            if (access === 'public' && scope === 'selective') {
+              return Array.isArray(visibility.allowedMapIds) && visibility.allowedMapIds.includes(mapId);
+            }
+            // Private + All: visible on any map owned by this user
+            if (access === 'private' && scope === 'all') return true;
+            // Private + Selective: only if this mapId is in allowedMapIds
+            if (access === 'private' && scope === 'selective') {
+              return Array.isArray(visibility.allowedMapIds) && visibility.allowedMapIds.includes(mapId);
+            }
+            
+            return false;
+          });
+
+        setPoiMarkers(visiblePOIs);
+      } catch (err) {
+        console.error("Failed to load POIs:", err);
+      } finally {
+        if (!cancelled) setLoadingPOIs(false);
+      }
+    };
+
+    loadPOIs();
+
+    return () => { cancelled = true; };
+  }, [user, mapId]);
+
   // Handle autocomplete place selection
   const onPlaceChanged = async () => {
     if (!user) return alert("Please sign in to save places");
@@ -125,7 +189,7 @@ function Map({ mapId }) {
     // Get the best name for the place
     const placeName = place.name || 
                      place.formatted_address?.split(',')[0] || 
-                      "Unknown Location";
+                       "Unknown Location";
 
     const newMarker = {
       position: { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() },
@@ -232,7 +296,7 @@ function Map({ mapId }) {
       } else {
         name = place.address_components?.[0]?.long_name || 
                place.formatted_address?.split(',')[0] || 
-                "Unknown Location";
+                 "Unknown Location";
       }
     }
     
@@ -301,8 +365,8 @@ function Map({ mapId }) {
       // Update local state
       setMarkers(prev => prev.map(marker => 
         marker.id === editingMarker.id 
-           ? { ...marker, name: markerName, notes: markerNotes }
-           : marker
+            ? { ...marker, name: markerName, notes: markerNotes }
+            : marker
       ));
       
       // Update selected marker if it's the one being edited
@@ -388,37 +452,71 @@ function Map({ mapId }) {
     }
   };
 
+  // Get the Google Maps icon URL for a POI based on its visibility settings
+  const getPoiIcon = (poi) => {
+    const visibility = poi.visibility || {};
+    const access = visibility.access || 'private';
+    const scope = visibility.scope || 'selective';
+    return POI_ICONS[`${access}-${scope}`] || DEFAULT_POI_ICON;
+  };
+
+  // Get the label text for a POI's visibility badge
+  const getPoiBadgeLabel = (poi) => {
+    const visibility = poi.visibility || {};
+    const access = visibility.access || 'private';
+    const scope = visibility.scope || 'selective';
+    if (access === 'public' && scope === 'all') return 'Public All';
+    if (access === 'public' && scope === 'selective') return 'Public Selective';
+    if (access === 'private' && scope === 'all') return 'Private All';
+    if (access === 'private' && scope === 'selective') return 'Private Selective';
+    return 'Private Selective';
+  };
+
+  // Color for the visibility badge
+  const getPoiBadgeColor = (poi) => {
+    const visibility = poi.visibility || {};
+    const access = visibility.access || 'private';
+    const scope = visibility.scope || 'selective';
+    const colors = {
+      'private-selective': '#ff9800', // orange
+      'private-all':       '#9c27b0', // purple
+      'public-selective':  '#2196f3', // blue
+      'public-all':        '#4caf50', // green
+    };
+    return colors[`${access}-${scope}`] || '#757575';
+  };
+
   if (!user) return <div>Please sign in to view and edit maps.</div>;
   if (showInvitation) return <MapInvitation mapId={mapId} onResponse={(res) => { setShowInvitation(false); setAccessStatus(res); }} />;
   if (accessStatus === 'declined') return (
-     <div style={{ display:'flex', justifyContent:'center', alignItems:'center', height:'100vh', flexDirection:'column', gap:'1rem' }}>
-       <p>You have declined this map invitation.</p>
-       <button onClick={() => { setAccessStatus('pending'); setShowInvitation(true); }} style={{ padding:'8px 16px', background:'#4285f4', color:'white', border:'none', borderRadius:'4px', cursor:'pointer' }}>Accept Invitation</button>
-     </div>
-   );
+      <div style={{ display:'flex', justifyContent:'center', alignItems:'center', height:'100vh', flexDirection:'column', gap:'1rem' }}>
+        <p>You have declined this map invitation.</p>
+        <button onClick={() => { setAccessStatus('pending'); setShowInvitation(true); }} style={{ padding:'8px 16px', background:'#4285f4', color:'white', border:'none', borderRadius:'4px', cursor:'pointer' }}>Accept Invitation</button>
+      </div>
+    );
   if (loading) return <div style={{ display:'flex', justifyContent:'center', alignItems:'center', height:'100vh', fontSize:'18px', color:'#666' }}>Loading map...</div>;
 
   return (
-     <div style={{ display: 'flex', height: '100%' }}>
-       {/* Left Sidebar */}
-       <div style={{ 
+      <div style={{ display: 'flex', height: '100%' }}>
+        {/* Left Sidebar */}
+        <div style={{ 
         width: '350px', 
         padding: '20px', 
         borderRight: '1px solid #ddd',
         overflowY: 'auto',
         backgroundColor: '#f9f9f9'
-       }}>
-         {/* Invite section */}
-         <div style={{ 
+        }}>
+          {/* Invite section */}
+          <div style={{ 
           marginBottom: '20px', 
           padding: '15px', 
           border: '1px solid #ddd', 
           borderRadius: '8px',
           backgroundColor: 'white'
-         }}>
-           <h3 style={{ margin: '0 0 10px 0', fontSize: '16px' }}>Invite Someone</h3>
-           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-             <input
+          }}>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '16px' }}>Invite Someone</h3>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <input
               type="email"
               value={shareEmail}
               onChange={(e) => setShareEmail(e.target.value)}
@@ -429,9 +527,9 @@ function Map({ mapId }) {
                 fontSize: '14px',
                 border: '1px solid #ccc',
                 borderRadius: '4px'
-               }}
-             />
-             <button
+                }}
+              />
+              <button
               onClick={handleInvite}
               disabled={shareLoading}
               style={{
@@ -442,21 +540,21 @@ function Map({ mapId }) {
                 borderRadius: '4px',
                 cursor: shareLoading ? 'not-allowed' : 'pointer',
                 fontSize: '14px'
-               }}
-             >
-               {shareLoading ? 'Sending...' : 'Send'}
-             </button>
-           </div>
-         </div>
+                }}
+              >
+                {shareLoading ? 'Sending...' : 'Send'}
+              </button>
+            </div>
+          </div>
 
-         {/* Search input */}
-         <div style={{ marginBottom: '20px' }}>
-           <h3 style={{ margin: '0 0 10px 0', fontSize: '16px' }}>Add New Location</h3>
-           <Autocomplete
+          {/* Search input */}
+          <div style={{ marginBottom: '20px' }}>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '16px' }}>Add New Location</h3>
+            <Autocomplete
             onLoad={autocomplete => autocompleteRef.current = autocomplete}
             onPlaceChanged={onPlaceChanged}
-           >
-             <input
+            >
+              <input
               type="text"
               placeholder="Search for a place..."
               style={{
@@ -465,22 +563,22 @@ function Map({ mapId }) {
                 fontSize: '14px',
                 border: '1px solid #ccc',
                 borderRadius: '4px'
-               }}
-             />
-           </Autocomplete>
-           <p style={{ fontSize: '12px', color: '#666', margin: '5px 0 0 0' }}>
-             {creatingMarker ? 
-               "🔍 Looking up address..." : 
-               "Or click on the map to add a marker"
-             }
-           </p>
-         </div>
+                }}
+              />
+            </Autocomplete>
+            <p style={{ fontSize: '12px', color: '#666', margin: '5px 0 0 0' }}>
+              {creatingMarker ? 
+                "🔍 Looking up address..." : 
+                "Or click on the map to add a marker"
+              }
+            </p>
+          </div>
 
-         {/* Markers List */}
-         <div>
-           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-             <h3 style={{ margin: 0, fontSize: '16px' }}>Markers ({markers.length})</h3>
-             <button
+          {/* Markers List */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <h3 style={{ margin: 0, fontSize: '16px' }}>Map Markers ({markers.length})</h3>
+              <button
               onClick={() => setShowMarkersList(!showMarkersList)}
               style={{
                 padding: '4px 8px',
@@ -489,16 +587,16 @@ function Map({ mapId }) {
                 borderRadius: '4px',
                 backgroundColor: 'white',
                 cursor: 'pointer'
-               }}
-             >
-               {showMarkersList ? 'Hide' : 'Show'}
-             </button>
-           </div>
+                }}
+              >
+                {showMarkersList ? 'Hide' : 'Show'}
+              </button>
+            </div>
           
-           {showMarkersList && (
-             <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-               {markers.map(marker => (
-                 <div 
+            {showMarkersList && (
+              <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                {markers.map(marker => (
+                  <div 
                   key={marker.id}
                   style={{
                     padding: '10px',
@@ -507,26 +605,26 @@ function Map({ mapId }) {
                     borderRadius: '4px',
                     backgroundColor: selectedMarker?.id === marker.id ? '#e3f2fd' : 'white',
                     cursor: 'pointer'
-                   }}
+                    }}
                   onClick={() => handleMarkerClick(marker)}
-                 >
-                   <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{marker.name}</div>
-                   {marker.address && (
-                     <div style={{ fontSize: '12px', color: '#666', margin: '2px 0' }}>
-                       {marker.address}
-                     </div>
-                   )}
-                   {marker.notes && (
-                     <div style={{ fontSize: '12px', fontStyle: 'italic', margin: '2px 0' }}>
-                       "{marker.notes}"
-                     </div>
-                   )}
-                   <div style={{ display: 'flex', gap: '5px', marginTop: '5px' }}>
-                     <button
+                  >
+                    <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{marker.name}</div>
+                    {marker.address && (
+                      <div style={{ fontSize: '12px', color: '#666', margin: '2px 0' }}>
+                        {marker.address}
+                      </div>
+                    )}
+                    {marker.notes && (
+                      <div style={{ fontSize: '12px', fontStyle: 'italic', margin: '2px 0' }}>
+                        "{marker.notes}"
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', gap: '5px', marginTop: '5px' }}>
+                      <button
                       onClick={(e) => {
                         e.stopPropagation();
                         startEditingMarker(marker);
-                       }}
+                        }}
                       style={{
                         padding: '2px 6px',
                         fontSize: '10px',
@@ -535,15 +633,15 @@ function Map({ mapId }) {
                         backgroundColor: 'white',
                         color: '#4285f4',
                         cursor: 'pointer'
-                       }}
-                     >
+                        }}
+                      >
                       Edit
-                     </button>
-                     <button
+                      </button>
+                      <button
                       onClick={(e) => {
                         e.stopPropagation();
                         deleteMarker(marker.id);
-                       }}
+                        }}
                       style={{
                         padding: '2px 6px',
                         fontSize: '10px',
@@ -552,58 +650,157 @@ function Map({ mapId }) {
                         backgroundColor: 'white',
                         color: '#ff4444',
                         cursor: 'pointer'
-                       }}
-                     >
+                        }}
+                      >
                       Delete
-                     </button>
-                   </div>
-                 </div>
-               ))}
-               {markers.length === 0 && (
-                 <p style={{ textAlign: 'center', color: '#666', fontStyle: 'italic' }}>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {markers.length === 0 && (
+                  <p style={{ textAlign: 'center', color: '#666', fontStyle: 'italic' }}>
                   No markers yet. Search for a place or click on the map to add one.
-                 </p>
-               )}
-             </div>
-           )}
-         </div>
-       </div>
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
 
-       {/* Main Map Area */}
-       <div style={{ flex: 1, position: 'relative' }}>
-         <GoogleMap
+          {/* POIs List */}
+          <div style={{ marginTop: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <h3 style={{ margin: 0, fontSize: '16px' }}>
+                POIs ({poiMarkers.length})
+              </h3>
+              {loadingPOIs && (
+                <span style={{ fontSize: '12px', color: '#666' }}>Loading...</span>
+              )}
+            </div>
+            
+            {!loadingPOIs && poiMarkers.map(poi => (
+              <div 
+                key={poi.id}
+                style={{
+                  padding: '10px',
+                  margin: '5px 0',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  backgroundColor: 'white',
+                  cursor: 'pointer',
+                  position: 'relative',
+                }}
+                onClick={() => {
+                  const poiMarker = { ...poi, position: poi.location?.location || poi.location };
+                  setSelectedMarker(poiMarker);
+                  setMapCenter(poiMarker.position);
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                    <img 
+                      src={getPoiIcon(poi)} 
+                      alt=""
+                      style={{ width: 20, height: 20, flexShrink: 0 }}
+                    />
+                    <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{poi.name}</span>
+                  </div>
+                  {/* Visibility badge in upper right */}
+                  <div 
+                    style={{
+                      backgroundColor: getPoiBadgeColor(poi),
+                      color: 'white',
+                      fontSize: '9px',
+                      padding: '2px 6px',
+                      borderRadius: '3px',
+                      marginLeft: '8px',
+                    }}
+                  >
+                    {getPoiBadgeLabel(poi)}
+                  </div>
+                </div>
+                {poi.location?.address && (
+                  <div style={{ fontSize: '12px', color: '#666', margin: '4px 0 0 28px' }}>
+                    {poi.location.address}
+                  </div>
+                )}
+              </div>
+            ))}
+            
+            {!loadingPOIs && poiMarkers.length === 0 && (
+              <p style={{ textAlign: 'center', color: '#666', fontStyle: 'italic', fontSize: '12px' }}>
+                No POIs yet. Create a location to get started.
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Main Map Area */}
+        <div style={{ flex: 1, position: 'relative' }}>
+          <GoogleMap
           mapContainerStyle={{ width: '100%', height: '100%' }}
           center={mapCenter}
           zoom={10}
           onClick={onMapClick}
           onLoad={map => mapRef.current = map}
-         >
-           {markers.map(marker => (
-             <Marker 
+          >
+            {/* Map markers (from map's markers subcollection) */}
+            {markers.map(marker => (
+              <Marker 
               key={marker.id} 
               position={marker.position} 
               onClick={() => handleMarkerClick(marker)} 
-             />
-           ))}
-           {selectedMarker && (
-             <InfoWindow 
+              />
+            ))}
+            
+            {/* POI markers (from user's POI collection with visibility filtering) */}
+            {poiMarkers.map(poi => (
+              <Marker 
+                key={`poi-${poi.id}`}
+                position={poi.location?.location || poi.location}
+                icon={getPoiIcon(poi)}
+                onClick={() => setSelectedMarker({ ...poi, position: poi.location?.location || poi.location })}
+              />
+            ))}
+            
+            {/* InfoWindow for either marker type */}
+            {selectedMarker && (
+              <InfoWindow 
               position={selectedMarker.position} 
               onCloseClick={() => setSelectedMarker(null)}
-             >
-               <div style={{ maxWidth: 300 }}>
-                 <h4 style={{ margin: '0 0 8px 0', fontSize: '16px' }}>{selectedMarker.name}</h4>
-                 {selectedMarker.address && (
-                   <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#666' }}>
-                     📍 {selectedMarker.address}
-                   </p>
-                 )}
-                 {selectedMarker.notes && (
-                   <p style={{ margin: '0 0 8px 0', fontSize: '14px' }}>
-                     📝 {selectedMarker.notes}
-                   </p>
-                 )}
-                 <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
-                   <button
+              >
+                <div style={{ maxWidth: 300 }}>
+                  <h4 style={{ margin: '0 0 8px 0', fontSize: '16px' }}>{selectedMarker.name}</h4>
+                  {selectedMarker.address && (
+                    <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#666' }}>
+                      📍 {selectedMarker.address}
+                    </p>
+                  )}
+                  {selectedMarker.notes && (
+                    <p style={{ margin: '0 0 8px 0', fontSize: '14px' }}>
+                      📝 {selectedMarker.notes}
+                    </p>
+                  )}
+                  {selectedMarker.location?.address && (
+                    <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#666' }}>
+                      📍 {selectedMarker.location.address}
+                    </p>
+                  )}
+                  {/* Show visibility badge for POI markers */}
+                  {selectedMarker.visibility && (
+                    <div style={{ 
+                      backgroundColor: getPoiBadgeColor(selectedMarker),
+                      color: 'white',
+                      fontSize: '10px',
+                      padding: '2px 8px',
+                      borderRadius: '3px',
+                      display: 'inline-block',
+                      marginTop: '4px'
+                    }}>
+                      {getPoiBadgeLabel(selectedMarker)}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                    <button
                     onClick={() => startEditingMarker(selectedMarker)}
                     style={{
                       padding: '4px 8px',
@@ -613,11 +810,11 @@ function Map({ mapId }) {
                       backgroundColor: 'white',
                       color: '#4285f4',
                       cursor: 'pointer'
-                     }}
-                   >
+                      }}
+                    >
                     Edit
-                   </button>
-                   <button
+                    </button>
+                    <button
                     onClick={() => deleteMarker(selectedMarker.id)}
                     style={{
                       padding: '4px 8px',
@@ -627,19 +824,19 @@ function Map({ mapId }) {
                       backgroundColor: 'white',
                       color: '#ff4444',
                       cursor: 'pointer'
-                     }}
-                   >
+                      }}
+                    >
                     Delete
-                   </button>
-                 </div>
-               </div>
-             </InfoWindow>
-           )}
-         </GoogleMap>
+                    </button>
+                  </div>
+                </div>
+              </InfoWindow>
+            )}
+          </GoogleMap>
 
-         {/* Editing Modal */}
-         {editingMarker && (
-           <div style={{
+          {/* Editing Modal */}
+          {editingMarker && (
+            <div style={{
             position: 'absolute',
             top: '50%',
             left: '50%',
@@ -650,13 +847,13 @@ function Map({ mapId }) {
             boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
             zIndex: 1000,
             minWidth: '300px'
-           }}>
-             <h3 style={{ margin: '0 0 15px 0', fontSize: '18px' }}>Edit Marker</h3>
-             <div style={{ marginBottom: '15px' }}>
-               <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', fontWeight: 'bold' }}>
+            }}>
+              <h3 style={{ margin: '0 0 15px 0', fontSize: '18px' }}>Edit Marker</h3>
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', fontWeight: 'bold' }}>
                 Name:
-               </label>
-               <input
+                </label>
+                <input
                 type="text"
                 value={markerName}
                 onChange={(e) => setMarkerName(e.target.value)}
@@ -666,14 +863,14 @@ function Map({ mapId }) {
                   fontSize: '14px',
                   border: '1px solid #ccc',
                   borderRadius: '4px'
-                 }}
-               />
-             </div>
-             <div style={{ marginBottom: '15px' }}>
-               <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', fontWeight: 'bold' }}>
+                  }}
+                />
+              </div>
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', fontWeight: 'bold' }}>
                 Notes:
-               </label>
-               <textarea
+                </label>
+                <textarea
                 value={markerNotes}
                 onChange={(e) => setMarkerNotes(e.target.value)}
                 rows={3}
@@ -684,12 +881,12 @@ function Map({ mapId }) {
                   border: '1px solid #ccc',
                   borderRadius: '4px',
                   resize: 'vertical'
-                 }}
+                  }}
                 placeholder="Add any notes about this location..."
-               />
-             </div>
-             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-               <button
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button
                 onClick={cancelEditingMarker}
                 style={{
                   padding: '8px 16px',
@@ -698,11 +895,11 @@ function Map({ mapId }) {
                   borderRadius: '4px',
                   backgroundColor: 'white',
                   cursor: 'pointer'
-                 }}
-               >
+                  }}
+                >
                 Cancel
-               </button>
-               <button
+                </button>
+                <button
                 onClick={saveMarkerEdit}
                 style={{
                   padding: '8px 16px',
@@ -712,16 +909,16 @@ function Map({ mapId }) {
                   backgroundColor: '#4285f4',
                   color: 'white',
                   cursor: 'pointer'
-                 }}
-               >
+                  }}
+                >
                 Save
-               </button>
-             </div>
-           </div>
-         )}
-       </div>
-     </div>
-   );
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
 }
 
 export default Map;
