@@ -393,14 +393,13 @@ function MasterMap() {
 
   return (
      <div style={{ display: 'flex', height: '100%' }}>
-       {/* Left Sidebar */}
-       <div style={{
-         width: '350px',
-         padding: '20px',
-         borderRight: '1px solid #ddd',
-         overflowY: 'auto',
-         backgroundColor: '#f9f9f9'
-       }}>
+        {/* Left Sidebar */}
+        <div style={{
+          width: '350px',
+          padding: '20px',
+          borderRight: '1px solid #ddd',
+          backgroundColor: '#f9f9f9'
+         }}>
          {/* Search input */}
          <div style={{ marginBottom: '20px' }}>
            <h3 style={{ margin: '0 0 10px 0', fontSize: '16px' }}>Add New Location</h3>
@@ -425,17 +424,20 @@ function MasterMap() {
            </p>
          </div>
 
-         {/* POIs List - all POIs for this user */}
-         <div>
-           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-             <h3 style={{ margin: 0, fontSize: '16px' }}>
-               All Locations ({allUserPOIs.length})
-             </h3>
-           </div>
+           {/* POIs List - all POIs for this user */}
+           <div>
+             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+               <h3 style={{ margin: 0, fontSize: '16px' }}>
+                All Locations ({allUserPOIs.length})
+               </h3>
+             </div>
 
-           {loadingPOIs && <span style={{ fontSize: '12px', color: '#666' }}>Loading...</span>}
+              {/* Scrollable POI list container */}
+              {/* Taller maxHeight since MasterMap has no Invite section */}
+              <div style={{ maxHeight: 'calc(100vh - 320px)', overflowY: 'auto', paddingRight: '5px' }}>
+             {loadingPOIs && <span style={{ fontSize: '12px', color: '#666' }}>Loading...</span>}
 
-           {!loadingPOIs && allUserPOIs.map(poi => {
+             {!loadingPOIs && allUserPOIs.map(poi => {
              const privacyColor = getPoiBadgeColor(poi);
              return (
                <div
@@ -536,15 +538,16 @@ function MasterMap() {
              );
            })}
 
-           {!loadingPOIs && allUserPOIs.length === 0 && (
-             <p style={{ textAlign: 'center', color: '#666', fontStyle: 'italic', fontSize: '12px' }}>
-               No locations yet. Search for a place or click on the map to add one.
-             </p>
-           )}
+               {!loadingPOIs && allUserPOIs.length === 0 && (
+                 <p style={{ textAlign: 'center', color: '#666', fontStyle: 'italic', fontSize: '12px' }}>
+                  No locations yet. Search for a place or click on the map to add one.
+                 </p>
+               )}
+             </div>
+           </div>
          </div>
-       </div>
 
-       {/* Main Map Area */}
+         {/* Main Map Area */}
        <div style={{ flex: 1, position: 'relative' }}>
          <GoogleMap
            mapContainerStyle={{ width: '100%', height: '100%' }}

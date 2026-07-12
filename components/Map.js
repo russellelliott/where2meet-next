@@ -512,14 +512,13 @@ function Map({ mapId }) {
 
   return (
     <div style={{ display: 'flex', height: '100%' }}>
-      {/* Left Sidebar */}
-      <div style={{
-        width: '350px',
-        padding: '20px',
-        borderRight: '1px solid #ddd',
-        overflowY: 'auto',
-        backgroundColor: '#f9f9f9'
-      }}>
+        {/* Left Sidebar */}
+        <div style={{
+         width: '350px',
+         padding: '20px',
+         borderRight: '1px solid #ddd',
+         backgroundColor: '#f9f9f9'
+        }}>
         {/* Invite section */}
         <div style={{
           marginBottom: '20px',
@@ -593,6 +592,8 @@ function Map({ mapId }) {
             </h3>
           </div>
 
+          {/* Scrollable POI list container */}
+          <div style={{ maxHeight: 'calc(100vh - 420px)', overflowY: 'auto', paddingRight: '5px' }}>
           {loadingPOIs && <span style={{ fontSize: '12px', color: '#666' }}>Loading...</span>}
 
           {!loadingPOIs && visiblePOIs.map(poi => {
@@ -697,17 +698,18 @@ function Map({ mapId }) {
                 </div>
               </div>
             );
-          })}
+            })}
 
-          {!loadingPOIs && visiblePOIs.length === 0 && (
-            <p style={{ textAlign: 'center', color: '#666', fontStyle: 'italic', fontSize: '12px' }}>
-              No locations yet. Search for a place or click on the map to add one.
-            </p>
-          )}
-        </div>
-      </div>
+            {!loadingPOIs && visiblePOIs.length === 0 && (
+              <p style={{ textAlign: 'center', color: '#666', fontStyle: 'italic', fontSize: '12px' }}>
+                No locations yet. Search for a place or click on the map to add one.
+              </p>
+            )}
+           </div>
+         </div>
+       </div>
 
-      {/* Main Map Area */}
+       {/* Main Map Area */}
       <div style={{ flex: 1, position: 'relative' }}>
         <GoogleMap
           mapContainerStyle={{ width: '100%', height: '100%' }}
