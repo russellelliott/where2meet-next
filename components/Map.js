@@ -519,9 +519,21 @@ function Map({ mapId }) {
          borderRight: '1px solid #ddd',
          backgroundColor: '#f9f9f9'
         }}>
-        {/* Invite section */}
-        <div style={{
-          marginBottom: '20px',
+          {/* Map Title */}
+          <div style={{
+            marginBottom: '20px',
+            padding: '15px',
+            border: '1px solid #ddd',
+            borderRadius: '8px',
+            backgroundColor: 'white',
+            textAlign: 'center'
+          }}>
+            <h2 style={{ margin: 0, fontSize: '20px' }}>{mapInfo?.name || 'Untitled Map'}</h2>
+          </div>
+
+          {/* Invite section */}
+          <div style={{
+           marginBottom: '20px',
           padding: '15px',
           border: '1px solid #ddd',
           borderRadius: '8px',
