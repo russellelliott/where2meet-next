@@ -17,7 +17,9 @@ import {
   Chip,
   Autocomplete,
   CircularProgress,
-  GlobalStyles,
+  MenuItem,
+  IconButton,
+  InputAdornment,
 } from '@mui/material';
 import { createPoiFromCoordinates } from '../../lib/poiService';
 import { saveFriend, updateFriend } from '../../lib/friendService';
@@ -25,6 +27,8 @@ import { auth, db } from '../../firebaseConfig';
 import { collection, getDocs } from 'firebase/firestore';
 import { toast } from 'react-toastify';
 import { GoogleMap, Marker } from '@react-google-maps/api';
+import { FaPhone, FaDiscord, FaInstagram } from 'react-icons/fa6';
+import { IoLogoWhatsapp } from 'react-icons/io';
 
 /**
  * FriendForm Component
@@ -62,9 +66,9 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
   });
 
   const [tabValue, setTabValue] = useState(0);
-  const [showCalendar, setShowCalendar] = useState(null); // 'tempStart', 'tempEnd'
+  const [showCalendar, setShowCalendar] = useState(null);
   const [calendarDate, setCalendarDate] = useState(dayjs());
-  const [poiPickerMode, setPoiPickerMode] = useState(null); // 'home', 'pickup', 'tempLocation'
+  const [poiPickerMode, setPoiPickerMode] = useState(null);
   const [existingPOIs, setExistingPOIs] = useState([]);
   const [loadingPOIs, setLoadingPOIs] = useState(false);
   const [selectedExistingPOI, setSelectedExistingPOI] = useState(null);
@@ -238,14 +242,28 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
     const lastContactDate =
       formData.contact.lastContactDate || new Date().toISOString();
 
+    // Build contact object per schema:
+    // - phone: boolean
+    // - whatsapp: boolean
+    // - discord: string (handle) or false
+    // - instagram: string (handle) or false
+    const contactData = {
+      phone: formData.contact.phone || false,
+      whatsapp: formData.contact.whatsapp || false,
+      discord: formData.contact.discord === true
+        ? (formData.contact.handle || false)
+        : formData.contact.discord,
+      instagram: formData.contact.instagram === true
+        ? (formData.contact.handle || false)
+        : formData.contact.instagram,
+      primary: formData.contact.primary || 'phone',
+      lastContactDate,
+    };
+
     const friendData = {
       name: formData.name.trim(),
       tags: parsedTags.length > 0 ? parsedTags : ['Friend'],
-      contact: {
-        ...formData.contact,
-        lastContactDate,
-        handle: formData.contact.handle?.trim() || undefined,
-      },
+      contact: contactData,
       location: {
         homePoiId: formData.location.homePoiId || undefined,
         temporaryLocation:
@@ -277,6 +295,49 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
       console.error('Error saving friend:', error);
       toast.error('Failed to save friend. Please try again.');
     }
+  };
+
+  /**
+   * Render contact channel toggle with icon styling.
+   * Phone/WhatsApp = boolean toggle only (no text field)
+   * Discord/Instagram = boolean toggle + text field for handle when checked
+   */
+  const renderContactChannel = (channel, label, Icon, color, placeholder) => {
+    const isChecked = formData.contact[channel] === true ||
+      (typeof formData.contact[channel] === 'string' && formData.contact[channel].length > 0);
+
+    return (
+      <Box key={channel} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1.5, borderRadius: 2, backgroundColor: '#FBFBF9' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Icon size={18} color={color} />
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>{label}</Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, maxWidth: 260 }}>
+          <input
+            type="checkbox"
+            checked={isChecked}
+            onChange={(e) => {
+              const val = e.target.checked;
+              handleContactChange(channel, val ? (channel === 'discord' || channel === 'instagram' ? '' : true) : false);
+              if (!val) handleContactChange('handle', '');
+            }}
+            style={{ cursor: 'pointer' }}
+          />
+          {(channel === 'discord' || channel === 'instagram') && isChecked && (
+            <TextField
+              size="small"
+              fullWidth
+              placeholder={placeholder}
+              value={formData.contact.handle || ''}
+              onChange={(e) => handleContactChange('handle', e.target.value)}
+              sx={{
+                '& .MuiOutlinedInput-root': { fontSize: '12px', height: 32 },
+              }}
+            />
+          )}
+        </Box>
+      </Box>
+    );
   };
 
   return (
@@ -349,7 +410,7 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
                   )}
                   renderTags={(value, getTagProps) =>
                     value.map((option, index) => (
-                       <Chip
+                      <Chip
                         key={`tag-${index}`}
                         variant="outlined"
                         label={option}
@@ -368,78 +429,59 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
                   value={formData.contact.primary}
                   onChange={(e) => handleContactChange('primary', e.target.value)}
                   margin="normal"
-                  SelectProps={{ native: true }}
                   size="small"
                 >
-                  <option value="phone">Phone Call</option>
-                  <option value="discord">Discord</option>
-                  <option value="whatsapp">WhatsApp</option>
-                  <option value="instagram">Instagram</option>
+                  <MenuItem value="phone">Phone Call</MenuItem>
+                  <MenuItem value="discord">Discord</MenuItem>
+                  <MenuItem value="whatsapp">WhatsApp</MenuItem>
+                  <MenuItem value="instagram">Instagram</MenuItem>
                 </TextField>
 
-                 <TextField
-                  fullWidth
-                  label="Handle / Number / Detail"
-                  placeholder={
-                    formData.contact.primary === 'phone'
-                       ? '+1 (555) 000-0000'
-                       : formData.contact.primary === 'discord'
-                       ? 'username#1234'
-                       : formData.contact.primary === 'whatsapp'
-                       ? '+1 (555) 000-0000'
-                       : formData.contact.primary === 'instagram'
-                       ? '@insta_handle'
-                       : 'email@example.com'
-                   }
-                  value={formData.contact.handle}
-                  onChange={(e) => handleContactChange('handle', e.target.value)}
-                  margin="normal"
-                  size="small"
-                />
-
-                <Box sx={{ mt: 2, mb: 1 }}>
+                {/* Contact Channels - New approach per schema */}
+                <Box sx={{ mt: 2, mb: 1.5 }}>
                   <Typography variant="subtitle2" gutterBottom>
                     Contact Channels Available
                   </Typography>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Toggle channels on and off. Discord and Instagram require a handle when enabled.
+                  </Typography>
                 </Box>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <input
-                      type="checkbox"
-                      checked={formData.contact.phone}
-                      onChange={(e) => handleContactChange('phone', e.target.checked)}
-                    />
-                    <span>Phone Call</span>
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <input
-                      type="checkbox"
-                      checked={formData.contact.whatsapp}
-                      onChange={(e) => handleContactChange('whatsapp', e.target.checked)}
-                    />
-                    <span>WhatsApp</span>
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <input
-                      type="checkbox"
-                      checked={formData.contact.discord !== false && formData.contact.discord !== ''}
-                      onChange={(e) =>
-                        handleContactChange('discord', e.target.checked ? 'available' : false)
-                      }
-                    />
-                    <span>Discord</span>
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <input
-                      type="checkbox"
-                      checked={formData.contact.instagram !== false && formData.contact.instagram !== ''}
-                      onChange={(e) =>
-                        handleContactChange('instagram', e.target.checked ? '@handle' : false)
-                      }
-                    />
-                    <span>Instagram</span>
-                  </label>
-                </Box>
+
+                {/* Phone - toggle only, no handle text */}
+                {renderContactChannel(
+                  'phone',
+                  'Phone Call',
+                  FaPhone,
+                  '#666666',
+                  '+1 (555) 000-0000'
+                )}
+
+                {/* WhatsApp - toggle only, no handle text */}
+                {renderContactChannel(
+                  'whatsapp',
+                  'WhatsApp',
+                  IoLogoWhatsapp,
+                  '#25D366',
+                  '+1 (555) 000-0000'
+                )}
+
+                {/* Discord - toggle + handle text field */}
+                {renderContactChannel(
+                  'discord',
+                  'Discord',
+                  FaDiscord,
+                  '#5865F2',
+                  'username#1234'
+                )}
+
+                {/* Instagram - toggle + handle text field */}
+                {renderContactChannel(
+                  'instagram',
+                  'Instagram',
+                  FaInstagram,
+                  '#8a49a1',
+                  '@insta_handle'
+                )}
               </Box>
             )}
 
@@ -739,7 +781,7 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
                     <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
                       Click the button below to open the map and create a new location.
                     </Typography>
-                     <POICreateButton key={`poi-create-${poiPickerMode}`} mode={poiPickerMode} onPoiCreated={handleMapPoiCreated} />
+                    <POICreateButton key={`poi-create-${poiPickerMode}`} mode={poiPickerMode} onPoiCreated={handleMapPoiCreated} />
                   </Box>
                 </DialogContent>
                 <DialogActions sx={{ p: 2, gap: 1 }}>
@@ -760,21 +802,21 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
           <Button
             variant="contained"
             onClick={handleSubmit}
-            sx={{ bgcolor: '#CC7A5C', '&:hover': { bgcolor: '#b86649' } }}
+            sx={{
+              backgroundColor: '#1976d2',
+              '&:hover': { backgroundColor: '#1565c0' },
+            }}
           >
             {editFriend ? 'Save Changes' : 'Add Friend'}
           </Button>
         </DialogActions>
       </Dialog>
-
-      <GlobalStyles styles={{ '.MuiPaper-root': { borderRadius: '16px !important' } }} />
     </LocalizationProvider>
   );
 }
 
 /**
  * Sub-component: Button that opens a map for POI creation
- * Uses the existing POIBasedMap component from the project
  */
 function POICreateButton({ mode, onPoiCreated }) {
   const [open, setOpen] = useState(false);
@@ -785,19 +827,19 @@ function POICreateButton({ mode, onPoiCreated }) {
         variant="outlined"
         onClick={() => setOpen(true)}
         sx={{ textTransform: 'none', mt: 1 }}
-       >
+      >
         + Create New Location on Map
-       </Button>
+      </Button>
 
-       {open && (
+      {open && (
         <SimpleMapPOIPicker
           mode={mode}
           onClose={() => setOpen(false)}
           onPoiCreated={onPoiCreated}
-         />
-       )}
+        />
+      )}
     </>
-   );
+  );
 }
 
 /**
@@ -808,12 +850,12 @@ function SimpleMapPOIPicker({ mode, onClose, onPoiCreated }) {
   const [selectedCoords, setSelectedCoords] = useState(null);
   const [mapLoaded, setMapLoaded] = useState(false);
 
-   // Load Google Maps script
+  // Load Google Maps script
   React.useEffect(() => {
     if (typeof window.google !== 'undefined' && window.google.maps) {
       setMapLoaded(true);
       return;
-     }
+    }
 
     const script = document.createElement('script');
     script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || ''}&libraries=places`;
@@ -823,8 +865,8 @@ function SimpleMapPOIPicker({ mode, onClose, onPoiCreated }) {
 
     return () => {
       document.head.removeChild(script);
-     };
-   }, []);
+    };
+  }, []);
 
   const handleSearch = () => {
     if (!window.google?.maps?.Geocoder) return;
@@ -834,87 +876,86 @@ function SimpleMapPOIPicker({ mode, onClose, onPoiCreated }) {
       if (status === 'OK' && results[0]) {
         const loc = results[0].geometry.location;
         setSelectedCoords({ lat: loc.lat(), lng: loc.lng() });
-       } else {
+      } else {
         alert('Could not find that address.');
-       }
-     });
-   };
+      }
+    });
+  };
 
   const handleUseCenter = (map) => {
     if (!map) return;
     const center = map.getCenter();
     setSelectedCoords({ lat: center.lat(), lng: center.lng() });
-   };
+  };
 
   const handleConfirm = () => {
     if (!selectedCoords) return;
     onPoiCreated({ location: selectedCoords });
     onClose();
-   };
+  };
 
   return (
     <Dialog open={true} onClose={onClose} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 2 } }}>
-       <DialogTitle>Create New Location</DialogTitle>
-       <DialogContent>
-         <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-           <TextField
+      <DialogTitle>Create New Location</DialogTitle>
+      <DialogContent>
+        <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+          <TextField
             fullWidth
             size="small"
             placeholder="Search address or place name"
             value={searchAddr}
             onChange={(e) => setSearchAddr(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
-           />
-           <Button variant="outlined" onClick={handleSearch}>Search</Button>
-         </Box>
+          />
+          <Button variant="outlined" onClick={handleSearch}>Search</Button>
+        </Box>
 
-         <Box sx={{ width: '100%', height: 300, borderRadius: 2, overflow: 'hidden', position: 'relative' }}>
-           {mapLoaded && window.google?.maps ? (
-             <GoogleMap
+        <Box sx={{ width: '100%', height: 300, borderRadius: 2, overflow: 'hidden', position: 'relative' }}>
+          {mapLoaded && window.google?.maps ? (
+            <GoogleMap
               center={selectedCoords || { lat: 37.7749, lng: -122.4194 }}
               zoom={12}
               mapTypeId="roadmap"
               options={{
                 streetViewControl: false,
                 mapTypeControl: false,
-               }}
-             >
-               {selectedCoords && (
-                 <Marker
+              }}
+            >
+              {selectedCoords && (
+                <Marker
                   key="selected-marker"
                   position={selectedCoords}
                   draggable={true}
                   onDragend={(e) => {
                     const loc = e.latLng?.toJSON();
                     if (loc) setSelectedCoords({ lat: loc.lat, lng: loc.lng });
-                   }}
-                 />
-               )}
-             </GoogleMap>
-           ) : (
-             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-               Loading map...
-             </Box>
-           )}
-         </Box>
-       </DialogContent>
-       <DialogActions sx={{ p: 2, gap: 1 }}>
-         <Button onClick={onClose}>Cancel</Button>
-         <Button variant="outlined" onClick={() => {
-           // Get center of map for new coords
-         }}>
+                  }}
+                />
+              )}
+            </GoogleMap>
+          ) : (
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+              Loading map...
+            </Box>
+          )}
+        </Box>
+      </DialogContent>
+      <DialogActions sx={{ p: 2, gap: 1 }}>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="outlined" onClick={() => {
+          // Get center of map for new coords
+        }}>
           Reset to Map Center
-         </Button>
-         <Button
+        </Button>
+        <Button
           variant="contained"
           onClick={handleConfirm}
           disabled={!selectedCoords}
           autoFocus
-         >
+        >
           Use This Location
-         </Button>
-       </DialogActions>
-     </Dialog>
-   );
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
 }
-

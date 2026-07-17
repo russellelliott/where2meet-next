@@ -62,15 +62,13 @@ export default function FriendsPage() {
         }
 
   return (
-        <div style={{ minHeight: '100vh', bgcolor: '#f5f5f5' }}>
-          <Navbar />
-          <Box sx={{ pt: 2 }}>
+          <div style={{ minHeight: '100vh', bgcolor: '#f5f5f5' }}>
+            <Navbar />
             {/* FriendsDashboard manages its own Firebase auth via auth.onAuthStateChanged
                 (same pattern as MasterMap, MyMaps, PersonalMap). This ensures Firestore 
-                and Auth share the same internal state, preventing "Missing or insufficient 
-                permissions" errors on page reload. */}
+               and Auth share the same internal state, preventing "Missing or insufficient 
+               permissions" errors on page reload. */}
             <FriendsDashboard onSignOut={handleSignOut} />
-            </Box>
           </div>
         );
 }
