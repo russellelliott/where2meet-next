@@ -6,10 +6,9 @@ import {
   Paper,
   Divider,
   CircularProgress,
-  Tabs,
-  Tab,
   Alert,
   Snackbar,
+  Grid,
 } from '@mui/material';
 import { auth } from '../../firebaseConfig';
 import FriendList from './FriendList';
@@ -46,7 +45,7 @@ function isAuthError(error) {
 export default function FriendsDashboard({ onSignOut }) {
   const [user, setUser] = useState(auth.currentUser);
 
-  // Load data for a given user - defined before the useEffect that calls it
+  // Load data for a given user
   const loadData = useCallback(async (currentUser) => {
     if (!currentUser) {
       setLoading(false);
@@ -93,10 +92,6 @@ export default function FriendsDashboard({ onSignOut }) {
     } catch (err) {
       console.error('Error loading dashboard data:', err);
 
-      // Only show auth error, NEVER auto-signout - Firebase Auth is managed by the
-      // shared FirebaseAuthContext in _app.js, same as all other pages (maps, etc).
-      // The context handles token refresh automatically via onAuthStateChanged.
-      // If Firestore returns permission-denied, it's a rules issue, not an auth issue.
       if (isAuthError(err)) {
         setAuthError('Your session may have expired. Please sign in again.');
       } else {
@@ -105,7 +100,7 @@ export default function FriendsDashboard({ onSignOut }) {
     } finally {
       setLoading(false);
     }
-   }, []);
+  }, []);
 
   const [friends, setFriends] = useState([]);
   const [groups, setGroups] = useState([]);
@@ -125,11 +120,7 @@ export default function FriendsDashboard({ onSignOut }) {
   const [selectedHangoutPoiId, setSelectedHangoutPoiId] = useState(null);
   const [selectedHangoutPoiName, setSelectedHangoutPoiName] = useState(null);
 
-  // Tabs: 'friends', 'hangouts', 'groups'
-  const [tabValue, setTabValue] = useState(0);
-
-  // Subscribe to Firebase Auth SDK directly (same as MasterMap, MyMaps, PersonalMap)
-  // This ensures Firestore and Auth share the same internal auth state
+  // Subscribe to Firebase Auth SDK directly
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((loggedInUser) => {
       setUser(loggedInUser);
@@ -406,7 +397,7 @@ export default function FriendsDashboard({ onSignOut }) {
   const selectedFriend = friends.find((f) => f.id === selectedFriendId);
 
   return (
-    <Box sx={{ p: 3, maxWidth: 1200, mx: 'auto' }}>
+    <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: 1400, mx: 'auto' }}>
       {/* Error Alerts */}
       {error && (
         <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError(null)}>
@@ -425,28 +416,19 @@ export default function FriendsDashboard({ onSignOut }) {
       )}
 
       {/* Header */}
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="h4" fontWeight="bold">
           Friends Dashboard
         </Typography>
-        <Button variant="contained" onClick={handleToggleAddForm}>
+        <Button variant="contained" onClick={handleToggleAddForm} size="small">
           Add Friend
         </Button>
       </Box>
 
-      {/* Tabs */}
-      <Tabs value={tabValue} onChange={(e, v) => setTabValue(v)} sx={{ mb: 3 }}>
-        <Tab label="Friends" />
-        <Tab label="Hangouts" />
-        <Tab label="Groups" />
-      </Tabs>
-
-      {/* Stats Grid */}
-      <StatsGrid friends={friends} plannedHangouts={plannedHangouts} />
-
-      {/* Friends Tab */}
-      {tabValue === 0 && (
-        <Box>
+      {/* Two-Column Dashboard Layout */}
+      <Grid container spacing={{ xs: 2, sm: 3 }}>
+        {/* Left Column: Friend List */}
+        <Grid item xs={12} md={5}>
           <FriendList
             friends={friends}
             selectedFriendId={selectedFriendId}
@@ -458,12 +440,14 @@ export default function FriendsDashboard({ onSignOut }) {
           />
 
           {showAddForm && (
-            <FriendForm onSave={() => loadData(user)} onClose={() => setShowAddForm(false)} />
+            <Paper sx={{ mt: 2, p: 2 }}>
+              <FriendForm onSave={() => loadData(user)} onClose={() => setShowAddForm(false)} />
+            </Paper>
           )}
 
           {/* Selected Friend Details */}
           {selectedFriend && (
-            <Paper sx={{ mt: 3, p: 3, borderRadius: 2 }}>
+            <Paper sx={{ mt: 2, p: 3, borderRadius: 2 }}>
               <Typography variant="h6" gutterBottom>
                 {selectedFriend.name} - Details
               </Typography>
@@ -500,12 +484,14 @@ export default function FriendsDashboard({ onSignOut }) {
               </Box>
             </Paper>
           )}
-        </Box>
-      )}
+        </Grid>
 
-      {/* Hangouts Tab */}
-      {tabValue === 1 && (
-        <Box>
+        {/* Right Column: Stats, Hangouts, Groups */}
+        <Grid item xs={12} md={7}>
+          {/* Stats Grid */}
+          <StatsGrid friends={friends} plannedHangouts={plannedHangouts} />
+
+          {/* Hangout Scheduler (commitments, groups, plan/create buttons) */}
           <HangoutScheduler
             friends={friends}
             groups={groups}
@@ -517,35 +503,17 @@ export default function FriendsDashboard({ onSignOut }) {
             onDeletePlannedHangout={handleDeletePlannedHangout}
             onTriggerNotification={() => {}}
           />
+        </Grid>
+      </Grid>
 
-          <Box sx={{ mt: 4 }}>
-            <HangoutList
-              hangouts={hangouts}
-              friends={friends}
-              onCompleteHangout={handleCompleteHangout}
-            />
-          </Box>
-        </Box>
-      )}
-
-      {/* Groups Tab */}
-      {tabValue === 2 && (
-        <Box>
-          <Typography variant="h6" gutterBottom>
-            All Groups ({groups.length})
-          </Typography>
-          {groups.map((group) => (
-            <Paper key={group.id} sx={{ p: 2, mb: 2, borderRadius: 2 }}>
-              <Typography variant="subtitle1" fontWeight="medium">
-                {group.name}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Members: {group.memberIds?.length || 0}
-              </Typography>
-            </Paper>
-          ))}
-        </Box>
-      )}
+      {/* HangoutList - upcoming & past hangouts */}
+      <Box sx={{ mt: 3 }}>
+        <HangoutList
+          hangouts={hangouts}
+          friends={friends}
+          onCompleteHangout={handleCompleteHangout}
+        />
+      </Box>
 
       {/* Place Ideas Dialog */}
       <PoiIdeasDialog
