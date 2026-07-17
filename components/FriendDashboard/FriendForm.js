@@ -266,26 +266,33 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
       lastContactDate,
     };
 
+    // Build nested objects only when they have fields to avoid saving empty objects
+     const locationObj = {
+         ...((formData.location.homePoiId || '').length > 0 && { homePoiId: formData.location.homePoiId }),
+          ...(formData.location.temporaryLocation?.poiId && {
+           temporaryLocation: formData.location.temporaryLocation,
+          }),
+         };
+     const logisticsObj = {
+          canDrive: formData.logistics.canDrive,
+          pickupRequired: formData.logistics.pickupRequired,
+          ...(formData.logistics.pickupPoiId && { pickupPoiId: formData.logistics.pickupPoiId }),
+         };
+     const planningObj = {
+          ...((formData.planning.notes?.trim() || '').length > 0 && { notes: formData.planning.notes.trim() }),
+         };
+
     const friendData = {
       name: formData.name.trim(),
       tags: parsedTags.length > 0 ? parsedTags : ['Friend'],
       contact: contactData,
-      location: {
-        homePoiId: formData.location.homePoiId || undefined,
-        temporaryLocation:
-          formData.location.temporaryLocation.poiId
-            ? formData.location.temporaryLocation
-            : undefined,
-      },
-      logistics: {
-        ...formData.logistics,
-        pickupPoiId: formData.logistics.pickupPoiId || undefined,
-      },
-      planning: {
-        notes: formData.planning.notes?.trim() || undefined,
-      },
-      notes: formData.notes?.trim() || undefined,
-    };
+       // Only include nested objects when they have actual fields
+      ...((Object.keys(locationObj).length > 0) && { location: locationObj }),
+      ...((Object.keys(logisticsObj).length > 0) && { logistics: logisticsObj }),
+      ...((Object.keys(planningObj).length > 0) && { planning: planningObj }),
+        // Only include top-level notes when set (Firebase rejects undefined)
+        ...((formData.notes?.trim() || '').length > 0 && { notes: formData.notes.trim() }),
+     };
 
     try {
       if (editFriend) {
