@@ -32,6 +32,7 @@ import {
   Video,
   Search,
   Pencil,
+  Trash2,
 } from 'lucide-react';
 import { createPoiFromCoordinates } from '../../lib/poiService';
 import { auth, db } from '../../firebaseConfig';
@@ -165,7 +166,70 @@ function SchedulingFormDialog(props) {
     confirmLocationSelection,
     cancelLocationSelection,
     getPoiNameById,
+    isEditingHangoutMode = false,
+    editingHangout = null,
+    onSaveHangout = null,
   } = props;
+
+  const handleSubmit = useCallback((e) => {
+    e.preventDefault();
+
+    if (isEditingHangoutMode && onSaveHangout && editingHangout) {
+      // Update existing hangout - only include fields that have values
+      const hangoutData = {
+        title: hangoutTitle.trim() || 'Untitled Hangout',
+        type: hangoutType,
+        datetime: new Date(datetime).toISOString(),
+        friendIds: customAttendeeIds.length > 0 ? [...customAttendeeIds] : [],
+       };
+
+      // Only add poiId if selected
+      if (selectedPoiId) {
+        hangoutData.poiId = selectedPoiId;
+       }
+
+      // Only add description if non-empty
+      if (details.trim()) {
+        hangoutData.description = details.trim();
+       }
+
+      // Only add groupId if selected
+      if (selectedGroupId) {
+        hangoutData.groupId = selectedGroupId;
+       }
+
+      onSaveHangout(hangoutData).then(() => {
+        setHangoutTitle('');
+        setSelectedGroupId('');
+        setCustomAttendeeIds([]);
+        setSelectedPoiId(null);
+        setDetails('');
+        setIsScheduling(false);
+       }).catch((err) => {
+        console.error('Error updating hangout:', err);
+       });
+    } else if (!isEditingHangoutMode && formOnSubmit) {
+      // Create new hangout (original behavior)
+      if (!hangoutTitle.trim() || customAttendeeIds.length === 0) {
+        return;
+      }
+      const hangoutData = {
+        title: hangoutTitle.trim(),
+        poiId: selectedPoiId || null,
+        type: hangoutType,
+        datetime: new Date(datetime).toISOString(),
+        friendIds: customAttendeeIds.length > 0 ? [...customAttendeeIds] : [],
+      };
+       // Only add optional fields if they have actual values
+      if (details.trim()) {
+        hangoutData.description = details.trim();
+       }
+      if (selectedGroupId) {
+        hangoutData.groupId = selectedGroupId;
+       }
+      formOnSubmit(e);
+    }
+  }, [isEditingHangoutMode, onSaveHangout, editingHangout, hangoutTitle, selectedPoiId, hangoutType, datetime, details, customAttendeeIds, selectedGroupId, formOnSubmit]);
 
   return (
     <Dialog
@@ -177,11 +241,11 @@ function SchedulingFormDialog(props) {
     >
       <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
         <Calendar size={18} color="#CC7A5C" />
-        Schedule Group Hangout
+        {isEditingHangoutMode ? 'Edit Hangout' : 'Schedule Group Hangout'}
       </DialogTitle>
 
       <DialogContent dividers>
-        <form id="scheduleHangoutForm" onSubmit={formOnSubmit}>
+        <form id="scheduleHangoutForm" onSubmit={handleSubmit}>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
             {/* Left: event details */}
             <Box>
@@ -192,7 +256,7 @@ function SchedulingFormDialog(props) {
                 placeholder="E.g. Sunday Board Game Run"
                 value={hangoutTitle}
                 onChange={(e) => setHangoutTitle(e.target.value)}
-                required
+                required={!isEditingHangoutMode}
                 sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
               />
 
@@ -425,7 +489,7 @@ function SchedulingFormDialog(props) {
       <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
         <Button onClick={() => setIsScheduling(false)}>Cancel</Button>
         <Button type="submit" form="scheduleHangoutForm" variant="contained" sx={{ backgroundColor: '#5A5A40', '&:hover': { backgroundColor: '#434330' } }}>
-          Create Hangout
+          {isEditingHangoutMode ? 'Save Hangout' : 'Create Hangout'}
         </Button>
       </DialogActions>
     </Dialog>
@@ -577,6 +641,9 @@ export default function HangoutScheduler({
   onTriggerNotification,
   editingGroup = null,
   setEditingGroup = null,
+  editingHangout = null,
+  isEditingHangoutMode = false,
+  onSaveHangout = null,
 }) {
   const [isScheduling, setIsScheduling] = useState(false);
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
@@ -588,6 +655,22 @@ export default function HangoutScheduler({
   const [datetime, setDatetime] = useState('2026-07-15T18:00');
   const [details, setDetails] = useState('');
   const [selectedPoiId, setSelectedPoiId] = useState(null);
+
+  // Sync editing hangout state into form fields when it changes
+  React.useEffect(() => {
+    if (editingHangout) {
+      setHangoutTitle(editingHangout.title || '');
+      setSelectedGroupId(editingHangout.groupId || '');
+      setHangoutType(editingHangout.type || 'physical');
+      setDatetime(editingHangout.datetime ? new Date(editingHangout.datetime).toISOString().slice(0, 16) : '2026-07-15T18:00');
+      setDetails(editingHangout.description || '');
+      setSelectedPoiId(editingHangout.poiId || null);
+      // Show the scheduler dialog when editing a hangout
+      setIsScheduling(true);
+      setIsCreatingGroup(false);
+    }
+  }, [editingHangout]);
+
   // POI picker states
   const [showPoiPicker, setShowPoiPicker] = useState(false);
   const [existingPOIs, setExistingPOIs] = useState([]);
@@ -698,7 +781,7 @@ export default function HangoutScheduler({
     }
   }, [customAttendeeIds]);
 
-  // Handle schedule submission for planning hangouts
+   // Handle schedule submission for planning hangouts
   const handleScheduleSubmit = useCallback((e) => {
     e.preventDefault();
     if (!hangoutTitle.trim() || customAttendeeIds.length === 0) {
@@ -706,16 +789,21 @@ export default function HangoutScheduler({
       return;
     }
 
-    // Build the hangout data object with proper friendIds field (required by Hangout schema)
+     // Build the hangout data object with proper friendIds field (required by Hangout schema)
     const hangoutData = {
       title: hangoutTitle.trim(),
       poiId: selectedPoiId || null,
       type: hangoutType,
       datetime: new Date(datetime).toISOString(),
-      description: details.trim() || undefined,
       friendIds: customAttendeeIds.length > 0 ? [...customAttendeeIds] : [],
-      groupId: selectedGroupId || undefined,
-    };
+     };
+     // Only add optional fields if they have actual values
+    if (details.trim()) {
+      hangoutData.description = details.trim();
+    }
+    if (selectedGroupId) {
+      hangoutData.groupId = selectedGroupId;
+    }
 
     onAddPlannedHangout(hangoutData).then(() => {
       // Reset scheduler state on success
@@ -846,6 +934,9 @@ export default function HangoutScheduler({
     confirmLocationSelection,
     cancelLocationSelection,
     getPoiNameById,
+    isEditingHangoutMode,
+    editingHangout,
+    onSaveHangout,
   }), [
     isScheduling, hangoutTitle, selectedGroupId, hangoutType, datetime, details,
     selectedPoiId, showPoiPicker, existingPOIs, loadingPOIs, poiSearchQuery,
@@ -853,6 +944,7 @@ export default function HangoutScheduler({
     handleScheduleSubmit, handleGroupChange, toggleAttendee, openPoiPicker,
     handlePoiSearchChange, handleSelectPoi, confirmLocationSelection,
     cancelLocationSelection, getPoiNameById,
+    isEditingHangoutMode, editingHangout, onSaveHangout,
   ]);
 
   const groupFormProps = React.useMemo(() => ({
@@ -946,10 +1038,23 @@ export default function HangoutScheduler({
                         e.stopPropagation();
                         if (onEditGroup) onEditGroup(group);
                       }}
-                      sx={{ position: 'absolute', top: 8, right: 8, color: '#9B988C', '&:hover': { color: '#5A5A40' } }}
+                      sx={{ position: 'absolute', top: 8, right: 32, color: '#9B988C', '&:hover': { color: '#5A5A40' } }}
                       title="Edit Group"
                     >
                       <Pencil size={12} />
+                    </IconButton>
+                  )}
+                  {(onDeleteGroup) && (
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteGroup(group.id);
+                      }}
+                      sx={{ position: 'absolute', top: 8, right: 8, color: '#9B988C', '&:hover': { color: '#CC7A5C' } }}
+                      title="Delete Group"
+                    >
+                      <Trash2 size={12} />
                     </IconButton>
                   )}
                   <Typography variant="subtitle2" sx={{ fontFamily: 'serif', fontWeight: 700, fontSize: '0.85rem', color: '#2D2D20' }}>

@@ -19,7 +19,7 @@ import CreateHangoutDialog from './CreateHangoutDialog';
 import HangoutList from './HangoutList';
 import { getFriends, getUserPoIs, recordContact as recordContactApi, deleteFriend, updateFriend } from '../../lib/friendService';
 import { getGroups, addGroup as addGroupApi, updateGroup, deleteGroup } from '../../lib/groupService';
-import { getHangouts, createHangout as createHangoutApi, completeHangout } from '../../lib/hangoutService';
+import { getHangouts, createHangout as createHangoutApi, completeHangout, deleteHangout as deleteHangoutApi, updateHangout as updateHangoutApi } from '../../lib/hangoutService';
 import FriendForm from './FriendForm';
 
 /**
@@ -65,6 +65,9 @@ export default function FriendsDashboard({ onSignOut }) {
   const [selectedHangoutPoiName, setSelectedHangoutPoiName] = useState(null);
   const [pois, setPoIs] = useState([]);
   const [cityCache, setCityCache] = useState({});
+    // Hangout editing state
+  const [editingHangout, setEditingHangout] = useState(null);
+  const [isEditingHangoutMode, setIsEditingHangoutMode] = useState(false);
 
    // Toggle add friend form visibility - must be defined after showAddForm state
   const handleToggleAddForm = useCallback(() => {
@@ -106,30 +109,52 @@ export default function FriendsDashboard({ onSignOut }) {
       const flattenedFriends = (friendsData || []).map(f => ({ ...f.data, id: f.id }));
       setFriends(flattenedFriends);
 
-       // Flatten group data and ensure planning object exists per schema
+        // Flatten group data and ensure planning object exists per schema
       const flattenedGroups = (groupsData || []).map(g => ({
-         ...g.data,
+          ...g.data,
         id: g.id,
         planning: g.data.planning || { hangoutIds: [], placeIdeas: [], notes: '' },
-       }));
+         }));
       setGroups(flattenedGroups);
-      setPoIs(poisData || []);
 
-       // All hangouts (from friend planning + group planning + standalone)
+        // Flatten POI data for direct access in components
+      const flattenedPoIs = (poisData || []).map(p => ({ ...p, id: p.id }));
+      setPoIs(flattenedPoIs);
+
+        // All hangouts (from friend planning + group planning + standalone)
       const allHangoutIds = new Set();
-       (friendsData || []).forEach((f) => {
-         (f.planning?.hangoutIds || []).forEach((id) => allHangoutIds.add(id));
-       });
-       (groupsData || []).forEach((g) => {
-         (g.planning?.hangoutIds || []).forEach((id) => allHangoutIds.add(id));
-       });
+        (friendsData || []).forEach((f) => {
+          (f.planning?.hangoutIds || []).forEach((id) => allHangoutIds.add(id));
+        });
+        (groupsData || []).forEach((g) => {
+          (g.planning?.hangoutIds || []).forEach((id) => allHangoutIds.add(id));
+        });
 
-      setHangouts(hangoutsData || []);
+        // Flatten hangout data for direct access in components
+      const flattenedHangouts = (hangoutsData || []).map(h => ({ ...h.data, id: h.id }));
+      setHangouts(flattenedHangouts);
 
-       // Separate planned vs completed
-      const now = new Date();
-      const planned = (hangoutsData || []).filter((h) => new Date(h.datetime) >= now);
-      const completed = (hangoutsData || []).filter((h) => new Date(h.datetime) < now);
+        // Helper to safely convert Firestore Timestamp or ISO string to Date
+       function toTimestamp(val) {
+         if (!val) return null;
+         // Handle Firestore Timestamp objects (from SDK v9 snapshot.data())
+         if (val?.toDate && typeof val.toDate === 'function') {
+           return val.toDate();
+         }
+         // Handle native Date or string
+         return new Date(val);
+        }
+
+        // Separate planned vs completed using flattened data
+       const now = new Date();
+      const planned = flattenedHangouts.filter((h) => {
+        const dt = toTimestamp(h.datetime);
+        return dt && dt >= now;
+       });
+      const completed = flattenedHangouts.filter((h) => {
+        const dt = toTimestamp(h.datetime);
+        return dt && dt < now;
+       });
 
       setPlannedHangouts(planned);
       setHistory(completed);
@@ -286,18 +311,72 @@ export default function FriendsDashboard({ onSignOut }) {
     if (!user || !hangoutId) return;
 
     try {
-      await createHangoutApi(user.uid, { id: hangoutId, deleted: true });
+      await deleteHangoutApi(user.uid, hangoutId);
       setHangouts((prev) => prev.filter((h) => h.id !== hangoutId));
       setPlannedHangouts((prev) => prev.filter((h) => h.id !== hangoutId));
-     } catch (err) {
+      } catch (err) {
       console.error('Error deleting hangout:', err);
       if (isAuthError(err)) {
         setAuthError('Session expired. Please sign in again.');
-       } else {
+        } else {
         setError('Failed to cancel hangout.');
-       }
-     }
-   }, [user]);
+        }
+      }
+    }, [user]);
+
+    // Delete hangout from the hangout list (full delete from Firestore)
+  const handleDeleteHangout = useCallback(async (hangoutId) => {
+    if (!confirm('Are you sure you want to delete this hangout? This action cannot be undone.')) return;
+    if (!user || !hangoutId) return;
+
+    try {
+      await deleteHangoutApi(user.uid, hangoutId);
+      setHangouts((prev) => prev.filter((h) => h.id !== hangoutId));
+        // Also remove from planned/history views
+      setPlannedHangouts((prev) => prev.filter((h) => h.id !== hangoutId));
+      setHistory((prev) => prev.filter((h) => h.id !== hangoutId));
+      await loadData(user);
+      } catch (err) {
+      console.error('Error deleting hangout:', err);
+      if (isAuthError(err)) {
+        setAuthError('Session expired. Please sign in again.');
+        } else {
+        setError('Failed to delete hangout.');
+        }
+      }
+    }, [user, loadData]);
+
+    // Edit hangout - open the scheduler in edit mode
+  const handleEditHangout = useCallback((hangout) => {
+    setEditingHangout(hangout);
+    setIsEditingHangoutMode(true);
+    }, []);
+
+    // Handle hangout save (create or update)
+  const handleSaveHangout = useCallback(async (hangoutData) => {
+    if (!user) return;
+
+    try {
+      if (isEditingHangoutMode && editingHangout) {
+          // Update existing hangout
+        await updateHangoutApi(user.uid, editingHangout.id, hangoutData);
+        } else {
+          // Create new hangout
+        await createHangoutApi(user.uid, hangoutData);
+        }
+
+      setIsEditingHangoutMode(false);
+      setEditingHangout(null);
+      await loadData(user);
+      } catch (err) {
+      console.error('Error saving hangout:', err);
+      if (isAuthError(err)) {
+        setAuthError('Session expired. Please sign in again.');
+        } else {
+        setError('Failed to save hangout.');
+        }
+      }
+    }, [user, isEditingHangoutMode, editingHangout, loadData]);
 
   const handleCompletePlannedHangout = useCallback(async (hangoutId, actualDate, attendeeIds) => {
     if (!user || !hangoutId) return;
@@ -622,7 +701,7 @@ export default function FriendsDashboard({ onSignOut }) {
          {/* Right Column: Hangouts, Groups */}
          <Grid item xs={12} md={7}>
            {/* Hangout Scheduler (commitments, groups, plan/create buttons) */}
-           <HangoutScheduler
+          <HangoutScheduler
             friends={friends}
             groups={groups}
             plannedHangouts={plannedHangouts}
@@ -636,19 +715,24 @@ export default function FriendsDashboard({ onSignOut }) {
             onTriggerNotification={() => {}}
             editingGroup={editingGroup}
             setEditingGroup={setEditingGroup}
-           />
+            editingHangout={editingHangout}
+            isEditingHangoutMode={isEditingHangoutMode}
+            onSaveHangout={handleSaveHangout}
+          />
          </Grid>
        </Grid>
 
-       {/* HangoutList - upcoming & past hangouts */}
-       <Box sx={{ mt: 3 }}>
+{/* HangoutList - upcoming & past hangouts */}
+        <Box sx={{ mt: 3 }}>
          <HangoutList
           hangouts={hangouts}
           friends={friends}
           pois={pois}
           onCompleteHangout={handleCompleteHangout}
-         />
-       </Box>
+          onEditHangout={handleEditHangout}
+          onDeleteHangout={handleDeleteHangout}
+          />
+        </Box>
 
        {/* Place Ideas Dialog */}
        <PoiIdeasDialog
