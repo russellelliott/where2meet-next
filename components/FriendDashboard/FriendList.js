@@ -10,7 +10,7 @@ import {
   Paper,
   Button,
 } from '@mui/material';
-import { Search, Tag, Car, AlertTriangle, Check, Trash2, Plus, UserX, MapPin } from 'lucide-react';
+import { Search, Tag, Car, AlertTriangle, Check, Trash2, Plus, UserX, MapPin, Pencil } from 'lucide-react';
 import { FaPhone } from 'react-icons/fa6';
 import { FaDiscord, FaInstagram } from 'react-icons/fa';
 import { IoLogoWhatsapp } from 'react-icons/io';
@@ -34,6 +34,7 @@ export default function FriendList({
   onSelectFriend,
   onRecordContact,
   onDeleteFriend,
+  onEditFriend,
   onToggleAddForm,
   isAddFormOpen,
 }) {
@@ -432,23 +433,40 @@ export default function FriendList({
                       );
                     })()}
 
-                     {/* Delete Button */}
-                    <IconButton
+                      {/* Edit Button */}
+                     <IconButton
+                     size="small"
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       onEditFriend?.(friend);
+                       }}
+                     sx={{
+                       color: '#9B988C',
+                        '&:hover': { color: '#5A5A40', backgroundColor: '#FBFBF9' },
+                       }}
+                        title="Edit Friend"
+                         id={`edit-friend-${friend.id}`}
+                       >
+                          <Pencil size={14} />
+                        </IconButton>
+
+                      {/* Delete Button */}
+                     <IconButton
                      size="small"
                      onClick={(e) => {
                        e.stopPropagation();
                        onDeleteFriend(friend.id);
-                      }}
+                       }}
                      sx={{
                        color: '#9B988C',
-                       '&:hover': { color: '#CC7A5C', backgroundColor: '#FBFBF9' },
-                      }}
-                       title="Remove Friend"
-                        id={`delete-friend-${friend.id}`}
-                      >
-                        <Trash2 size={14} />
-                      </IconButton>
-                  </Box>
+                        '&:hover': { color: '#CC7A5C', backgroundColor: '#FBFBF9' },
+                       }}
+                        title="Remove Friend"
+                         id={`delete-friend-${friend.id}`}
+                       >
+                          <Trash2 size={14} />
+                        </IconButton>
+                    </Box>
                 </Box>
 
                  {/* Logistics details for selected */}

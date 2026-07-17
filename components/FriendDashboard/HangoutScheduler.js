@@ -31,6 +31,7 @@ import {
   ClipboardList,
   Video,
   Search,
+  Pencil,
 } from 'lucide-react';
 import { createPoiFromCoordinates } from '../../lib/poiService';
 import { auth, db } from '../../firebaseConfig';
@@ -50,14 +51,14 @@ function SimpleMapPOIPicker({ onClose, onPoiCreated }) {
     if (typeof window.google !== 'undefined' && window.google.maps) {
       setMapLoaded(true);
       return;
-     }
+    }
     const script = document.createElement('script');
     script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || ''}&libraries=places`;
     script.async = true;
     script.onload = () => setMapLoaded(true);
     document.head.appendChild(script);
     return () => { document.head.removeChild(script); };
-   }, []);
+  }, []);
 
   const handleSearch = () => {
     if (!window.google?.maps?.Geocoder) return;
@@ -69,68 +70,68 @@ function SimpleMapPOIPicker({ onClose, onPoiCreated }) {
       } else {
         alert('Could not find that address.');
       }
-     });
-   };
+    });
+  };
 
   const handleConfirm = () => {
     if (!selectedCoords) return;
     onPoiCreated(selectedCoords);
     onClose();
-   };
+  };
 
   return (
     <Box sx={{ mt: 2 }}>
-       <Typography variant="subtitle2" gutterBottom>Create New Location</Typography>
-       <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+      <Typography variant="subtitle2" gutterBottom>Create New Location</Typography>
+      <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
         Click the button below to open the map and create a new location.
-       </Typography>
-       <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-         <TextField
+      </Typography>
+      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+        <TextField
           fullWidth
           size="small"
           placeholder="Search address or place name"
           value={searchAddr}
           onChange={(e) => setSearchAddr(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
-         />
-         <Button variant="outlined" onClick={handleSearch}>Search</Button>
-       </Box>
+        />
+        <Button variant="outlined" onClick={handleSearch}>Search</Button>
+      </Box>
 
-       <Box sx={{ width: '100%', height: 300, borderRadius: 2, overflow: 'hidden', position: 'relative' }}>
-         {mapLoaded && window.google?.maps ? (
-           <GoogleMap
+      <Box sx={{ width: '100%', height: 300, borderRadius: 2, overflow: 'hidden', position: 'relative' }}>
+        {mapLoaded && window.google?.maps ? (
+          <GoogleMap
             center={selectedCoords || { lat: 37.7749, lng: -122.4194 }}
             zoom={12}
             mapTypeId="roadmap"
             options={{ streetViewControl: false, mapTypeControl: false }}
-           >
-             {selectedCoords && (
-               <Marker
+          >
+            {selectedCoords && (
+              <Marker
                 key="selected-marker"
                 position={selectedCoords}
                 draggable={true}
                 onDragend={(e) => {
                   const loc = e.latLng?.toJSON();
                   if (loc) setSelectedCoords({ lat: loc.lat, lng: loc.lng });
-                 }}
-               />
-             )}
-           </GoogleMap>
-         ) : (
-           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                }}
+              />
+            )}
+          </GoogleMap>
+        ) : (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
             Loading map...
-           </Box>
-         )}
-       </Box>
+          </Box>
+        )}
+      </Box>
 
-       <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
-         <Button onClick={onClose}>Cancel</Button>
-         <Button variant="contained" onClick={handleConfirm} disabled={!selectedCoords} autoFocus>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="contained" onClick={handleConfirm} disabled={!selectedCoords} autoFocus>
           Use This Location
-         </Button>
-       </Box>
-     </Box>
-   );
+        </Button>
+      </Box>
+    </Box>
+  );
 }
 
 /* ========================================================================
@@ -167,24 +168,24 @@ function SchedulingFormDialog(props) {
   } = props;
 
   return (
-     <Dialog
+    <Dialog
       open={isScheduling}
       onClose={() => setIsScheduling(false)}
       maxWidth="md"
       fullWidth
       PaperProps={{ sx: { borderRadius: 3, backgroundColor: '#FBFBF9' } }}
-     >
-       <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-         <Calendar size={18} color="#CC7A5C" />
+    >
+      <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Calendar size={18} color="#CC7A5C" />
         Schedule Group Hangout
-       </DialogTitle>
+      </DialogTitle>
 
-       <DialogContent dividers>
-         <form id="scheduleHangoutForm" onSubmit={formOnSubmit}>
-           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-             {/* Left: event details */}
-             <Box>
-               <TextField
+      <DialogContent dividers>
+        <form id="scheduleHangoutForm" onSubmit={formOnSubmit}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
+            {/* Left: event details */}
+            <Box>
+              <TextField
                 fullWidth
                 size="small"
                 label="Hangout Title"
@@ -193,36 +194,36 @@ function SchedulingFormDialog(props) {
                 onChange={(e) => setHangoutTitle(e.target.value)}
                 required
                 sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-               />
+              />
 
-               <FormControl fullWidth size="small" sx={{ mb: 2 }}>
-                 <InputLabel>Pre-set Group</InputLabel>
-                 <Select
+              <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+                <InputLabel>Pre-set Group</InputLabel>
+                <Select
                   value={selectedGroupId}
                   onChange={(e) => handleGroupChange(e.target.value)}
                   label="Pre-set Group"
-                 >
-                   <MenuItem value="">-- Custom (Select Friends Below) --</MenuItem>
-                   {groups.map((g) => (
-                     <MenuItem key={g.id} value={g.id}>{g.name}</MenuItem>
-                   ))}
-                 </Select>
-               </FormControl>
+                >
+                  <MenuItem value="">-- Custom (Select Friends Below) --</MenuItem>
+                  {groups.map((g) => (
+                    <MenuItem key={g.id} value={g.id}>{g.name}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
 
-               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, mb: 2 }}>
-                 {/* Type toggle using MUI ToggleButtonGroup */}
-                 <Box>
-                   <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 0.5 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, mb: 2 }}>
+                {/* Type toggle using MUI ToggleButtonGroup */}
+                <Box>
+                  <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 0.5 }}>
                     Type
-                   </Typography>
-                   <ToggleButtonGroup
+                  </Typography>
+                  <ToggleButtonGroup
                     value={hangoutType}
                     exclusive
                     onChange={(e, newType) => newType && setHangoutType(newType)}
                     sx={{
                       width: '100%',
                       borderRadius: 2,
-                       '& .MuiToggleButton-root': {
+                      '& .MuiToggleButton-root': {
                         fontSize: '11px',
                         fontWeight: 600,
                         fontFamily: 'monospace',
@@ -231,30 +232,30 @@ function SchedulingFormDialog(props) {
                         border: '1px solid #E0DED7',
                         borderRadius: 2,
                         transition: 'all 0.2s ease',
-                       },
-                       '& .Mui-selected': {
+                      },
+                      '& .Mui-selected': {
                         backgroundColor: '#5A5A40',
                         color: '#FFFFFF',
-                       },
-                       '& .MuiToggleButton-root:first-of-type': {
+                      },
+                      '& .MuiToggleButton-root:first-of-type': {
                         borderRadius: hangoutType === 'physical' ? '2px 0 0 2px' : 2,
-                       },
-                       '& .MuiToggleButton-root:last-of-type': {
+                      },
+                      '& .MuiToggleButton-root:last-of-type': {
                         borderRadius: hangoutType === 'virtual' ? '0 2px 2px 0' : 2,
-                       },
-                     }}
-                   >
-                     <ToggleButton value="physical">Physical</ToggleButton>
-                     <ToggleButton value="virtual">Virtual</ToggleButton>
-                   </ToggleButtonGroup>
-                 </Box>
+                      },
+                    }}
+                  >
+                    <ToggleButton value="physical">Physical</ToggleButton>
+                    <ToggleButton value="virtual">Virtual</ToggleButton>
+                  </ToggleButtonGroup>
+                </Box>
 
-                 {/* Date & time */}
-                 <Box>
-                   <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 0.5 }}>
+                {/* Date & time */}
+                <Box>
+                  <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 0.5 }}>
                     Date & Time
-                   </Typography>
-                   <TextField
+                  </Typography>
+                  <TextField
                     fullWidth
                     type="datetime-local"
                     value={datetime}
@@ -262,17 +263,17 @@ function SchedulingFormDialog(props) {
                     size="small"
                     InputLabelProps={{ shrink: true }}
                     sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                   />
-                 </Box>
-               </Box>
+                  />
+                </Box>
+              </Box>
 
-               {/* Location selection button - only for physical type */}
-               {hangoutType === 'physical' && (
-                 <Box sx={{ mb: 2 }}>
-                   <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 0.5 }}>
+              {/* Location selection button - only for physical type */}
+              {hangoutType === 'physical' && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 0.5 }}>
                     Destination
-                   </Typography>
-                   <Button
+                  </Typography>
+                  <Button
                     fullWidth
                     variant="outlined"
                     onClick={openPoiPicker}
@@ -281,16 +282,16 @@ function SchedulingFormDialog(props) {
                       textTransform: 'none',
                       justifyContent: 'flex-start',
                       borderRadius: 2,
-                     }}
-                   >
-                     {selectedPoiId
-                       ? `📍 ${getPoiNameById(selectedPoiId) || 'Loading...'}`
-                       : '+ Select Location on Map'}
-                   </Button>
-                 </Box>
-               )}
+                    }}
+                  >
+                    {selectedPoiId
+                      ? `📍 ${getPoiNameById(selectedPoiId) || 'Loading...'}`
+                      : '+ Select Location on Map'}
+                  </Button>
+                </Box>
+              )}
 
-               <TextField
+              <TextField
                 fullWidth
                 size="small"
                 multiline
@@ -300,51 +301,51 @@ function SchedulingFormDialog(props) {
                 value={details}
                 onChange={(e) => setDetails(e.target.value)}
                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-               />
-             </Box>
+              />
+            </Box>
 
-             {/* Right: attendees */}
-             <Box>
-               <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 1 }}>
+            {/* Right: attendees */}
+            <Box>
+              <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 1 }}>
                 Attendees (Customize Selection)
-               </Typography>
-               <Paper variant="outlined" sx={{ p: 1.5, maxHeight: 230, overflowY: 'auto', borderRadius: 2 }}>
-                 {friends.map((f) => {
+              </Typography>
+              <Paper variant="outlined" sx={{ p: 1.5, maxHeight: 230, overflowY: 'auto', borderRadius: 2 }}>
+                {friends.map((f) => {
                   const isChecked = customAttendeeIds.includes(f.id);
                   return (
-                     <label key={f.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.75, px: 1, borderRadius: 1, cursor: 'pointer', '&:hover': { backgroundColor: '#FBFBF9' } }}>
-                       <input type="checkbox" checked={isChecked} onChange={() => toggleAttendee(f.id)} style={{ accentColor: '#CC7A5C' }} />
-                       <Typography variant="body2" sx={{ fontSize: '12px', flex: 1 }}>{f.name}</Typography>
-                       <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', color: '#7D7B6D' }}>
-                         ({f.location?.city || 'Unknown'})
-                       </Typography>
-                     </label>
-                   );
-                 })}
-               </Paper>
-               <Typography variant="caption" sx={{ display: 'block', fontStyle: 'italic', color: '#7D7B6D', mt: 1, fontSize: '10px' }}>
+                    <label key={f.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.75, px: 1, borderRadius: 1, cursor: 'pointer', '&:hover': { backgroundColor: '#FBFBF9' } }}>
+                      <input type="checkbox" checked={isChecked} onChange={() => toggleAttendee(f.id)} style={{ accentColor: '#CC7A5C' }} />
+                      <Typography variant="body2" sx={{ fontSize: '12px', flex: 1 }}>{f.name}</Typography>
+                      <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', color: '#7D7B6D' }}>
+                        ({f.location?.city || 'Unknown'})
+                      </Typography>
+                    </label>
+                  );
+                })}
+              </Paper>
+              <Typography variant="caption" sx={{ display: 'block', fontStyle: 'italic', color: '#7D7B6D', mt: 1, fontSize: '10px' }}>
                 Add or remove specific individuals for this hangout commitment.
-               </Typography>
-             </Box>
-           </Box>
+              </Typography>
+            </Box>
+          </Box>
 
-           <Divider sx={{ my: 2 }} />
+          <Divider sx={{ my: 2 }} />
 
-           {/* POI Picker Dialog — nested inside SchedulingFormDialog so it appears on top */}
-           {showPoiPicker && hangoutType === 'physical' && (
-             <Dialog
+          {/* POI Picker Dialog — nested inside SchedulingFormDialog so it appears on top */}
+          {showPoiPicker && hangoutType === 'physical' && (
+            <Dialog
               open={true}
               onClose={cancelLocationSelection}
               maxWidth="md"
               fullWidth
               PaperProps={{ sx: { borderRadius: 2 } }}
-             >
-               <DialogTitle>Select or Create a Location</DialogTitle>
+            >
+              <DialogTitle>Select or Create a Location</DialogTitle>
 
-               {/* Search bar */}
-               <DialogContent>
-                 <Box sx={{ mb: 2 }}>
-                   <TextField
+              {/* Search bar */}
+              <DialogContent>
+                <Box sx={{ mb: 2 }}>
+                  <TextField
                     fullWidth
                     size="small"
                     placeholder="Search locations by name, address, or city..."
@@ -352,27 +353,27 @@ function SchedulingFormDialog(props) {
                     onChange={handlePoiSearchChange}
                     InputProps={{
                       startAdornment: (
-                         <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
-                           <Search size={14} color="#9B988C" />
-                         </Box>
-                       ),
-                     }}
-                   />
-                 </Box>
+                        <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
+                          <Search size={14} color="#9B988C" />
+                        </Box>
+                      ),
+                    }}
+                  />
+                </Box>
 
-                 {/* Existing POIs list */}
-                 <Box sx={{ mb: 2 }}>
-                   <Typography variant="subtitle2" gutterBottom>
+                {/* Existing POIs list */}
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2" gutterBottom>
                     Existing Locations
-                   </Typography>
-                   {loadingPOIs ? (
-                     <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
-                       <CircularProgress size={24} />
-                     </Box>
-                   ) : (
-                     <Box sx={{ maxHeight: 200, overflowY: 'auto' }}>
-                       {existingPOIs.map((poi) => (
-                         <Box
+                  </Typography>
+                  {loadingPOIs ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+                      <CircularProgress size={24} />
+                    </Box>
+                  ) : (
+                    <Box sx={{ maxHeight: 200, overflowY: 'auto' }}>
+                      {existingPOIs.map((poi) => (
+                        <Box
                           key={poi.id}
                           onClick={() => handleSelectPoi(poi.id)}
                           sx={{
@@ -381,54 +382,54 @@ function SchedulingFormDialog(props) {
                             borderRadius: 1,
                             mb: 0.5,
                             bgcolor: selectedPoiId === poi.id ? 'action.selected' : 'transparent',
-                             '&:hover': { bgcolor: 'action.hover' },
-                           }}
-                         >
-                           <Typography variant="body2">{poi.name}</Typography>
-                           <Typography variant="caption" color="text.secondary">
-                             {poi.location?.address || `${poi.location?.lat}, ${poi.location?.lng}`}
-                           </Typography>
-                         </Box>
-                       ))}
-                       {existingPOIs.length === 0 && (
-                         <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
+                            '&:hover': { bgcolor: 'action.hover' },
+                          }}
+                        >
+                          <Typography variant="body2">{poi.name}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {poi.location?.address || `${poi.location?.lat}, ${poi.location?.lng}`}
+                          </Typography>
+                        </Box>
+                      ))}
+                      {existingPOIs.length === 0 && (
+                        <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
                           No locations found. Search above or create a new one below.
-                         </Typography>
-                       )}
-                     </Box>
-                   )}
-                 </Box>
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
+                </Box>
 
-                 {/* Create New via Map component */}
-                 <Box sx={{ mt: 0, borderTop: '1px solid #e0e0e0', pt: 2 }}>
-                   <SimpleMapPOIPicker key={`poi-picker-schedule-${selectedPoiId}`} onClose={cancelLocationSelection} onPoiCreated={(coords) => {
+                {/* Create New via Map component */}
+                <Box sx={{ mt: 0, borderTop: '1px solid #e0e0e0', pt: 2 }}>
+                  <SimpleMapPOIPicker key={`poi-picker-schedule-${selectedPoiId}`} onClose={cancelLocationSelection} onPoiCreated={(coords) => {
                     setSelectedPoiId(null);
                     cancelLocationSelection();
-                   }} />
-                 </Box>
-               </DialogContent>
+                  }} />
+                </Box>
+              </DialogContent>
 
-               <DialogActions sx={{ p: 2, gap: 1 }}>
-                 <Button onClick={cancelLocationSelection}>Cancel</Button>
-                 {selectedPoiId && (
-                   <Button variant="contained" onClick={confirmLocationSelection} autoFocus>
+              <DialogActions sx={{ p: 2, gap: 1 }}>
+                <Button onClick={cancelLocationSelection}>Cancel</Button>
+                {selectedPoiId && (
+                  <Button variant="contained" onClick={confirmLocationSelection} autoFocus>
                     Use Selected Location
-                   </Button>
-                 )}
-               </DialogActions>
-             </Dialog>
-           )}
-         </form>
-       </DialogContent>
+                  </Button>
+                )}
+              </DialogActions>
+            </Dialog>
+          )}
+        </form>
+      </DialogContent>
 
-       <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-         <Button onClick={() => setIsScheduling(false)}>Cancel</Button>
-         <Button type="submit" form="scheduleHangoutForm" variant="contained" sx={{ backgroundColor: '#5A5A40', '&:hover': { backgroundColor: '#434330' } }}>
+      <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+        <Button onClick={() => setIsScheduling(false)}>Cancel</Button>
+        <Button type="submit" form="scheduleHangoutForm" variant="contained" sx={{ backgroundColor: '#5A5A40', '&:hover': { backgroundColor: '#434330' } }}>
           Create Hangout
-         </Button>
-       </DialogActions>
-     </Dialog>
-   );
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
 }
 
 /* ========================================================================
@@ -443,27 +444,47 @@ function GroupCreationForm(props) {
     friends,
     onSubmit: formOnSubmit,
     toggleGroupMember,
+    editingGroup = null,
   } = props;
 
+  // Populate form when editing a group
+  React.useEffect(() => {
+    if (editingGroup) {
+      setGroupName(editingGroup.name || '');
+      setGroupNotes(editingGroup.planning?.notes || editingGroup.notes || '');
+      setGroupMemberIds(editingGroup.memberIds || []);
+      setIsCreatingGroup(true);
+    }
+  }, [editingGroup]);
+
   return (
-     <Dialog
+    <Dialog
       open={isCreatingGroup}
-      onClose={() => setIsCreatingGroup(false)}
+      onClose={() => {
+        if (!editingGroup) {
+          setIsCreatingGroup(false);
+          setGroupName('');
+          setGroupNotes('');
+          setGroupMemberIds([]);
+        } else {
+          setIsCreatingGroup(false);
+        }
+      }}
       maxWidth="md"
       fullWidth
       PaperProps={{ sx: { borderRadius: 3, backgroundColor: '#FBFBF9' } }}
-     >
-       <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-         <Users size={18} color="#CC7A5C" />
-        Create New Friend Group
-       </DialogTitle>
+    >
+      <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Users size={18} color="#CC7A5C" />
+        {editingGroup ? 'Edit Group' : 'Create New Friend Group'}
+      </DialogTitle>
 
-       <DialogContent dividers>
-         <form id="createGroupForm" onSubmit={formOnSubmit}>
-           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-             {/* Left: group details */}
-             <Box>
-               <TextField
+      <DialogContent dividers>
+        <form id="createGroupForm" onSubmit={formOnSubmit}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
+            {/* Left: group details */}
+            <Box>
+              <TextField
                 fullWidth
                 size="small"
                 label="Group Name"
@@ -472,9 +493,9 @@ function GroupCreationForm(props) {
                 onChange={(e) => setGroupName(e.target.value)}
                 required
                 sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-               />
+              />
 
-               <TextField
+              <TextField
                 fullWidth
                 size="small"
                 multiline
@@ -484,46 +505,58 @@ function GroupCreationForm(props) {
                 value={groupNotes}
                 onChange={(e) => setGroupNotes(e.target.value)}
                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-               />
-             </Box>
+              />
 
-             {/* Right: members */}
-             <Box>
-               <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 1 }}>
+              {/* Planning Place Ideas - show existing place ideas count */}
+              {editingGroup && editingGroup.planning?.placeIdeas && editingGroup.placingPlaceIdeas?.length > 0 && (
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#CC7A5C', mb: 0.5 }}>
+                    Place Ideas ({editingGroup.placingPlaceIdeas?.length || 0})
+                  </Typography>
+                  <Typography variant="caption" sx={{ display: 'block', color: '#7D7B6D' }}>
+                    {editingGroup.placingPlaceIdeas.map(id => id).join(', ')}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+
+            {/* Right: members */}
+            <Box>
+              <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 1 }}>
                 Group Members
-               </Typography>
-               <Paper variant="outlined" sx={{ p: 1.5, maxHeight: 230, overflowY: 'auto', borderRadius: 2 }}>
-                 {friends.map((f) => {
+              </Typography>
+              <Paper variant="outlined" sx={{ p: 1.5, maxHeight: 230, overflowY: 'auto', borderRadius: 2 }}>
+                {friends.map((f) => {
                   const isChecked = groupMemberIds.includes(f.id);
                   return (
-                     <label key={f.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.75, px: 1, borderRadius: 1, cursor: 'pointer', '&:hover': { backgroundColor: '#FBFBF9' } }}>
-                       <input type="checkbox" checked={isChecked} onChange={() => toggleGroupMember(f.id)} style={{ accentColor: '#CC7A5C' }} />
-                       <Typography variant="body2" sx={{ fontSize: '12px', flex: 1 }}>{f.name}</Typography>
-                       <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', color: '#7D7B6D' }}>
-                         ({f.location?.city || 'Unknown'})
-                       </Typography>
-                     </label>
-                   );
-                 })}
-               </Paper>
-               <Typography variant="caption" sx={{ display: 'block', fontStyle: 'italic', color: '#7D7B6D', mt: 1, fontSize: '10px' }}>
+                    <label key={f.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.75, px: 1, borderRadius: 1, cursor: 'pointer', '&:hover': { backgroundColor: '#FBFBF9' } }}>
+                      <input type="checkbox" checked={isChecked} onChange={() => toggleGroupMember(f.id)} style={{ accentColor: '#CC7A5C' }} />
+                      <Typography variant="body2" sx={{ fontSize: '12px', flex: 1 }}>{f.name}</Typography>
+                      <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', color: '#7D7B6D' }}>
+                        ({f.location?.city || 'Unknown'})
+                      </Typography>
+                    </label>
+                  );
+                })}
+              </Paper>
+              <Typography variant="caption" sx={{ display: 'block', fontStyle: 'italic', color: '#7D7B6D', mt: 1, fontSize: '10px' }}>
                 Select friends to include in this custom preset group.
-               </Typography>
-             </Box>
-           </Box>
+              </Typography>
+            </Box>
+          </Box>
 
-           <Divider sx={{ my: 2 }} />
-         </form>
-       </DialogContent>
+          <Divider sx={{ my: 2 }} />
+        </form>
+      </DialogContent>
 
-       <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-         <Button onClick={() => setIsCreatingGroup(false)}>Cancel</Button>
-         <Button type="submit" form="createGroupForm" variant="contained" sx={{ backgroundColor: '#5A5A40', '&:hover': { backgroundColor: '#434330' } }}>
-          Create Group
-         </Button>
-       </DialogActions>
-     </Dialog>
-   );
+      <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+        <Button onClick={() => { setIsCreatingGroup(false); if (!editingGroup) { setGroupName(''); setGroupNotes(''); setGroupMemberIds([]); } }}>Cancel</Button>
+        <Button type="submit" form="createGroupForm" variant="contained" sx={{ backgroundColor: '#5A5A40', '&:hover': { backgroundColor: '#434330' } }}>
+          {editingGroup ? 'Save Group' : 'Create Group'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
 }
 
 /* ========================================================================
@@ -531,15 +564,19 @@ function GroupCreationForm(props) {
  * State lives here; extracted sub-components receive everything via props.
  * ======================================================================== */
 export default function HangoutScheduler({
-  friends,
-  groups,
-  plannedHangouts,
-  history,
+  friends = [],
+  groups = [],
+  plannedHangouts = [],
+  history = [],
   onAddPlannedHangout,
   onCompletePlannedHangout,
   onAddGroup,
+  onEditGroup,
+  onDeleteGroup,
   onDeletePlannedHangout,
   onTriggerNotification,
+  editingGroup = null,
+  setEditingGroup = null,
 }) {
   const [isScheduling, setIsScheduling] = useState(false);
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
@@ -661,7 +698,7 @@ export default function HangoutScheduler({
     }
   }, [customAttendeeIds]);
 
-  // Handle schedule submission
+  // Handle schedule submission for planning hangouts
   const handleScheduleSubmit = useCallback((e) => {
     e.preventDefault();
     if (!hangoutTitle.trim() || customAttendeeIds.length === 0) {
@@ -669,29 +706,33 @@ export default function HangoutScheduler({
       return;
     }
 
-    const newPlannedHangout = {
-      id: `plan_${Date.now()}`,
+    // Build the hangout data object with proper friendIds field (required by Hangout schema)
+    const hangoutData = {
       title: hangoutTitle.trim(),
-      groupId: selectedGroupId || 'custom_event',
+      poiId: selectedPoiId || null,
       type: hangoutType,
       datetime: new Date(datetime).toISOString(),
-      locationPoiId: hangoutType === 'physical' ? (selectedPoiId || null) : null,
       description: details.trim() || undefined,
+      friendIds: customAttendeeIds.length > 0 ? [...customAttendeeIds] : [],
+      groupId: selectedGroupId || undefined,
     };
 
-    onAddPlannedHangout(newPlannedHangout);
-
-    // Reset scheduler state
-    setHangoutTitle('');
-    setSelectedGroupId('');
-    setCustomAttendeeIds([]);
-    setSelectedPoiId(null);
-    setDetails('');
-    setIsScheduling(false);
-    onTriggerNotification(`Scheduled upcoming hangout "${newPlannedHangout.title}"!`);
+    onAddPlannedHangout(hangoutData).then(() => {
+      // Reset scheduler state on success
+      setHangoutTitle('');
+      setSelectedGroupId('');
+      setCustomAttendeeIds([]);
+      setSelectedPoiId(null);
+      setDetails('');
+      setIsScheduling(false);
+      onTriggerNotification(`Scheduled upcoming hangout "${hangoutData.title}"!`);
+    }).catch((err) => {
+      console.error('Error creating hangout:', err);
+      onTriggerNotification(`Failed to create hangout: ${err.message}`);
+    });
   }, [hangoutTitle, selectedGroupId, hangoutType, datetime, details, customAttendeeIds, selectedPoiId, onAddPlannedHangout, onTriggerNotification]);
 
-  // Handle group creation submission
+  // Handle group creation / editing submission
   const handleGroupSubmit = useCallback((e) => {
     e.preventDefault();
     if (!groupName.trim() || groupMemberIds.length === 0) {
@@ -699,22 +740,54 @@ export default function HangoutScheduler({
       return;
     }
 
-    const newGroup = {
-      id: `group_${Date.now()}`,
-      name: groupName.trim(),
-      memberIds: groupMemberIds,
-      notes: groupNotes.trim() || undefined,
-    };
+    if (editingGroup) {
+      // For editing: use editGroup data, preserve planning object
+      const updatedGroup = {
+        name: groupName.trim(),
+        memberIds: groupMemberIds,
+        planning: {
+          hangoutIds: editingGroup.planning?.hangoutIds || [],
+          placeIdeas: editingGroup.placingPlaceIdeas || editingGroup.planning?.placeIdeas || [],
+          notes: groupNotes.trim() || '',
+        },
+      };
 
-    onAddGroup(newGroup);
+      onAddGroup(updatedGroup, editingGroup.id).then(() => {
+        setIsCreatingGroup(false);
+        setEditingGroup(null);
+        setGroupName('');
+        setGroupNotes('');
+        setGroupMemberIds([]);
+        onTriggerNotification(`Updated group "${groupName.trim()}"!`);
+      }).catch((err) => {
+        console.error('Error updating group:', err);
+        onTriggerNotification(`Failed to update group: ${err.message}`);
+      });
+    } else {
+      // New group with proper schema: planning object per JSON schema
+      const newGroup = {
+        name: groupName.trim(),
+        memberIds: groupMemberIds,
+        planning: {
+          hangoutIds: [],
+          placeIdeas: [],
+          notes: groupNotes.trim() || '',
+        },
+      };
 
-    // Reset group form state
-    setGroupName('');
-    setGroupNotes('');
-    setGroupMemberIds([]);
-    setIsCreatingGroup(false);
-    onTriggerNotification(`Created new group "${newGroup.name}"!`);
-  }, [groupName, groupMemberIds, groupNotes, onAddGroup, onTriggerNotification]);
+      onAddGroup(newGroup).then(() => {
+        // Reset group form state
+        setGroupName('');
+        setGroupNotes('');
+        setGroupMemberIds([]);
+        setIsCreatingGroup(false);
+        onTriggerNotification(`Created new group "${groupName.trim()}"!`);
+      }).catch((err) => {
+        console.error('Error creating group:', err);
+        onTriggerNotification(`Failed to create group: ${err.message}`);
+      });
+    }
+  }, [groupName, groupMemberIds, groupNotes, onAddGroup, editingGroup, setEditingGroup, onTriggerNotification]);
 
   const toggleGroupMember = useCallback((friendId) => {
     if (groupMemberIds.includes(friendId)) {
@@ -790,30 +863,31 @@ export default function HangoutScheduler({
     friends,
     onSubmit: handleGroupSubmit,
     toggleGroupMember,
+    editingGroup,
   }), [
     isCreatingGroup, groupName, groupNotes, groupMemberIds,
-    friends, handleGroupSubmit, toggleGroupMember,
+    friends, handleGroupSubmit, toggleGroupMember, editingGroup,
   ]);
 
   return (
-     <Box>
-       {/* Plan Event / Create Group dialogs — stable component references */}
-       <SchedulingFormDialog {...schedulingFormProps} />
-       <GroupCreationForm {...groupFormProps} />
+    <Box>
+      {/* Plan Event / Create Group dialogs — stable component references */}
+      <SchedulingFormDialog {...schedulingFormProps} />
+      <GroupCreationForm {...groupFormProps} />
 
-       {/* Main Hub */}
-       <Paper sx={{ p: 3, borderRadius: 3, border: '1px solid #EBE9E2', backgroundColor: '#FFFFFF' }}>
-         {/* Header with buttons */}
-         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1.5, borderBottom: '1px solid #F2F0EA', mb: 2 }}>
-           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-             <Clock size={18} color="#CC7A5C" />
-             <Typography variant="subtitle1" sx={{ fontFamily: 'serif', fontWeight: 700, fontSize: '1rem', color: '#2D2D20' }}>
+      {/* Main Hub */}
+      <Paper sx={{ p: 3, borderRadius: 3, border: '1px solid #EBE9E2', backgroundColor: '#FFFFFF' }}>
+        {/* Header with buttons */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1.5, borderBottom: '1px solid #F2F0EA', mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Clock size={18} color="#CC7A5C" />
+            <Typography variant="subtitle1" sx={{ fontFamily: 'serif', fontWeight: 700, fontSize: '1rem', color: '#2D2D20' }}>
               Commitments & Planning
-             </Typography>
-           </Box>
-           <Box sx={{ display: 'flex', gap: 1 }}>
-             <Button
-              onClick={() => { setIsScheduling(true); setIsCreatingGroup(false); }}
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              onClick={() => { setIsScheduling(true); setIsCreatingGroup(false); setEditingGroup(null); }}
               variant="outlined"
               size="small"
               startIcon={<Calendar size={14} />}
@@ -825,13 +899,13 @@ export default function HangoutScheduler({
                 borderColor: '#5A5A4030',
                 color: '#5A5A40',
                 backgroundColor: '#5A5A4010',
-                 '&:hover': { backgroundColor: '#5A5A4020', borderColor: '#5A5A4050' },
-               }}
-             >
+                '&:hover': { backgroundColor: '#5A5A4020', borderColor: '#5A5A4050' },
+              }}
+            >
               Plan Event
-             </Button>
-             <Button
-              onClick={() => { setIsCreatingGroup(true); setIsScheduling(false); }}
+            </Button>
+            <Button
+              onClick={() => { setIsCreatingGroup(true); setIsScheduling(false); setEditingGroup(null); }}
               variant="outlined"
               size="small"
               startIcon={<Users size={14} />}
@@ -843,35 +917,48 @@ export default function HangoutScheduler({
                 borderColor: '#9E9EA830',
                 color: '#5A5A40',
                 backgroundColor: '#9E9EA810',
-                 '&:hover': { backgroundColor: '#9E9EA820', borderColor: '#9E9EA850' },
-               }}
-             >
+                '&:hover': { backgroundColor: '#9E9EA820', borderColor: '#9E9EA850' },
+              }}
+            >
               Create Group
-             </Button>
-           </Box>
-         </Box>
+            </Button>
+          </Box>
+        </Box>
 
-         {/* Groups Quick Overview */}
-         <Box sx={{ mb: 3 }}>
-           <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 1.5 }}>
+        {/* Groups Quick Overview */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 1.5 }}>
             Preset Friend Groups
-           </Typography>
-           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
-             {groups.map((group) => {
-              const memberNames = group.memberIds
-                .map((id) => friends.find((f) => f.id === id)?.name?.split(' ')[0])
+          </Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
+            {(groups || []).map((group) => {
+              const memberNames = (group.memberIds || [])
+                .map((id) => (friends || []).find((f) => f.id === id)?.name?.split(' ')[0])
                 .filter(Boolean)
                 .join(', ');
 
               return (
-                 <Paper key={group.id} variant="outlined" sx={{ p: 2, borderRadius: 2, backgroundColor: '#FBFBF9' }}>
-                   <Typography variant="subtitle2" sx={{ fontFamily: 'serif', fontWeight: 700, fontSize: '0.85rem', color: '#2D2D20' }}>
-                     {group.name}
-                   </Typography>
-                   <Typography variant="caption" sx={{ color: '#7D7B6D', display: 'block', mt: 0.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                     {group.notes || 'No group notes'}
-                   </Typography>
-                   <Chip
+                <Paper key={group.id} variant="outlined" sx={{ p: 2, borderRadius: 2, backgroundColor: '#FBFBF9', position: 'relative' }}>
+                  {(onEditGroup || onAddGroup) && (
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onEditGroup) onEditGroup(group);
+                      }}
+                      sx={{ position: 'absolute', top: 8, right: 8, color: '#9B988C', '&:hover': { color: '#5A5A40' } }}
+                      title="Edit Group"
+                    >
+                      <Pencil size={12} />
+                    </IconButton>
+                  )}
+                  <Typography variant="subtitle2" sx={{ fontFamily: 'serif', fontWeight: 700, fontSize: '0.85rem', color: '#2D2D20' }}>
+                    {group.name}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#7D7B6D', display: 'block', mt: 0.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {group.notes || group.planning?.notes || 'No group notes'}
+                  </Typography>
+                  <Chip
                     label={`Members: ${memberNames || 'None'}`}
                     size="small"
                     sx={{
@@ -881,28 +968,28 @@ export default function HangoutScheduler({
                       fontFamily: 'monospace',
                       fontSize: '10px',
                       height: 22,
-                     }}
-                   />
-                 </Paper>
-               );
-             })}
-           </Box>
-         </Box>
+                    }}
+                  />
+                </Paper>
+              );
+            })}
+          </Box>
+        </Box>
 
-         {/* Pending Commitments */}
-         <Box sx={{ mb: 3 }}>
-           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-             <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D' }}>
+        {/* Pending Commitments */}
+        <Box sx={{ mb: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+            <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D' }}>
               Pending Commitments
-             </Typography>
-             <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', fontStyle: 'italic', color: '#CC7A5C' }}>
+            </Typography>
+            <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', fontStyle: 'italic', color: '#CC7A5C' }}>
               Time-Leap simulates event completion
-             </Typography>
-           </Box>
+            </Typography>
+          </Box>
 
-           {plannedHangouts.length > 0 ? (
-             <Box sx={{ maxHeight: 280, overflowY: 'auto', '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '3px' } }}>
-               {plannedHangouts.map((hangout) => {
+          {plannedHangouts.length > 0 ? (
+            <Box sx={{ maxHeight: 280, overflowY: 'auto', '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '3px' } }}>
+              {plannedHangouts.map((hangout) => {
                 const groupObj = groups.find((g) => g.id === hangout.groupId);
                 const attendees = groupObj ? groupObj.memberIds : [];
                 const attendeeNames = attendees
@@ -911,17 +998,17 @@ export default function HangoutScheduler({
                   .join(', ');
 
                 return (
-                   <Paper key={hangout.id} variant="outlined" sx={{ p: 2, mb: 1.5, borderRadius: 2, backgroundColor: '#FFFFFF' }}>
-                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                       <Box>
-                         <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', color: '#7D7B6D', display: 'block' }}>
-                           {groupObj ? groupObj.name : 'Custom Event'}
-                         </Typography>
-                         <Typography variant="subtitle2" sx={{ fontFamily: 'serif', fontWeight: 700, fontSize: '0.85rem', color: '#2D2D20' }}>
-                           {hangout.title}
-                         </Typography>
-                       </Box>
-                       <Chip
+                  <Paper key={hangout.id} variant="outlined" sx={{ p: 2, mb: 1.5, borderRadius: 2, backgroundColor: '#FFFFFF' }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                      <Box>
+                        <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', color: '#7D7B6D', display: 'block' }}>
+                          {groupObj ? groupObj.name : 'Custom Event'}
+                        </Typography>
+                        <Typography variant="subtitle2" sx={{ fontFamily: 'serif', fontWeight: 700, fontSize: '0.85rem', color: '#2D2D20' }}>
+                          {hangout.title}
+                        </Typography>
+                      </Box>
+                      <Chip
                         label={hangout.type === 'physical' ? 'PHYSICAL' : 'VIRTUAL'}
                         size="small"
                         sx={{
@@ -932,25 +1019,25 @@ export default function HangoutScheduler({
                           fontWeight: 700,
                           height: 20,
                           border: `1px solid ${hangout.type === 'physical' ? '#25D36630' : '#5865F230'}`,
-                         }}
-                       />
-                     </Box>
+                        }}
+                      />
+                    </Box>
 
-                     <Box sx={{ mt: 1.5 }}>
-                       {hangout.locationPoiId && (
-                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.75 }}>
-                           <MapPin size={14} color="#9B988C" />
-                           <Typography variant="body2" sx={{ fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                             {hangout.locationPoiId}
-                           </Typography>
-                         </Box>
-                       )}
-                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F2F0EA', pt: 1, mt: 0.5 }}>
-                         <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '10px', color: '#7D7B6D' }}>
-                           {formatDate(hangout.datetime)}
-                         </Typography>
-                         <Box sx={{ display: 'flex', gap: 0.5 }}>
-                           <Button
+                    <Box sx={{ mt: 1.5 }}>
+                      {hangout.locationPoiId && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.75 }}>
+                          <MapPin size={14} color="#9B988C" />
+                          <Typography variant="body2" sx={{ fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {hangout.locationPoiId}
+                          </Typography>
+                        </Box>
+                      )}
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F2F0EA', pt: 1, mt: 0.5 }}>
+                        <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '10px', color: '#7D7B6D' }}>
+                          {formatDate(hangout.datetime)}
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                          <Button
                             onClick={() => handleCompleteLeap(hangout)}
                             size="small"
                             startIcon={<Flame size={12} color="#FFDD6B" />}
@@ -961,88 +1048,88 @@ export default function HangoutScheduler({
                               fontFamily: 'monospace',
                               backgroundColor: '#5A5A40',
                               color: '#FFFFFF',
-                               '&:hover': { backgroundColor: '#434330' },
-                             }}
+                              '&:hover': { backgroundColor: '#434330' },
+                            }}
                             title="Leap time forward to simulate completing this event"
-                           >
+                          >
                             Leap Complete
-                           </Button>
-                           <IconButton
+                          </Button>
+                          <IconButton
                             onClick={() => onDeletePlannedHangout(hangout.id)}
                             size="small"
                             sx={{ color: '#9B988C', '&:hover': { color: '#CC7A5C', backgroundColor: '#FBFBF9' } }}
                             title="Cancel Commitment"
-                           >
-                             <X size={14} />
-                           </IconButton>
-                         </Box>
-                       </Box>
-                     </Box>
+                          >
+                            <X size={14} />
+                          </IconButton>
+                        </Box>
+                      </Box>
+                    </Box>
 
-                     {attendeeNames && (
-                       <Typography variant="caption" sx={{ display: 'block', mt: 1, p: 1, backgroundColor: '#FBFBF9', border: '1px solid #EBE9E2', borderRadius: 1, fontSize: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {attendeeNames && (
+                      <Typography variant="caption" sx={{ display: 'block', mt: 1, p: 1, backgroundColor: '#FBFBF9', border: '1px solid #EBE9E2', borderRadius: 1, fontSize: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         Attendees: <Typography component="span" sx={{ fontWeight: 700, color: '#2D2D20' }}>{attendeeNames}</Typography>
-                       </Typography>
-                     )}
-                   </Paper>
-                 );
-               })}
-             </Box>
-           ) : (
-             <Box sx={{ textAlign: 'center', py: 4, px: 3, backgroundColor: '#FBFBF9', border: '1px dashed #E0DED7', borderRadius: 2 }}>
-               <Typography variant="body2" sx={{ color: '#9B988C', fontStyle: 'italic', fontSize: '12px' }}>
+                      </Typography>
+                    )}
+                  </Paper>
+                );
+              })}
+            </Box>
+          ) : (
+            <Box sx={{ textAlign: 'center', py: 4, px: 3, backgroundColor: '#FBFBF9', border: '1px dashed #E0DED7', borderRadius: 2 }}>
+              <Typography variant="body2" sx={{ color: '#9B988C', fontStyle: 'italic', fontSize: '12px' }}>
                 No active planned events. Click Plan Event to schedule.
-               </Typography>
-             </Box>
-           )}
-         </Box>
+              </Typography>
+            </Box>
+          )}
+        </Box>
 
-         {/* Historical Logs */}
-         <Box>
-           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}>
-             <ClipboardList size={14} color="#7D7B6D" />
-             <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D' }}>
+        {/* Historical Logs */}
+        <Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}>
+            <ClipboardList size={14} color="#7D7B6D" />
+            <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D' }}>
               Past Completed Logs ({history.length})
-             </Typography>
-           </Box>
+            </Typography>
+          </Box>
 
-           {history.length > 0 ? (
-             <Box sx={{ maxHeight: 200, overflowY: 'auto', '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '3px' } }}>
-               {history.map((h, idx) => {
+          {history.length > 0 ? (
+            <Box sx={{ maxHeight: 200, overflowY: 'auto', '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '3px' } }}>
+              {history.map((h, idx) => {
                 const attendeeNames = h.friendIds
                   .map((fId) => friends.find((f) => f.id === fId)?.name?.split(' ')[0])
                   .filter(Boolean)
                   .join(', ');
 
                 return (
-                   <Box key={h.id || idx} sx={{ pb: 1.5, mb: 1.5, borderBottom: '1px solid #F2F0EA', '&:last-child': { borderBottom: 'none', pb: 0 } }}>
-                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.25 }}>
-                       <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '10px', color: '#9B988C' }}>
-                         {formatDate(h.datetime)}
-                       </Typography>
-                       <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '10px', color: '#5A5A40', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>
-                         {attendeeNames || 'No attendees'}
-                       </Typography>
-                     </Box>
-                     <Typography variant="subtitle2" sx={{ fontFamily: 'serif', fontWeight: 700, fontSize: '0.8rem', color: '#2D2D20', display: 'block', mt: 0.25 }}>
-                       {h.title}
-                     </Typography>
-                     {h.details && (
-                       <Typography variant="caption" sx={{ display: 'block', color: '#7D7B6D', fontStyle: 'italic', fontSize: '10px', mt: 0.25 }}>
-                         {h.details}
-                       </Typography>
-                     )}
-                   </Box>
-                 );
-               })}
-             </Box>
-           ) : (
-             <Typography variant="body2" sx={{ color: '#9B988C', fontStyle: 'italic', fontSize: '12px' }}>
+                  <Box key={h.id || idx} sx={{ pb: 1.5, mb: 1.5, borderBottom: '1px solid #F2F0EA', '&:last-child': { borderBottom: 'none', pb: 0 } }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.25 }}>
+                      <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '10px', color: '#9B988C' }}>
+                        {formatDate(h.datetime)}
+                      </Typography>
+                      <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '10px', color: '#5A5A40', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>
+                        {attendeeNames || 'No attendees'}
+                      </Typography>
+                    </Box>
+                    <Typography variant="subtitle2" sx={{ fontFamily: 'serif', fontWeight: 700, fontSize: '0.8rem', color: '#2D2D20', display: 'block', mt: 0.25 }}>
+                      {h.title}
+                    </Typography>
+                    {h.details && (
+                      <Typography variant="caption" sx={{ display: 'block', color: '#7D7B6D', fontStyle: 'italic', fontSize: '10px', mt: 0.25 }}>
+                        {h.details}
+                      </Typography>
+                    )}
+                  </Box>
+                );
+              })}
+            </Box>
+          ) : (
+            <Typography variant="body2" sx={{ color: '#9B988C', fontStyle: 'italic', fontSize: '12px' }}>
               No past completed logs.
-             </Typography>
-           )}
-         </Box>
-       </Paper>
-     </Box>
-   );
+            </Typography>
+          )}
+        </Box>
+      </Paper>
+    </Box>
+  );
 }
