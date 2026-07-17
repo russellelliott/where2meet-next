@@ -568,95 +568,97 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
                     </Button>
                   )}
 
-                  {/* Temporary Location Dates */}
-                  <Box sx={{ display: 'flex', gap: 2 }}>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="caption" display="block" gutterBottom>
-                        Start Date
-                      </Typography>
-                      <Button
-                        variant="outlined"
-                        onClick={() => {
-                          setShowCalendar('tempStart');
-                          setCalendarDate(
-                            formData.location.temporaryLocation?.startDate
-                              ? dayjs(formData.location.temporaryLocation.startDate)
-                              : dayjs()
-                          );
-                        }}
-                        sx={{
-                          textTransform: 'none',
-                          justifyContent: 'flex-start',
-                          width: '100%',
-                          fontSize: '12px',
-                          height: '36px',
-                        }}
-                      >
-                        {formData.location.temporaryLocation?.startDate
-                          ? dayjs(formData.location.temporaryLocation.startDate).format('MMM D, YYYY')
-                          : 'Select start date'}
-                      </Button>
-                    </Box>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="caption" display="block" gutterBottom>
-                        End Date
-                      </Typography>
-                      <Button
-                        variant="outlined"
-                        onClick={() => {
-                          setShowCalendar('tempEnd');
-                          setCalendarDate(
-                            formData.location.temporaryLocation?.endDate
-                              ? dayjs(formData.location.temporaryLocation.endDate)
-                              : dayjs()
-                          );
-                        }}
-                        sx={{
-                          textTransform: 'none',
-                          justifyContent: 'flex-start',
-                          width: '100%',
-                          fontSize: '12px',
-                          height: '36px',
-                        }}
-                      >
-                        {formData.location.temporaryLocation?.endDate
-                          ? dayjs(formData.location.temporaryLocation.endDate).format('MMM D, YYYY')
-                          : 'Select end date'}
-                      </Button>
-                    </Box>
-                  </Box>
-
-                  {/* Calendar Popup */}
-                  {showCalendar && (
-                    <Box
-                      sx={{
-                        position: 'absolute',
-                        bottom: showCalendar === 'tempEnd' ? 120 : 'auto',
-                        top: showCalendar === 'tempStart' ? 200 : 'auto',
-                        left: 0,
-                        zIndex: 10,
-                        bgcolor: 'background.paper',
-                        borderRadius: 2,
-                        boxShadow: 3,
-                        p: 2,
-                      }}
-                    >
-                      <DateCalendar
-                        value={calendarDate}
-                        onChange={(newValue) => {
-                          setCalendarDate(newValue);
-                          handleCalendarChange(newValue);
-                        }}
-                        views={['year', 'month', 'day']}
-                      />
-                      <Box sx={{ mt: 1, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                        <Button size="small" onClick={() => setShowCalendar(null)}>
-                          Cancel
-                        </Button>
+                    {/* Temporary Location Dates — only show when a temp location POI is set */}
+                    {formData.location.temporaryLocation?.poiId && (
+                      <Box sx={{ display: 'flex', gap: 2 }}>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="caption" display="block" gutterBottom>
+                           Start Date
+                          </Typography>
+                          <Button
+                           variant="outlined"
+                           onClick={() => {
+                             setShowCalendar('tempStart');
+                             setCalendarDate(
+                               formData.location.temporaryLocation?.startDate
+                                  ? dayjs(formData.location.temporaryLocation.startDate)
+                                  : dayjs()
+                              );
+                            }}
+                           sx={{
+                             textTransform: 'none',
+                             justifyContent: 'flex-start',
+                             width: '100%',
+                             fontSize: '12px',
+                             height: '36px',
+                            }}
+                          >
+                            {formData.location.temporaryLocation?.startDate
+                              ? dayjs(formData.location.temporaryLocation.startDate).format('MMM D, YYYY')
+                              : 'Select start date'}
+                          </Button>
+                        </Box>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="caption" display="block" gutterBottom>
+                           End Date
+                          </Typography>
+                          <Button
+                           variant="outlined"
+                           onClick={() => {
+                             setShowCalendar('tempEnd');
+                             setCalendarDate(
+                               formData.location.temporaryLocation?.endDate
+                                  ? dayjs(formData.location.temporaryLocation.endDate)
+                                  : dayjs()
+                              );
+                            }}
+                           sx={{
+                             textTransform: 'none',
+                             justifyContent: 'flex-start',
+                             width: '100%',
+                             fontSize: '12px',
+                             height: '36px',
+                            }}
+                          >
+                            {formData.location.temporaryLocation?.endDate
+                              ? dayjs(formData.location.temporaryLocation.endDate).format('MMM D, YYYY')
+                              : 'Select end date'}
+                          </Button>
+                        </Box>
                       </Box>
-                    </Box>
-                  )}
-                </Box>
+                    )}
+
+                    {/* Calendar Popup */}
+                    {showCalendar && (
+                      <Box
+                       sx={{
+                         position: 'absolute',
+                         bottom: showCalendar === 'tempEnd' ? 120 : 'auto',
+                         top: showCalendar === 'tempStart' ? 200 : 'auto',
+                         left: 0,
+                         zIndex: 10,
+                         bgcolor: 'background.paper',
+                         borderRadius: 2,
+                         boxShadow: 3,
+                         p: 2,
+                        }}
+                      >
+                        <DateCalendar
+                         value={calendarDate}
+                         onChange={(newValue) => {
+                           setCalendarDate(newValue);
+                           handleCalendarChange(newValue);
+                          }}
+                         views={['year', 'month', 'day']}
+                        />
+                        <Box sx={{ mt: 1, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                          <Button size="small" onClick={() => setShowCalendar(null)}>
+                           Cancel
+                          </Button>
+                        </Box>
+                      </Box>
+                    )}
+                  </Box>
               </Box>
             )}
 

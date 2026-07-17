@@ -18,6 +18,8 @@ import {
   InputLabel,
   Select,
   CircularProgress,
+  ToggleButtonGroup,
+  ToggleButton,
 } from '@mui/material';
 import {
   Calendar,
@@ -33,6 +35,103 @@ import {
 import { createPoiFromCoordinates } from '../../lib/poiService';
 import { auth, db } from '../../firebaseConfig';
 import { collection, getDocs } from 'firebase/firestore';
+
+/**
+ * SimpleMapPOIPicker — Top-level component (defined OUTSIDE HangoutScheduler
+ * to prevent re-creation/re-mount issues on every parent render).
+ * Matches the same pattern used in FriendForm.js.
+ */
+function SimpleMapPOIPicker({ onClose, onPoiCreated }) {
+  const [searchAddr, setSearchAddr] = useState('');
+  const [selectedCoords, setSelectedCoords] = useState(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
+
+  React.useEffect(() => {
+    if (typeof window.google !== 'undefined' && window.google.maps) {
+      setMapLoaded(true);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || ''}&libraries=places`;
+    script.async = true;
+    script.onload = () => setMapLoaded(true);
+    document.head.appendChild(script);
+    return () => { document.head.removeChild(script); };
+  }, []);
+
+  const handleSearch = () => {
+    if (!window.google?.maps?.Geocoder) return;
+    const geocoder = new window.google.maps.Geocoder();
+    geocoder.geocode({ address: searchAddr }, (results, status) => {
+      if (status === 'OK' && results[0]) {
+        const loc = results[0].geometry.location;
+        setSelectedCoords({ lat: loc.lat(), lng: loc.lng() });
+      } else {
+        alert('Could not find that address.');
+      }
+    });
+  };
+
+  const handleConfirm = () => {
+    if (!selectedCoords) return;
+    onPoiCreated(selectedCoords);
+    onClose();
+  };
+
+  return (
+    <Box sx={{ mt: 2 }}>
+      <Typography variant="subtitle2" gutterBottom>Create New Location</Typography>
+      <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+        Click the button below to open the map and create a new location.
+      </Typography>
+      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+        <TextField
+          fullWidth
+          size="small"
+          placeholder="Search address or place name"
+          value={searchAddr}
+          onChange={(e) => setSearchAddr(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
+        />
+        <Button variant="outlined" onClick={handleSearch}>Search</Button>
+      </Box>
+
+      <Box sx={{ width: '100%', height: 300, borderRadius: 2, overflow: 'hidden', position: 'relative' }}>
+        {mapLoaded && window.google?.maps ? (
+          <GoogleMap
+            center={selectedCoords || { lat: 37.7749, lng: -122.4194 }}
+            zoom={12}
+            mapTypeId="roadmap"
+            options={{ streetViewControl: false, mapTypeControl: false }}
+          >
+            {selectedCoords && (
+              <Marker
+                key="selected-marker"
+                position={selectedCoords}
+                draggable={true}
+                onDragend={(e) => {
+                  const loc = e.latLng?.toJSON();
+                  if (loc) setSelectedCoords({ lat: loc.lat, lng: loc.lng });
+                }}
+              />
+            )}
+          </GoogleMap>
+        ) : (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+            Loading map...
+          </Box>
+        )}
+      </Box>
+
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="contained" onClick={handleConfirm} disabled={!selectedCoords} autoFocus>
+          Use This Location
+        </Button>
+      </Box>
+    </Box>
+  );
+}
 
 /**
  * HangoutScheduler Component
@@ -263,106 +362,7 @@ export default function HangoutScheduler({
     return poi ? poi.name : null;
   };
 
-  // Simple map POI picker component (uses Google Maps to create a new location)
-  const SimpleMapPOIPicker = ({ onClose, onPoiCreated }) => {
-    const [searchAddr, setSearchAddr] = useState('');
-    const [selectedCoords, setSelectedCoords] = useState(null);
-    const [mapLoaded, setMapLoaded] = useState(false);
-
-    React.useEffect(() => {
-      if (typeof window.google !== 'undefined' && window.google.maps) {
-        setMapLoaded(true);
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || ''}&libraries=places`;
-      script.async = true;
-      script.onload = () => setMapLoaded(true);
-      document.head.appendChild(script);
-      return () => { document.head.removeChild(script); };
-    }, []);
-
-    const handleSearch = () => {
-      if (!window.google?.maps?.Geocoder) return;
-      const geocoder = new window.google.maps.Geocoder();
-      geocoder.geocode({ address: searchAddr }, (results, status) => {
-        if (status === 'OK' && results[0]) {
-          const loc = results[0].geometry.location;
-          setSelectedCoords({ lat: loc.lat(), lng: loc.lng() });
-        } else {
-          alert('Could not find that address.');
-        }
-      });
-    };
-
-    const handleUseCenter = (map) => {
-      if (!map) return;
-      const center = map.getCenter();
-      setSelectedCoords({ lat: center.lat(), lng: center.lng() });
-    };
-
-    const handleConfirm = () => {
-      if (!selectedCoords) return;
-      onPoiCreated(selectedCoords);
-      onClose();
-    };
-
-    return (
-      <Box sx={{ mt: 2 }}>
-        <Typography variant="subtitle2" gutterBottom>Create New Location</Typography>
-        <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-          Click the button below to open the map and create a new location.
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="Search address or place name"
-            value={searchAddr}
-            onChange={(e) => setSearchAddr(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
-          />
-          <Button variant="outlined" onClick={handleSearch}>Search</Button>
-        </Box>
-
-        <Box sx={{ width: '100%', height: 300, borderRadius: 2, overflow: 'hidden', position: 'relative' }}>
-          {mapLoaded && window.google?.maps ? (
-            <GoogleMap
-              center={selectedCoords || { lat: 37.7749, lng: -122.4194 }}
-              zoom={12}
-              mapTypeId="roadmap"
-              options={{ streetViewControl: false, mapTypeControl: false }}
-            >
-              {selectedCoords && (
-                <Marker
-                  key="selected-marker"
-                  position={selectedCoords}
-                  draggable={true}
-                  onDragend={(e) => {
-                    const loc = e.latLng?.toJSON();
-                    if (loc) setSelectedCoords({ lat: loc.lat, lng: loc.lng });
-                  }}
-                />
-              )}
-            </GoogleMap>
-          ) : (
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-              Loading map...
-            </Box>
-          )}
-        </Box>
-
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button variant="contained" onClick={handleConfirm} disabled={!selectedCoords} autoFocus>
-            Use This Location
-          </Button>
-        </Box>
-      </Box>
-    );
-  };
-
-  // Scheduling form - wrapped in Dialog
+  // ─── Scheduling form ───
   const SchedulingFormDialog = () => (
     <Dialog
       open={isScheduling}
@@ -406,57 +406,47 @@ export default function HangoutScheduler({
                 </Select>
               </FormControl>
 
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, mb: 2 }}>
-                {/* Type toggle */}
-                <Box>
-                  <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 0.5 }}>
-                    Type
-                  </Typography>
-                  <Box sx={{ display: 'flex', borderRadius: 2, border: '1px solid #E0DED7', overflow: 'hidden', p: 0.25 }}>
-                    <Button
-                      type="button"
-                      onClick={() => setHangoutType('physical')}
-                      disableRipple
-                      sx={{
-                        flex: 1,
-                        textTransform: 'none',
-                        py: 0.75,
-                        fontSize: '11px',
-                        fontWeight: 600,
-                        fontFamily: 'monospace',
-                        borderRadius: 1,
-                        backgroundColor: hangoutType === 'physical' ? '#5A5A40' : 'transparent',
-                        color: hangoutType === 'physical' ? '#FFFFFF' : '#7D7B6D',
-                        transition: 'all 0.2s ease',
-                        '&:hover': { backgroundColor: hangoutType === 'physical' ? '#5A5A40' : '#F0EEE6' },
-                      }}
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, mb: 2 }}>
+                  {/* Type toggle using MUI ToggleButtonGroup */}
+                  <Box>
+                    <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 0.5 }}>
+                     Type
+                    </Typography>
+                    <ToggleButtonGroup
+                     value={hangoutType}
+                     exclusive
+                     onChange={(e, newType) => newType && setHangoutType(newType)}
+                     sx={{
+                       width: '100%',
+                       borderRadius: 2,
+                       '& .MuiToggleButton-root': {
+                         fontSize: '11px',
+                         fontWeight: 600,
+                         fontFamily: 'monospace',
+                         py: 0.75,
+                         px: 1,
+                         border: '1px solid #E0DED7',
+                         borderRadius: 2,
+                         transition: 'all 0.2s ease',
+                       },
+                       '& .Mui-selected': {
+                         backgroundColor: '#5A5A40',
+                         color: '#FFFFFF',
+                       },
+                       '& .MuiToggleButton-root:first-of-type': {
+                         borderRadius: hangoutType === 'physical' ? '2px 0 0 2px' : 2,
+                       },
+                       '& .MuiToggleButton-root:last-of-type': {
+                         borderRadius: hangoutType === 'virtual' ? '0 2px 2px 0' : 2,
+                       },
+                     }}
                     >
-                      Physical
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={() => setHangoutType('virtual')}
-                      disableRipple
-                      sx={{
-                        flex: 1,
-                        textTransform: 'none',
-                        py: 0.75,
-                        fontSize: '11px',
-                        fontWeight: 600,
-                        fontFamily: 'monospace',
-                        borderRadius: 1,
-                        backgroundColor: hangoutType === 'virtual' ? '#5A5A40' : 'transparent',
-                        color: hangoutType === 'virtual' ? '#FFFFFF' : '#7D7B6D',
-                        transition: 'all 0.2s ease',
-                        '&:hover': { backgroundColor: hangoutType === 'virtual' ? '#5A5A40' : '#F0EEE6' },
-                      }}
-                    >
-                      Virtual
-                    </Button>
+                      <ToggleButton value="physical">Physical</ToggleButton>
+                      <ToggleButton value="virtual">Virtual</ToggleButton>
+                    </ToggleButtonGroup>
                   </Box>
-                </Box>
 
-                {/* Date & time */}
+                  {/* Date & time */}
                 <Box>
                   <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 0.5 }}>
                     Date & Time
@@ -536,6 +526,95 @@ export default function HangoutScheduler({
           </Box>
 
           <Divider sx={{ my: 2 }} />
+
+          {/* POI Picker Dialog — nested inside SchedulingFormDialog so it appears on top */}
+          {showPoiPicker && hangoutType === 'physical' && (
+            <Dialog
+              open={true}
+              onClose={cancelLocationSelection}
+              maxWidth="md"
+              fullWidth
+              PaperProps={{ sx: { borderRadius: 2 } }}
+            >
+              <DialogTitle>Select or Create a Location</DialogTitle>
+
+              {/* Search bar */}
+              <DialogContent>
+                <Box sx={{ mb: 2 }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    placeholder="Search locations by name, address, or city..."
+                    value={poiSearchQuery}
+                    onChange={handlePoiSearchChange}
+                    InputProps={{
+                      startAdornment: (
+                        <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
+                          <Search size={14} color="#9B988C" />
+                        </Box>
+                      ),
+                    }}
+                  />
+                </Box>
+
+                {/* Existing POIs list */}
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Existing Locations
+                  </Typography>
+                  {loadingPOIs ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+                      <CircularProgress size={24} />
+                    </Box>
+                  ) : (
+                    <Box sx={{ maxHeight: 200, overflowY: 'auto' }}>
+                      {existingPOIs.map((poi) => (
+                        <Box
+                          key={poi.id}
+                          onClick={() => handleSelectPoi(poi.id)}
+                          sx={{
+                            p: 1.5,
+                            cursor: 'pointer',
+                            borderRadius: 1,
+                            mb: 0.5,
+                            bgcolor: selectedPoiId === poi.id ? 'action.selected' : 'transparent',
+                            '&:hover': { bgcolor: 'action.hover' },
+                          }}
+                        >
+                          <Typography variant="body2">{poi.name}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {poi.location?.address || `${poi.location?.lat}, ${poi.location?.lng}`}
+                          </Typography>
+                        </Box>
+                      ))}
+                      {existingPOIs.length === 0 && (
+                        <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
+                          No locations found. Search above or create a new one below.
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
+                </Box>
+
+                {/* Create New via Map component */}
+                <Box sx={{ mt: 0, borderTop: '1px solid #e0e0e0', pt: 2 }}>
+                  <SimpleMapPOIPicker onClose={cancelLocationSelection} onPoiCreated={(coords) => {
+                    setSelectedPoiId(null);
+                    cancelLocationSelection();
+                  }} />
+                </Box>
+              </DialogContent>
+
+              <DialogActions sx={{ p: 2, gap: 1 }}>
+                <Button onClick={cancelLocationSelection}>Cancel</Button>
+                {selectedPoiId && (
+                  <Button variant="contained" onClick={confirmLocationSelection} autoFocus>
+                    Use Selected Location
+                  </Button>
+                )}
+              </DialogActions>
+            </Dialog>
+          )}
         </form>
       </DialogContent>
 
@@ -548,7 +627,7 @@ export default function HangoutScheduler({
     </Dialog>
   );
 
-  // Group creation form - wrapped in Dialog
+  // ─── Group creation form ───
   const GroupCreationForm = () => (
     <Dialog
       open={isCreatingGroup}
@@ -634,96 +713,6 @@ export default function HangoutScheduler({
       {/* Plan Event / Create Group dialogs render at top level */}
       {<SchedulingFormDialog />}
       {<GroupCreationForm />}
-
-      {/* POI Picker Dialog - only shown when scheduling a physical hangout */}
-      {showPoiPicker && hangoutType === 'physical' && (
-        <Dialog
-          open={true}
-          onClose={cancelLocationSelection}
-          maxWidth="md"
-          fullWidth
-          PaperProps={{ sx: { borderRadius: 2 } }}
-        >
-          <DialogTitle>Select or Create a Location</DialogTitle>
-
-          {/* Search bar */}
-          <DialogContent>
-            <Box sx={{ mb: 2 }}>
-              <TextField
-                fullWidth
-                size="small"
-                placeholder="Search locations by name, address, or city..."
-                value={poiSearchQuery}
-                onChange={handlePoiSearchChange}
-                InputProps={{
-                  startAdornment: (
-                    <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
-                      <Search size={14} color="#9B988C" />
-                    </Box>
-                  ),
-                }}
-              />
-            </Box>
-
-            {/* Existing POIs list */}
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Existing Locations
-              </Typography>
-              {loadingPOIs ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
-                  <CircularProgress size={24} />
-                </Box>
-              ) : (
-                <Box sx={{ maxHeight: 200, overflowY: 'auto' }}>
-                  {existingPOIs.map((poi) => (
-                    <Box
-                      key={poi.id}
-                      onClick={() => handleSelectPoi(poi.id)}
-                      sx={{
-                        p: 1.5,
-                        cursor: 'pointer',
-                        borderRadius: 1,
-                        mb: 0.5,
-                        bgcolor: selectedPoiId === poi.id ? 'action.selected' : 'transparent',
-                        '&:hover': { bgcolor: 'action.hover' },
-                      }}
-                    >
-                      <Typography variant="body2">{poi.name}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {poi.location?.address || `${poi.location?.lat}, ${poi.location?.lng}`}
-                      </Typography>
-                    </Box>
-                  ))}
-                  {existingPOIs.length === 0 && (
-                    <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
-                      No locations found. Search above or create a new one below.
-                    </Typography>
-                  )}
-                </Box>
-              )}
-            </Box>
-
-            {/* Create New via Map component */}
-            <Box sx={{ mt: 0, borderTop: '1px solid #e0e0e0', pt: 2 }}>
-              <SimpleMapPOIPicker onClose={cancelLocationSelection} onPoiCreated={(coords) => {
-                // After creating a new POI via map, use its coords
-                setSelectedPoiId(null); // Reset for now, would need to reload POIs
-                cancelLocationSelection();
-              }} />
-            </Box>
-          </DialogContent>
-
-          <DialogActions sx={{ p: 2, gap: 1 }}>
-            <Button onClick={cancelLocationSelection}>Cancel</Button>
-            {selectedPoiId && (
-              <Button variant="contained" onClick={confirmLocationSelection} autoFocus>
-                Use Selected Location
-              </Button>
-            )}
-          </DialogActions>
-        </Dialog>
-      )}
 
       {/* Main Hub */}
       <Paper sx={{ p: 3, borderRadius: 3, border: '1px solid #EBE9E2', backgroundColor: '#FFFFFF' }}>
