@@ -66,54 +66,57 @@ function Navbar() {
   return (
     <nav style={navStyle}>
       <Link href="/" style={{ textDecoration: 'none' }}>
-        <span style={{ margin: 0, fontSize: '18px', color: '#333', cursor: 'pointer' }}>Where2Meet</span>
-      </Link>
-      <Link href="/" style={{ textDecoration: 'none' }}>
-        <button style={buttonStyle(router.pathname === '/')}>🗺️ Master Map</button>
-      </Link>
-      <Link href="/create-map" style={{ textDecoration: 'none' }}>
-        <button style={buttonStyle(router.pathname === '/create-map')}>✨ Create New Map</button>
-      </Link>
-      <Link href="/my-maps" style={{ textDecoration: 'none' }}>
-        <button style={buttonStyle(router.pathname === '/my-maps')}>📍 My Maps</button>
-      </Link>
-      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '10px' }}>
-        {user ? (
-          <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <img
-                src={user.photoURL}
-                alt={user.displayName}
-                style={{ width: '32px', height: '32px', borderRadius: '50%' }}
-              />
-              <span style={{ fontSize: '14px' }}>{user.displayName}</span>
-            </div>
-            <button
+         <span style={{ margin: 0, fontSize: '18px', color: '#333', cursor: 'pointer' }}>Where2Meet</span>
+       </Link>
+       <Link href="/" style={{ textDecoration: 'none' }}>
+         <button style={buttonStyle(router.pathname === '/')}>🗺️ Master Map</button>
+       </Link>
+       <Link href="/create-map" style={{ textDecoration: 'none' }}>
+         <button style={buttonStyle(router.pathname === '/create-map')}>✨ Create New Map</button>
+       </Link>
+       <Link href="/my-maps" style={{ textDecoration: 'none' }}>
+         <button style={buttonStyle(router.pathname === '/my-maps')}>📍 My Maps</button>
+       </Link>
+       <Link href="/friends" style={{ textDecoration: 'none' }}>
+         <button style={buttonStyle(router.pathname === '/friends')}>👥 Friends</button>
+       </Link>
+       <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '10px' }}>
+         {user ? (
+           <>
+             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+               <img
+                 src={user.photoURL}
+                 alt={user.displayName}
+                 style={{ width: '32px', height: '32px', borderRadius: '50%' }}
+               />
+               <span style={{ fontSize: '14px' }}>{user.displayName}</span>
+             </div>
+             <button
               style={{
                 ...buttonStyle(false),
                 background: '#ff4444',
                 color: 'white',
-              }}
+               }}
               onClick={handleSignOut}
-            >
-              Sign Out
-            </button>
-          </>
-        ) : (
-          <button
+             >
+               Sign Out
+             </button>
+           </>
+         ) : (
+           <button
             style={{
               ...buttonStyle(false),
               background: '#4285f4',
               color: 'white',
-            }}
+             }}
             onClick={handleSignIn}
-          >
+           >
             Sign in with Google
-          </button>
-        )}
-      </div>
-    </nav>
-  );
+           </button>
+         )}
+       </div>
+     </nav>
+   );
 }
 
 export default Navbar;
