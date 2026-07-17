@@ -350,7 +350,13 @@ export default function FriendsDashboard({ onSignOut }) {
   const handleEditHangout = useCallback((hangout) => {
     setEditingHangout(hangout);
     setIsEditingHangoutMode(true);
-    }, []);
+     }, []);
+
+  // Plan Event: clear edit state and open create form
+  const handlePlanEvent = useCallback(() => {
+    setEditingHangout(null);
+    setIsEditingHangoutMode(false);
+   }, []);
 
     // Handle hangout save (create or update)
   const handleSaveHangout = useCallback(async (hangoutData) => {
@@ -701,7 +707,7 @@ export default function FriendsDashboard({ onSignOut }) {
          {/* Right Column: Hangouts, Groups */}
          <Grid item xs={12} md={7}>
            {/* Hangout Scheduler (commitments, groups, plan/create buttons) */}
-          <HangoutScheduler
+           <HangoutScheduler
             friends={friends}
             groups={groups}
             plannedHangouts={plannedHangouts}
@@ -718,7 +724,9 @@ export default function FriendsDashboard({ onSignOut }) {
             editingHangout={editingHangout}
             isEditingHangoutMode={isEditingHangoutMode}
             onSaveHangout={handleSaveHangout}
-          />
+            pois={pois}
+            onPlanEvent={handlePlanEvent}
+           />
          </Grid>
        </Grid>
 

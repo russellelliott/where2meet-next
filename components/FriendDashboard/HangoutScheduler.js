@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import dayjs from 'dayjs';
 import { GoogleMap, Marker } from '@react-google-maps/api';
 import {
   Box,
@@ -166,10 +167,12 @@ function SchedulingFormDialog(props) {
     confirmLocationSelection,
     cancelLocationSelection,
     getPoiNameById,
+    getPoiAddressById,
     isEditingHangoutMode = false,
     editingHangout = null,
     onSaveHangout = null,
-  } = props;
+    userPois = [],
+    } = props;
 
   const handleSubmit = useCallback((e) => {
     e.preventDefault();
@@ -644,7 +647,37 @@ export default function HangoutScheduler({
   editingHangout = null,
   isEditingHangoutMode = false,
   onSaveHangout = null,
+  pois = [],
+  onPlanEvent = null,
 }) {
+
+/**
+ * Helper: convert a UTC ISO datetime string to local time string for datetime-local input.
+ * Firestore stores datetimes as UTC (e.g. 2026-08-01T01:00:00.000Z).
+ * The <input type="datetime-local"> expects the browser's local timezone.
+ */
+function utcToLocalDatetimeInput(utcIso) {
+  if (!utcIso) return '2026-07-15T18:00';
+  const dt = new Date(utcIso);
+  if (isNaN(dt.getTime())) return '2026-07-15T18:00';
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+}
+
+/**
+ * Helper: resolve POI name and address from merged POI array (user POIs + existingPOIs).
+ */
+function resolvePoiInfo(poiId, userPois, localPoisArray) {
+  if (!poiId) return { name: null, address: null };
+  // Prefer userPOIs (which may include friend POIs loaded by the parent), fall back to local
+  const poi = (userPois && userPois.length > 0 ? userPois : localPoisArray)?.find((p) => p.id === poiId);
+  if (!poi) return { name: null, address: null };
+  return {
+    name: poi.name || poi.location?.address || null,
+    address: poi.location?.address || null,
+  };
+}
+
   const [isScheduling, setIsScheduling] = useState(false);
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
 
@@ -655,29 +688,31 @@ export default function HangoutScheduler({
   const [datetime, setDatetime] = useState('2026-07-15T18:00');
   const [details, setDetails] = useState('');
   const [selectedPoiId, setSelectedPoiId] = useState(null);
+  const [customAttendeeIds, setCustomAttendeeIds] = useState([]);
 
-  // Sync editing hangout state into form fields when it changes
+   // Sync editing hangout state into form fields when it changes
   React.useEffect(() => {
     if (editingHangout) {
       setHangoutTitle(editingHangout.title || '');
       setSelectedGroupId(editingHangout.groupId || '');
       setHangoutType(editingHangout.type || 'physical');
-      setDatetime(editingHangout.datetime ? new Date(editingHangout.datetime).toISOString().slice(0, 16) : '2026-07-15T18:00');
+         // Convert UTC datetime to local time for datetime-local input
+      setDatetime(editingHangout.datetime ? utcToLocalDatetimeInput(editingHangout.datetime) : '2026-07-15T18:00');
       setDetails(editingHangout.description || '');
       setSelectedPoiId(editingHangout.poiId || null);
-      // Show the scheduler dialog when editing a hangout
+         // Populate attendee checkboxes from friendIds
+      setCustomAttendeeIds(editingHangout.friendIds || []);
+         // Show the scheduler dialog when editing a hangout
       setIsScheduling(true);
       setIsCreatingGroup(false);
-    }
-  }, [editingHangout]);
+      }
+     }, [editingHangout]);
 
-  // POI picker states
+   // POI picker states
   const [showPoiPicker, setShowPoiPicker] = useState(false);
   const [existingPOIs, setExistingPOIs] = useState([]);
   const [loadingPOIs, setLoadingPOIs] = useState(false);
   const [poiSearchQuery, setPoiSearchQuery] = useState('');
-  // Custom attendee list initialized based on selected group, but customizable
-  const [customAttendeeIds, setCustomAttendeeIds] = useState([]);
 
   // Form states for creating a group
   const [groupName, setGroupName] = useState('');
@@ -901,14 +936,30 @@ export default function HangoutScheduler({
     onTriggerNotification(`Simulated leap! "${hangout.title}" completed. Updated contact records for: ${namesList}.`);
   }, [groups, friends, onCompletePlannedHangout, onTriggerNotification]);
 
-  // Get POI name by ID
+    // Get POI name + address by ID — merges pois (parent) with local existingPOIs.
+    // In edit mode this resolves friend-owned POIs (home, places) that don't live in the current user's POI collection.
   const getPoiNameById = useCallback((poiId) => {
+      // If editing, prefer pois which contains all POIs for this user/friends
+    if (isEditingHangoutMode && pois && pois.length > 0) {
+      const poi = pois.find((p) => p.id === poiId);
+      if (poi) return poi.name || poi.location?.address || 'Unnamed Location';
+    }
     const poi = existingPOIs.find((p) => p.id === poiId);
     return poi ? poi.name : null;
-  }, [existingPOIs]);
+    }, [existingPOIs, pois, isEditingHangoutMode]);
 
-  // Build the shared props object so the extracted component always
-  // receives fresh state without being re-created itself.
+    // Get POI address by ID (for displaying full street address in edit mode)
+  const getPoiAddressById = useCallback((poiId) => {
+    if (isEditingHangoutMode && pois && pois.length > 0) {
+      const poi = pois.find((p) => p.id === poiId);
+      if (poi && poi.location?.address) return poi.location.address;
+    }
+    const poi = existingPOIs.find((p) => p.id === poiId);
+    return poi ? poi.location?.address : null;
+    }, [existingPOIs, pois, isEditingHangoutMode]);
+
+   // Build the shared props object so the extracted component always
+   // receives fresh state without being re-created itself.
   const schedulingFormProps = React.useMemo(() => ({
     isScheduling, setIsScheduling,
     hangoutTitle, setHangoutTitle,
@@ -934,18 +985,20 @@ export default function HangoutScheduler({
     confirmLocationSelection,
     cancelLocationSelection,
     getPoiNameById,
+    getPoiAddressById,
     isEditingHangoutMode,
     editingHangout,
     onSaveHangout,
-  }), [
+    pois,
+    }), [
     isScheduling, hangoutTitle, selectedGroupId, hangoutType, datetime, details,
     selectedPoiId, showPoiPicker, existingPOIs, loadingPOIs, poiSearchQuery,
     loadExistingPOIs, friends, groups, customAttendeeIds,
     handleScheduleSubmit, handleGroupChange, toggleAttendee, openPoiPicker,
     handlePoiSearchChange, handleSelectPoi, confirmLocationSelection,
-    cancelLocationSelection, getPoiNameById,
-    isEditingHangoutMode, editingHangout, onSaveHangout,
-  ]);
+    cancelLocationSelection, getPoiNameById, getPoiAddressById,
+    isEditingHangoutMode, editingHangout, onSaveHangout, pois,
+    ]);
 
   const groupFormProps = React.useMemo(() => ({
     isCreatingGroup, setIsCreatingGroup,
@@ -977,9 +1030,22 @@ export default function HangoutScheduler({
               Commitments & Planning
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button
-              onClick={() => { setIsScheduling(true); setIsCreatingGroup(false); setEditingGroup(null); }}
+            <Box sx={{ display: 'flex', gap: 1 }}>
+               {/* Plan Event button — clears edit state via onPlanEvent then opens a fresh create form */}
+               <Button
+              onClick={() => {
+                if (onPlanEvent) onPlanEvent();
+                 // Reset form fields for a fresh hangout creation
+                setHangoutTitle('');
+                setSelectedGroupId('');
+                setCustomAttendeeIds([]);
+                setSelectedPoiId(null);
+                setDetails('');
+                setDatetime(dayjs().format('YYYY-MM-DDTHH:mm'));
+                setIsCreatingGroup(false);
+                setEditingGroup(null);
+                setIsScheduling(true);
+                }}
               variant="outlined"
               size="small"
               startIcon={<Calendar size={14} />}
@@ -991,11 +1057,11 @@ export default function HangoutScheduler({
                 borderColor: '#5A5A4030',
                 color: '#5A5A40',
                 backgroundColor: '#5A5A4010',
-                '&:hover': { backgroundColor: '#5A5A4020', borderColor: '#5A5A4050' },
-              }}
-            >
+                 '&:hover': { backgroundColor: '#5A5A4020', borderColor: '#5A5A4050' },
+                }}
+              >
               Plan Event
-            </Button>
+              </Button>
             <Button
               onClick={() => { setIsCreatingGroup(true); setIsScheduling(false); setEditingGroup(null); }}
               variant="outlined"
