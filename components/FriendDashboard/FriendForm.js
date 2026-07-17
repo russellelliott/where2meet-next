@@ -35,35 +35,41 @@ import { IoLogoWhatsapp } from 'react-icons/io';
  * Add/Edit a friend with location POI selection, temporary locations with dates
  */
 export default function FriendForm({ onSave, onClose, editFriend = null }) {
-  const [formData, setFormData] = useState({
-    name: editFriend?.name || '',
-    tagsInput: (editFriend?.tags || []).join(', '),
-    contact: {
-      phone: editFriend?.contact?.phone || false,
-      whatsapp: editFriend?.contact?.whatsapp || false,
-      discord: editFriend?.contact?.discord || false,
-      instagram: editFriend?.contact?.instagram || false,
-      primary: editFriend?.contact?.primary || 'phone',
-      handle: editFriend?.contact?.handle || '',
-    },
-    location: {
-      homePoiId: editFriend?.location?.homePoiId || '',
-      temporaryLocation: editFriend?.location?.temporaryLocation || {
-        startDate: null,
-        endDate: null,
-        poiId: null,
-      },
-    },
-    logistics: {
-      canDrive: editFriend?.logistics?.canDrive || false,
-      pickupRequired: editFriend?.logistics?.pickupRequired || false,
-      pickupPoiId: editFriend?.logistics?.pickupPoiId || '',
-    },
-    planning: {
-      notes: editFriend?.planning?.notes || '',
-    },
-    notes: editFriend?.notes || '',
-  });
+   const [formData, setFormData] = useState({
+     name: editFriend?.name || '',
+     tagsInput: (editFriend?.tags || []).join(', '),
+     contact: {
+       phone: editFriend?.contact?.phone || false,
+       whatsapp: editFriend?.contact?.whatsapp || false,
+       discord: editFriend?.contact?.discord || false,
+       instagram: editFriend?.contact?.instagram || false,
+       primary: editFriend?.contact?.primary || 'phone',
+       handle: editFriend?.contact?.handle || '',
+     },
+     location: {
+       homePoiId: editFriend?.location?.homePoiId || '',
+       temporaryLocation: editFriend?.location?.temporaryLocation || {
+         startDate: null,
+         endDate: null,
+         poiId: null,
+       },
+     },
+     logistics: {
+       canDrive: editFriend?.logistics?.canDrive || false,
+       pickupRequired: editFriend?.logistics?.pickupRequired || false,
+       pickupPoiId: editFriend?.logistics?.pickupPoiId || '',
+     },
+     planning: {
+       notes: editFriend?.planning?.notes || '',
+     },
+     notes: editFriend?.notes || '',
+   });
+
+   // Local state for immediate checkbox toggle feedback (avoids React render delay)
+   const [contactToggles, setContactToggles] = useState({
+     discord: editFriend?.contact?.discord === true || (typeof editFriend?.contact?.discord === 'string' && editFriend?.contact?.discord.length > 0),
+     instagram: editFriend?.contact?.instagram === true || (typeof editFriend?.contact?.instagram === 'string' && editFriend?.contact?.instagram.length > 0),
+   });
 
   const [tabValue, setTabValue] = useState(0);
   const [showCalendar, setShowCalendar] = useState(null);
@@ -297,48 +303,69 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
     }
   };
 
-  /**
-   * Render contact channel toggle with icon styling.
-   * Phone/WhatsApp = boolean toggle only (no text field)
-   * Discord/Instagram = boolean toggle + text field for handle when checked
-   */
+   /**
+    * Render contact channel toggle with icon styling.
+    * Phone/WhatsApp = boolean toggle only (no text field)
+    * Discord/Instagram = boolean toggle + text field for handle when checked
+    */
   const renderContactChannel = (channel, label, Icon, color, placeholder) => {
-    const isChecked = formData.contact[channel] === true ||
-      (typeof formData.contact[channel] === 'string' && formData.contact[channel].length > 0);
+       // Use formData for initial state / persistence
+    const persistedChecked = formData.contact[channel] === true ||
+       (typeof formData.contact[channel] === 'string' && formData.contact[channel].length > 0);
+
+       // For Discord/Instagram, use local toggle state for immediate feedback
+    const isToggled = (channel === 'discord' || channel === 'instagram')
+       ? contactToggles[channel] ?? persistedChecked
+       : persistedChecked;
+
+    const handleToggleClick = () => {
+         // Update local toggle immediately for visual feedback
+      if (channel === 'discord' || channel === 'instagram') {
+        setContactToggles((prev) => {
+          const newVal = !prev[channel];
+           // Also update formData.contact.channel
+          handleContactChange(channel, newVal ? '' : false);
+           // Clear handle when unchecked
+          if (!newVal) handleContactChange('handle', '');
+           return { ...prev, [channel]: newVal };
+        });
+      } else {
+         // Phone/WhatsApp: direct boolean toggle
+        const val = !persistedChecked;
+        handleContactChange(channel, val);
+        if (!val) handleContactChange('handle', '');
+      }
+    };
 
     return (
-      <Box key={channel} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1.5, borderRadius: 2, backgroundColor: '#FBFBF9' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Icon size={18} color={color} />
-          <Typography variant="body2" sx={{ fontWeight: 500 }}>{label}</Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, maxWidth: 260 }}>
-          <input
+       <Box key={channel} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1.5, borderRadius: 2, backgroundColor: '#FBFBF9' }}>
+         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+           <Icon size={18} color={color} />
+           <Typography variant="body2" sx={{ fontWeight: 500 }}>{label}</Typography>
+         </Box>
+         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, maxWidth: 260 }}>
+           <input
             type="checkbox"
-            checked={isChecked}
-            onChange={(e) => {
-              const val = e.target.checked;
-              handleContactChange(channel, val ? (channel === 'discord' || channel === 'instagram' ? '' : true) : false);
-              if (!val) handleContactChange('handle', '');
-            }}
+            checked={isToggled}
+            onChange={handleToggleClick}
             style={{ cursor: 'pointer' }}
-          />
-          {(channel === 'discord' || channel === 'instagram') && isChecked && (
-            <TextField
+           />
+           {(channel === 'discord' || channel === 'instagram') && isToggled && (
+             <TextField
               size="small"
               fullWidth
               placeholder={placeholder}
               value={formData.contact.handle || ''}
               onChange={(e) => handleContactChange('handle', e.target.value)}
               sx={{
-                '& .MuiOutlinedInput-root': { fontSize: '12px', height: 32 },
-              }}
-            />
-          )}
-        </Box>
-      </Box>
-    );
-  };
+                 '& .MuiOutlinedInput-root': { fontSize: '12px', height: 32 },
+               }}
+             />
+           )}
+         </Box>
+       </Box>
+     );
+   };
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>

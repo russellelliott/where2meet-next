@@ -182,253 +182,265 @@ export default function HangoutScheduler({
     onTriggerNotification(`🎉 Simulated leap! "${hangout.title}" completed. Updated contact records for: ${namesList}.`);
   };
 
-  // Scheduling form
-  const SchedulingForm = () => (
-    <Box sx={{ mb: 3 }}>
-      <Paper sx={{ p: 3, borderRadius: 3, backgroundColor: '#FBFBF9', border: '1px solid #EBE9E2' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, pb: 1.5, borderBottom: '1px solid #EBE9E2' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Calendar size={18} color="#CC7A5C" />
-            <Typography variant="subtitle1" sx={{ fontFamily: 'serif', fontWeight: 700, fontSize: '1rem', color: '#2D2D20' }}>
-              Schedule Group Hangout
-            </Typography>
-          </Box>
-          <IconButton size="small" onClick={() => setIsScheduling(false)} sx={{ color: '#9B988C', '&:hover': { color: '#2D2D20' } }}>
-            <X size={16} />
-          </IconButton>
-        </Box>
+   // Scheduling form - wrapped in Dialog
+  const SchedulingFormDialog = () => (
+<Dialog
+open={isScheduling}
+onClose={() => setIsScheduling(false)}
+maxWidth="md"
+ fullWidth
+ PaperProps={{ sx: { borderRadius: 3, backgroundColor: '#FBFBF9' } }}
+>
+ <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+   <Calendar size={18} color="#CC7A5C" />
+   Schedule Group Hangout
+ </DialogTitle>
 
-        <form onSubmit={handleScheduleSubmit}>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-            {/* Left: event details */}
-            <Box>
-              <TextField
-                fullWidth
-                size="small"
-                label="Hangout Title"
-                placeholder="E.g. Sunday Board Game Run"
-                value={hangoutTitle}
-                onChange={(e) => setHangoutTitle(e.target.value)}
-                required
-                sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-              />
+ <DialogContent dividers>
+   <form onSubmit={handleScheduleSubmit}>
+     <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
+       {/* Left: event details */}
+       <Box>
+         <TextField
+          fullWidth
+          size="small"
+          label="Hangout Title"
+          placeholder="E.g. Sunday Board Game Run"
+          value={hangoutTitle}
+          onChange={(e) => setHangoutTitle(e.target.value)}
+          required
+          sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+         />
 
-              <FormControl fullWidth size="small" sx={{ mb: 2 }}>
-                <InputLabel>Pre-set Group</InputLabel>
-                <Select
-                  value={selectedGroupId}
-                  onChange={(e) => handleGroupChange(e.target.value)}
-                  label="Pre-set Group"
-                >
-                  <MenuItem value="">-- Custom (Select Friends Below) --</MenuItem>
-                  {groups.map((g) => (
-                    <MenuItem key={g.id} value={g.id}>{g.name}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+         <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+           <InputLabel>Pre-set Group</InputLabel>
+           <Select
+            value={selectedGroupId}
+            onChange={(e) => handleGroupChange(e.target.value)}
+            label="Pre-set Group"
+           >
+             <MenuItem value="">-- Custom (Select Friends Below) --</MenuItem>
+             {groups.map((g) => (
+               <MenuItem key={g.id} value={g.id}>{g.name}</MenuItem>
+             ))}
+           </Select>
+         </FormControl>
 
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, mb: 2 }}>
-                {/* Type toggle */}
-                <Box>
-                  <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 0.5 }}>
-                    Type
-                  </Typography>
-                  <Box sx={{ display: 'flex', borderRadius: 2, border: '1px solid #E0DED7', overflow: 'hidden', p: 0.25 }}>
-                    {['physical', 'virtual'].map((type) => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => setHangoutType(type)}
-                        sx={{
-                          flex: 1,
-                          textTransform: 'none',
-                          py: 0.75,
-                          fontSize: '11px',
-                          fontWeight: 600,
-                          fontFamily: 'monospace',
-                          borderRadius: 1,
-                          backgroundColor: hangoutType === type ? '#5A5A40' : 'transparent',
-                          color: hangoutType === type ? '#FFFFFF' : '#7D7B6D',
-                          transition: 'all 0.2s ease',
-                        }}
-                      >
-                        {type === 'physical' ? 'Physical' : 'Virtual'}
-                      </button>
-                    ))}
-                  </Box>
-                </Box>
+         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, mb: 2 }}>
+           {/* Type toggle */}
+           <Box>
+             <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 0.5 }}>
+              Type
+             </Typography>
+             <Box sx={{ display: 'flex', borderRadius: 2, border: '1px solid #E0DED7', overflow: 'hidden', p: 0.25 }}>
+               {['physical', 'virtual'].map((type) => (
+                 <button
+                  key={type}
+                  type="button"
+                  onClick={() => setHangoutType(type)}
+                  sx={{
+                    flex: 1,
+                    textTransform: 'none',
+                    py: 0.75,
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    fontFamily: 'monospace',
+                    borderRadius: 1,
+                    backgroundColor: hangoutType === type ? '#5A5A40' : 'transparent',
+                    color: hangoutType === type ? '#FFFFFF' : '#7D7B6D',
+                    transition: 'all 0.2s ease',
+                   }}
+                 >
+                   {type === 'physical' ? 'Physical' : 'Virtual'}
+                 </button>
+               ))}
+             </Box>
+           </Box>
 
-                {/* Date & time */}
-                <Box>
-                  <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 0.5 }}>
-                    Date & Time
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    type="datetime-local"
-                    value={datetime}
-                    onChange={(e) => setDatetime(e.target.value)}
-                    size="small"
-                    InputLabelProps={{ shrink: true }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                  />
-                </Box>
-              </Box>
+           {/* Date & time */}
+           <Box>
+             <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 0.5 }}>
+              Date & Time
+             </Typography>
+             <TextField
+              fullWidth
+              type="datetime-local"
+              value={datetime}
+              onChange={(e) => setDatetime(e.target.value)}
+              size="small"
+              InputLabelProps={{ shrink: true }}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+             />
+           </Box>
+         </Box>
 
-              <TextField
-                fullWidth
-                size="small"
-                label={hangoutType === 'physical' ? 'Physical Destination POI / City' : 'Virtual Connection Link / Channel'}
-                placeholder={hangoutType === 'physical' ? 'Henry Cowell Park / Santa Cruz' : 'Discord Voice Channel'}
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-              />
+         <TextField
+          fullWidth
+          size="small"
+          label={hangoutType === 'physical' ? 'Physical Destination POI / City' : 'Virtual Connection Link / Channel'}
+          placeholder={hangoutType === 'physical' ? 'Henry Cowell Park / Santa Cruz' : 'Discord Voice Channel'}
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+         />
 
-              <TextField
-                fullWidth
-                size="small"
-                multiline
-                rows={2}
-                label="Planning Notes / Logistics details"
-                placeholder="Need food recommendations, ride-share configurations..."
-                value={details}
-                onChange={(e) => setDetails(e.target.value)}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-              />
-            </Box>
+         <TextField
+          fullWidth
+          size="small"
+          multiline
+          rows={2}
+          label="Planning Notes / Logistics details"
+          placeholder="Need food recommendations, ride-share configurations..."
+          value={details}
+          onChange={(e) => setDetails(e.target.value)}
+          sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+         />
+       </Box>
 
-            {/* Right: attendees */}
-            <Box>
-              <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 1 }}>
-                Attendees (Customize Selection)
-              </Typography>
-              <Paper variant="outlined" sx={{ p: 1.5, maxHeight: 230, overflowY: 'auto', borderRadius: 2 }}>
-                {friends.map((f) => {
-                  const isChecked = customAttendeeIds.includes(f.id);
-                  return (
-                    <label key={f.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.75, px: 1, borderRadius: 1, cursor: 'pointer', '&:hover': { backgroundColor: '#FBFBF9' } }}>
-                      <input type="checkbox" checked={isChecked} onChange={() => toggleAttendee(f.id)} style={{ accentColor: '#CC7A5C' }} />
-                      <Typography variant="body2" sx={{ fontSize: '12px', flex: 1 }}>{f.name}</Typography>
-                      <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', color: '#7D7B6D' }}>
-                        ({f.location?.city || 'Unknown'})
-                      </Typography>
-                    </label>
-                  );
-                })}
-              </Paper>
-              <Typography variant="caption" sx={{ display: 'block', fontStyle: 'italic', color: '#7D7B6D', mt: 1, fontSize: '10px' }}>
-                Add or remove specific individuals for this hangout commitment.
-              </Typography>
-            </Box>
-          </Box>
+       {/* Right: attendees */}
+       <Box>
+         <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 1 }}>
+          Attendees (Customize Selection)
+         </Typography>
+         <Paper variant="outlined" sx={{ p: 1.5, maxHeight: 230, overflowY: 'auto', borderRadius: 2 }}>
+           {friends.map((f) => {
+            const isChecked = customAttendeeIds.includes(f.id);
+            return (
+               <label key={f.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.75, px: 1, borderRadius: 1, cursor: 'pointer', '&:hover': { backgroundColor: '#FBFBF9' } }}>
+                 <input type="checkbox" checked={isChecked} onChange={() => toggleAttendee(f.id)} style={{ accentColor: '#CC7A5C' }} />
+                 <Typography variant="body2" sx={{ fontSize: '12px', flex: 1 }}>{f.name}</Typography>
+                 <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', color: '#7D7B6D' }}>
+                   ({f.location?.city || 'Unknown'})
+                 </Typography>
+               </label>
+             );
+           })}
+         </Paper>
+         <Typography variant="caption" sx={{ display: 'block', fontStyle: 'italic', color: '#7D7B6D', mt: 1, fontSize: '10px' }}>
+          Add or remove specific individuals for this hangout commitment.
+         </Typography>
+       </Box>
+     </Box>
 
-          <Divider sx={{ my: 2 }} />
+     <Divider sx={{ my: 2 }} />
 
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-            <Button onClick={() => setIsScheduling(false)} variant="text" size="small" sx={{ textTransform: 'none', color: '#7D7B6D' }}>
-              Cancel
-            </Button>
-            <Button type="submit" variant="contained" size="small" sx={{ backgroundColor: '#5A5A40', textTransform: 'none', '&:hover': { backgroundColor: '#434330' } }}>
-              Schedule Sync
-            </Button>
-          </Box>
-        </form>
-      </Paper>
-    </Box>
-  );
+     <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+       <Button onClick={() => setIsScheduling(false)} variant="text" size="small" sx={{ textTransform: 'none', color: '#7D7B6D' }}>
+        Cancel
+       </Button>
+       <Button type="submit" variant="contained" size="small" sx={{ backgroundColor: '#5A5A40', textTransform: 'none', '&:hover': { backgroundColor: '#434330' } }}>
+        Schedule Sync
+       </Button>
+     </Box>
+   </form>
+ </DialogContent>
 
-  // Group creation form
+ <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+   <Button onClick={() => setIsScheduling(false)}>Cancel</Button>
+   <Button type="submit" variant="contained" sx={{ backgroundColor: '#5A5A40', '&:hover': { backgroundColor: '#434330' } }}>
+    Schedule Sync
+   </Button>
+ </DialogActions>
+</Dialog>
+);
+
+    // Group creation form - wrapped in Dialog
   const GroupCreationForm = () => (
-    <Box sx={{ mb: 3 }}>
-      <Paper sx={{ p: 3, borderRadius: 3, backgroundColor: '#FBFBF9', border: '1px solid #EBE9E2' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, pb: 1.5, borderBottom: '1px solid #EBE9E2' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Users size={18} color="#CC7A5C" />
-            <Typography variant="subtitle1" sx={{ fontFamily: 'serif', fontWeight: 700, fontSize: '1rem', color: '#2D2D20' }}>
-              Create New Friend Group
-            </Typography>
-          </Box>
-          <IconButton size="small" onClick={() => setIsCreatingGroup(false)} sx={{ color: '#9B988C', '&:hover': { color: '#2D2D20' } }}>
-            <X size={16} />
-          </IconButton>
+<Dialog
+open={isCreatingGroup}
+onClose={() => setIsCreatingGroup(false)}
+maxWidth="md"
+ fullWidth
+ PaperProps={{ sx: { borderRadius: 3, backgroundColor: '#FBFBF9' } }}
+>
+ <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+    <Users size={18} color="#CC7A5C" />
+   Create New Friend Group
+ </DialogTitle>
+
+ <DialogContent dividers>
+    <form onSubmit={handleGroupSubmit}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
+        {/* Left: group details */}
+        <Box>
+          <TextField
+           fullWidth
+           size="small"
+           label="Group Name"
+           placeholder="E.g. Beach Volleyball Crew"
+           value={groupName}
+           onChange={(e) => setGroupName(e.target.value)}
+           required
+           sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+          />
+
+          <TextField
+           fullWidth
+           size="small"
+           multiline
+           rows={4}
+           label="Group Notes / Core Focus"
+           placeholder="E.g. Best friends from high school or local surf buddies..."
+           value={groupNotes}
+           onChange={(e) => setGroupNotes(e.target.value)}
+           sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+          />
         </Box>
 
-        <form onSubmit={handleGroupSubmit}>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-            {/* Left: group details */}
-            <Box>
-              <TextField
-                fullWidth
-                size="small"
-                label="Group Name"
-                placeholder="E.g. Beach Volleyball Crew"
-                value={groupName}
-                onChange={(e) => setGroupName(e.target.value)}
-                required
-                sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-              />
+        {/* Right: members */}
+        <Box>
+          <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 1 }}>
+           Group Members
+          </Typography>
+          <Paper variant="outlined" sx={{ p: 1.5, maxHeight: 230, overflowY: 'auto', borderRadius: 2 }}>
+            {friends.map((f) => {
+             const isChecked = groupMemberIds.includes(f.id);
+             return (
+                <label key={f.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.75, px: 1, borderRadius: 1, cursor: 'pointer', '&:hover': { backgroundColor: '#FBFBF9' } }}>
+                  <input type="checkbox" checked={isChecked} onChange={() => toggleGroupMember(f.id)} style={{ accentColor: '#CC7A5C' }} />
+                  <Typography variant="body2" sx={{ fontSize: '12px', flex: 1 }}>{f.name}</Typography>
+                  <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', color: '#7D7B6D' }}>
+                    ({f.location?.city || 'Unknown'})
+                  </Typography>
+                </label>
+              );
+            })}
+          </Paper>
+          <Typography variant="caption" sx={{ display: 'block', fontStyle: 'italic', color: '#7D7B6D', mt: 1, fontSize: '10px' }}>
+           Select friends to include in this custom preset group.
+          </Typography>
+        </Box>
+      </Box>
 
-              <TextField
-                fullWidth
-                size="small"
-                multiline
-                rows={4}
-                label="Group Notes / Core Focus"
-                placeholder="E.g. Best friends from high school or local surf buddies..."
-                value={groupNotes}
-                onChange={(e) => setGroupNotes(e.target.value)}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-              />
-            </Box>
+       <Divider sx={{ my: 2 }} />
 
-            {/* Right: members */}
-            <Box>
-              <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 1 }}>
-                Group Members
-              </Typography>
-              <Paper variant="outlined" sx={{ p: 1.5, maxHeight: 230, overflowY: 'auto', borderRadius: 2 }}>
-                {friends.map((f) => {
-                  const isChecked = groupMemberIds.includes(f.id);
-                  return (
-                    <label key={f.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.75, px: 1, borderRadius: 1, cursor: 'pointer', '&:hover': { backgroundColor: '#FBFBF9' } }}>
-                      <input type="checkbox" checked={isChecked} onChange={() => toggleGroupMember(f.id)} style={{ accentColor: '#CC7A5C' }} />
-                      <Typography variant="body2" sx={{ fontSize: '12px', flex: 1 }}>{f.name}</Typography>
-                      <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', color: '#7D7B6D' }}>
-                        ({f.location?.city || 'Unknown'})
-                      </Typography>
-                    </label>
-                  );
-                })}
-              </Paper>
-              <Typography variant="caption" sx={{ display: 'block', fontStyle: 'italic', color: '#7D7B6D', mt: 1, fontSize: '10px' }}>
-                Select friends to include in this custom preset group.
-              </Typography>
-            </Box>
-          </Box>
+       <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+         <Button onClick={() => setIsCreatingGroup(false)} variant="text" size="small" sx={{ textTransform: 'none', color: '#7D7B6D' }}>
+          Cancel
+         </Button>
+         <Button type="submit" variant="contained" size="small" sx={{ backgroundColor: '#5A5A40', textTransform: 'none', '&:hover': { backgroundColor: '#434330' } }}>
+          Save Group
+         </Button>
+       </Box>
+    </form>
+ </DialogContent>
 
-          <Divider sx={{ my: 2 }} />
-
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-            <Button onClick={() => setIsCreatingGroup(false)} variant="text" size="small" sx={{ textTransform: 'none', color: '#7D7B6D' }}>
-              Cancel
-            </Button>
-            <Button type="submit" variant="contained" size="small" sx={{ backgroundColor: '#5A5A40', textTransform: 'none', '&:hover': { backgroundColor: '#434330' } }}>
-              Save Group
-            </Button>
-          </Box>
-        </form>
-      </Paper>
-    </Box>
-  );
+ <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+    <Button onClick={() => setIsCreatingGroup(false)}>Cancel</Button>
+    <Button type="submit" variant="contained" sx={{ backgroundColor: '#5A5A40', '&:hover': { backgroundColor: '#434330' } }}>
+     Save Group
+    </Button>
+ </DialogActions>
+</Dialog>
+);
 
   return (
     <Box>
-      {/* Dynamic Scheduling Forms */}
-      {isScheduling && <SchedulingForm />}
-      {isCreatingGroup && <GroupCreationForm />}
+       {/* Plan Event / Create Group dialogs render at top level */}
+       {<SchedulingFormDialog />}
+       {<GroupCreationForm />}
 
-      {/* Main Hub */}
+       {/* Main Hub */}
       <Paper sx={{ p: 3, borderRadius: 3, border: '1px solid #EBE9E2', backgroundColor: '#FFFFFF' }}>
         {/* Header with buttons */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1.5, borderBottom: '1px solid #F2F0EA', mb: 2 }}>
