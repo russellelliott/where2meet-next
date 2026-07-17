@@ -16,6 +16,8 @@ import {
   FormControl,
   InputLabel,
   Select,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
 import {
   Calendar,
@@ -226,36 +228,22 @@ maxWidth="md"
            </Select>
          </FormControl>
 
-         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, mb: 2 }}>
-           {/* Type toggle */}
-           <Box>
-             <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 0.5 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, mb: 2 }}>
+            {/* Type toggle */}
+            <Box>
+              <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 0.5 }}>
               Type
-             </Typography>
-             <Box sx={{ display: 'flex', borderRadius: 2, border: '1px solid #E0DED7', overflow: 'hidden', p: 0.25 }}>
-               {['physical', 'virtual'].map((type) => (
-                 <button
-                  key={type}
-                  type="button"
-                  onClick={() => setHangoutType(type)}
-                  sx={{
-                    flex: 1,
-                    textTransform: 'none',
-                    py: 0.75,
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    fontFamily: 'monospace',
-                    borderRadius: 1,
-                    backgroundColor: hangoutType === type ? '#5A5A40' : 'transparent',
-                    color: hangoutType === type ? '#FFFFFF' : '#7D7B6D',
-                    transition: 'all 0.2s ease',
-                   }}
-                 >
-                   {type === 'physical' ? 'Physical' : 'Virtual'}
-                 </button>
-               ))}
-             </Box>
-           </Box>
+              </Typography>
+              <ToggleButtonGroup
+                value={hangoutType}
+                onChange={(e, newType) => newType && setHangoutType(newType)}
+                exclusive
+                sx={{ width: '100%', '& .MuiToggleButton-root': { textTransform: 'none', fontSize: '10px', fontWeight: 600, fontFamily: 'monospace', py: 0.75 } }}
+              >
+                <ToggleButton value="physical">Physical</ToggleButton>
+                <ToggleButton value="virtual">Virtual</ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
 
            {/* Date & time */}
            <Box>
@@ -322,25 +310,16 @@ maxWidth="md"
        </Box>
      </Box>
 
-     <Divider sx={{ my: 2 }} />
+      <Divider sx={{ my: 2 }} />
+    </form>
+  </DialogContent>
 
-     <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-       <Button onClick={() => setIsScheduling(false)} variant="text" size="small" sx={{ textTransform: 'none', color: '#7D7B6D' }}>
-        Cancel
-       </Button>
-       <Button type="submit" variant="contained" size="small" sx={{ backgroundColor: '#5A5A40', textTransform: 'none', '&:hover': { backgroundColor: '#434330' } }}>
-        Schedule Sync
-       </Button>
-     </Box>
-   </form>
- </DialogContent>
-
- <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-   <Button onClick={() => setIsScheduling(false)}>Cancel</Button>
-   <Button type="submit" variant="contained" sx={{ backgroundColor: '#5A5A40', '&:hover': { backgroundColor: '#434330' } }}>
-    Schedule Sync
-   </Button>
- </DialogActions>
+  <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+    <Button onClick={() => setIsScheduling(false)}>Cancel</Button>
+    <Button type="submit" variant="contained" sx={{ backgroundColor: '#5A5A40', '&:hover': { backgroundColor: '#434330' } }}>
+    Create Hangout
+    </Button>
+  </DialogActions>
 </Dialog>
 );
 
@@ -412,25 +391,16 @@ maxWidth="md"
         </Box>
       </Box>
 
-       <Divider sx={{ my: 2 }} />
+         <Divider sx={{ my: 2 }} />
+      </form>
+    </DialogContent>
 
-       <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-         <Button onClick={() => setIsCreatingGroup(false)} variant="text" size="small" sx={{ textTransform: 'none', color: '#7D7B6D' }}>
-          Cancel
-         </Button>
-         <Button type="submit" variant="contained" size="small" sx={{ backgroundColor: '#5A5A40', textTransform: 'none', '&:hover': { backgroundColor: '#434330' } }}>
-          Save Group
-         </Button>
-       </Box>
-    </form>
- </DialogContent>
-
- <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-    <Button onClick={() => setIsCreatingGroup(false)}>Cancel</Button>
-    <Button type="submit" variant="contained" sx={{ backgroundColor: '#5A5A40', '&:hover': { backgroundColor: '#434330' } }}>
-     Save Group
-    </Button>
- </DialogActions>
+    <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+      <Button onClick={() => setIsCreatingGroup(false)}>Cancel</Button>
+      <Button type="submit" variant="contained" sx={{ backgroundColor: '#5A5A40', '&:hover': { backgroundColor: '#434330' } }}>
+     Create Group
+      </Button>
+    </DialogActions>
 </Dialog>
 );
 
