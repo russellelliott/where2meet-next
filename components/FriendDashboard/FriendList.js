@@ -29,6 +29,7 @@ import { IoLogoWhatsapp } from 'react-icons/io';
  */
 export default function FriendList({
   friends,
+  cityCache,
   selectedFriendId,
   onSelectFriend,
   onRecordContact,
@@ -331,12 +332,12 @@ export default function FriendList({
                     <Typography variant="body2" sx={{ fontFamily: 'serif', fontWeight: 700, color: '#2D2D20', fontSize: '0.95rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {friend.name}
                     </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
-                      <MapPin size={12} color="#9B988C" />
-                      <Typography variant="caption" sx={{ color: '#7D7B6D', fontSize: '11px' }}>
-                         {friend.location?.homePoiId ? 'Home set' : 'No location set'}
-                       </Typography>
-                     </Box>
+<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
+                       <MapPin size={12} color="#9B988C" />
+                       <Typography variant="caption" sx={{ color: '#7D7B6D', fontSize: '11px' }}>
+                          {cityCache?.[friend.location?.homePoiId] || (friend.location?.homePoiId ? 'Home set' : 'No location set')}
+                        </Typography>
+                      </Box>
                   </Box>
 
                    {/* Right: Days Ago + Contact Icon */}

@@ -17,9 +17,48 @@ import StatsGrid from './StatsGrid';
 import PoiIdeasDialog from './PoiIdeasDialog';
 import CreateHangoutDialog from './CreateHangoutDialog';
 import HangoutList from './HangoutList';
-import { getFriends, recordContact as recordContactApi, deleteFriend } from '../../lib/friendService';
+import { getFriends, getUserPoIs, recordContact as recordContactApi, deleteFriend } from '../../lib/friendService';
 import { getGroups, addGroup as addGroupApi, updateGroup } from '../../lib/groupService';
 import { getHangouts, createHangout as createHangoutApi, completeHangout } from '../../lib/hangoutService';
+
+/**
+ * Resolve a POI id to a city name using Google reverse geocoding.
+ * Reads address_components for locality, falls back to postal_town > administrative_area_level_3 > sublocality.
+ */
+async function getCityFromPoiId(poiId, allPoIs) {
+  const poi = allPoIs?.find((p) => p.id === poiId);
+  if (!poi?.location?.lat || !poi.location.lng) return null;
+
+  // If we already cached a city from the POI document, use it
+  if (poi.city) return poi.city;
+
+  try {
+    if (typeof window.google !== 'undefined' && window.google.maps?.Geocoder) {
+      const geocoder = new window.google.maps.Geocoder();
+      return new Promise((resolve) => {
+        geocoder.geocode({ location: { lat: poi.location.lat, lng: poi.location.lng } }, (results, status) => {
+          if (status === 'OK' && results?.length) {
+            const result = results[0];
+            // Priority 1: locality
+            let city = result.address_components.find((c) => c.types.includes('locality'))?.long_name;
+            if (city) return resolve(city);
+            // Fallbacks per Google guidance
+            city = result.address_components.find((c) => c.types.includes('postal_town'))?.long_name;
+            if (city) return resolve(city);
+            city = result.address_components.find((c) => c.types.includes('administrative_area_level_3'))?.long_name;
+            if (city) return resolve(city);
+            city = result.address_components.find((c) => c.types.includes('sublocality'))?.long_name;
+            if (city) return resolve(city);
+          }
+          resolve(null);
+        });
+      });
+    }
+  } catch (err) {
+    console.warn('Reverse geocoding failed for POI', poiId, err);
+  }
+  return null;
+}
 
 /**
  * Helper: check if error indicates auth/session issue that needs re-login
@@ -62,16 +101,18 @@ export default function FriendsDashboard({ onSignOut }) {
     setAuthError(null);
 
     try {
-      const [friendsData, groupsData, hangoutsData] = await Promise.all([
+      const [friendsData, groupsData, hangoutsData, poisData] = await Promise.all([
         getFriends(currentUser.uid),
         getGroups(currentUser.uid),
         getHangouts(currentUser.uid),
+        getUserPoIs(currentUser.uid),
       ]);
 
-      // Flatten friend data from { id, data: {...} } to { id, ...data }
+       // Flatten friend data from { id, data: {...} } to { id, ...data }
       const flattenedFriends = (friendsData || []).map(f => ({ ...f.data, id: f.id }));
       setFriends(flattenedFriends);
       setGroups(groupsData || []);
+      setPoIs(poisData || []);
 
       // All hangouts (from friend planning + group planning + standalone)
       const allHangoutIds = new Set();
@@ -121,8 +162,81 @@ export default function FriendsDashboard({ onSignOut }) {
   const [createHangoutOpen, setCreateHangoutOpen] = useState(false);
   const [selectedHangoutPoiId, setSelectedHangoutPoiId] = useState(null);
   const [selectedHangoutPoiName, setSelectedHangoutPoiName] = useState(null);
+   // POI data for city resolution (users/{uid}/poi subcollection)
+  const [pois, setPoIs] = useState([]);
+    // Cache of poiId → city name (resolved via Google reverse geocoding)
+  const [cityCache, setCityCache] = useState({});
 
-  // Subscribe to Firebase Auth SDK directly
+  // Build city cache when friends and POIs are loaded
+   useEffect(() => {
+     if (!friends.length || !pois.length) return;
+
+     const newCache = { ...cityCache };
+     let changed = false;
+
+    friends.forEach((friend) => {
+       const homeId = friend.location?.homePoiId;
+       if (homeId && !newCache[homeId]) {
+         const poi = pois.find((p) => p.id === homeId);
+         if (poi?.location?.lat && poi.location.lng) {
+           resolveCity(poi.location.lat, poi.location.lng).then((city) => {
+             if (city) {
+               setCityCache((prev) => ({ ...prev, [homeId]: city }));
+             }
+           });
+           changed = true;
+         }
+       }
+       const tempId = friend.location?.temporaryLocation?.poiId;
+       if (tempId && !newCache[tempId]) {
+         const poi = pois.find((p) => p.id === tempId);
+         if (poi?.location?.lat && poi.location.lng) {
+           resolveCity(poi.location.lat, poi.location.lng).then((city) => {
+             if (city) {
+               setCityCache((prev) => ({ ...prev, [tempId]: city }));
+             }
+           });
+           changed = true;
+         }
+       }
+     });
+
+     if (!changed && !Object.keys(newCache).length) {
+       // Reset cache so subsequent loads work
+       setCityCache({});
+     }
+   }, [friends, pois]);
+
+  /**
+   * Resolve coordinates to a city name using Google reverse geocoding.
+   */
+  function resolveCity(lat, lng) {
+    return new Promise((resolve) => {
+      try {
+        if (typeof window.google !== 'undefined' && window.google.maps?.Geocoder) {
+          const geocoder = new window.google.maps.Geocoder();
+          geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+            if (status === 'OK' && results?.length) {
+              const result = results[0];
+              let city = result.address_components.find((c) => c.types.includes('locality'))?.long_name;
+              if (!city) city = result.address_components.find((c) => c.types.includes('postal_town'))?.long_name;
+              if (!city) city = result.address_components.find((c) => c.types.includes('administrative_area_level_3'))?.long_name;
+              if (!city) city = result.address_components.find((c) => c.types.includes('sublocality'))?.long_name;
+              return resolve(city || null);
+            }
+            resolve(null);
+          });
+         } else {
+          resolve(null);
+        }
+      } catch (err) {
+        console.warn('Reverse geocoding failed', err);
+        resolve(null);
+      }
+    });
+  }
+
+   // Subscribe to Firebase Auth SDK directly
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((loggedInUser) => {
       setUser(loggedInUser);
@@ -431,15 +545,16 @@ export default function FriendsDashboard({ onSignOut }) {
         <Grid container spacing={{ xs: 2, sm: 3 }}>
           {/* Left Column: Friend List */}
           <Grid item xs={12} md={5}>
-          <FriendList
-            friends={friends}
-            selectedFriendId={selectedFriendId}
-            onSelectFriend={setSelectedFriendId}
-            onRecordContact={handleRecordContact}
-            onDeleteFriend={handleDeleteFriend}
-            onToggleAddForm={handleToggleAddForm}
-            isAddFormOpen={showAddForm}
-          />
+            <FriendList
+             friends={friends}
+             cityCache={cityCache}
+             selectedFriendId={selectedFriendId}
+             onSelectFriend={setSelectedFriendId}
+             onRecordContact={handleRecordContact}
+             onDeleteFriend={handleDeleteFriend}
+             onToggleAddForm={handleToggleAddForm}
+             isAddFormOpen={showAddForm}
+            />
 
           {showAddForm && (
             <Paper sx={{ mt: 2, p: 2 }}>
