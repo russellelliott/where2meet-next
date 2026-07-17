@@ -68,7 +68,9 @@ export default function FriendsDashboard({ onSignOut }) {
         getHangouts(currentUser.uid),
       ]);
 
-      setFriends(friendsData || []);
+      // Flatten friend data from { id, data: {...} } to { id, ...data }
+      const flattenedFriends = (friendsData || []).map(f => ({ ...f.data, id: f.id }));
+      setFriends(flattenedFriends);
       setGroups(groupsData || []);
 
       // All hangouts (from friend planning + group planning + standalone)

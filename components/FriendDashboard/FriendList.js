@@ -37,55 +37,48 @@ export default function FriendList({
   isAddFormOpen,
 }) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCity, setSelectedCity] = useState('all');
   const [selectedStaleness, setSelectedStaleness] = useState('all');
   const [selectedLogistics, setSelectedLogistics] = useState('all');
 
-   // Constant anchor time for relative calculations: July 12, 2026
+    // Constant anchor time for relative calculations: July 12, 2026
   const CURRENT_TIME = new Date('2026-07-12T16:00:00Z');
 
-   // Helper: calculate days since last contacted
+    // Helper: calculate days since last contacted
   const getDaysSinceContact = (dateStr) => {
     if (!dateStr) return 999;
     const lastDate = new Date(dateStr);
     const diffTime = CURRENT_TIME.getTime() - lastDate.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return isNaN(diffDays) ? 0 : diffDays;
-    };
+     };
 
-   // Helper: Get Staleness Category
+    // Helper: Get Staleness Category
   const getStalenessCategory = (days) => {
     if (days <= 7) return 'fresh';
     if (days <= 30) return 'stale';
     return 'overdue';
-    };
+     };
 
-   // Extract unique cities
-  const cities = ['all', ...Array.from(new Set(friends.map((f) => f.location?.city || 'Unknown')))];
-
-   // Filters
+    // Filters (city hub removed - not a stored field in friend schema)
   const filteredFriends = friends.filter((friend) => {
-     // Search filter
+      // Search filter
     const matchesSearch =
       friend.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       friend.tags?.some((t) => t.toLowerCase().includes(searchTerm.toLowerCase()));
 
-     // City Hub filter
-    const matchesCity = selectedCity === 'all' || friend.location?.city === selectedCity;
-
-     // Staleness filter
+      // Staleness filter
     const days = getDaysSinceContact(friend.contact?.lastContactDate);
     const category = getStalenessCategory(days);
     const matchesStaleness = selectedStaleness === 'all' || category === selectedStaleness;
 
-     // Logistics filter
+      // Logistics filter
     const matchesLogistics =
       selectedLogistics === 'all' ||
-       (selectedLogistics === 'can_drive' && friend.logistics?.canDrive) ||
-       (selectedLogistics === 'needs_ride' && friend.logistics?.pickupRequired);
+        (selectedLogistics === 'can_drive' && friend.logistics?.canDrive) ||
+        (selectedLogistics === 'needs_ride' && friend.logistics?.pickupRequired);
 
-    return matchesSearch && matchesCity && matchesStaleness && matchesLogistics;
-    });
+    return matchesSearch && matchesStaleness && matchesLogistics;
+     });
 
    // Contact icon with proper colors - show handle text under Discord/Instagram only
   const renderContactIcon = (friend) => {
@@ -257,35 +250,9 @@ export default function FriendList({
             id="friend-search-input"
            />
 
-           {/* Filters Row */}
-          <Box sx={{ display: 'flex', gap: 1.5, mt: 1.5 }}>
-             {/* City Hub */}
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 0.5 }}>
-                City Hub
-              </Typography>
-              <TextField
-               select
-               size="small"
-               fullWidth
-               value={selectedCity}
-               onChange={(e) => setSelectedCity(e.target.value)}
-               sx={{
-                 backgroundColor: '#F9F8F6',
-                 borderRadius: 1,
-                 borderColor: '#EBE9E2',
-                }}
-                id="friend-city-select"
-               >
-                {cities.map((c) => (
-                  <MenuItem key={c} value={c}>
-                    {c === 'all' ? 'All Cities' : c}
-                  </MenuItem>
-                 ))}
-              </TextField>
-            </Box>
-
-             {/* Contact Staleness */}
+            {/* Filters Row */}
+           <Box sx={{ display: 'flex', gap: 1.5, mt: 1.5 }}>
+              {/* Contact Staleness */}
             <Box sx={{ flex: 1 }}>
               <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 0.5 }}>
                 Contact Staleness
@@ -367,9 +334,9 @@ export default function FriendList({
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
                       <MapPin size={12} color="#9B988C" />
                       <Typography variant="caption" sx={{ color: '#7D7B6D', fontSize: '11px' }}>
-                        {friend.location?.city || 'Unknown'}
-                      </Typography>
-                    </Box>
+                         {friend.location?.homePoiId ? 'Home set' : 'No location set'}
+                       </Typography>
+                     </Box>
                   </Box>
 
                    {/* Right: Days Ago + Contact Icon */}
