@@ -22,7 +22,7 @@ import {
   InputAdornment,
 } from '@mui/material';
 import { createPoiFromCoordinates } from '../../lib/poiService';
-import { saveFriend, updateFriend } from '../../lib/friendService';
+import { saveFriend, updateFriend, getFriends } from '../../lib/friendService';
 import { auth, db } from '../../firebaseConfig';
 import { collection, getDocs } from 'firebase/firestore';
 import { toast } from 'react-toastify';
@@ -79,6 +79,9 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
   const [loadingPOIs, setLoadingPOIs] = useState(false);
   const [selectedExistingPOI, setSelectedExistingPOI] = useState(null);
   const [formErrors, setFormErrors] = useState({});
+  
+  // State for all tags from friends (for autocomplete suggestions)
+  const [allTags, setAllTags] = useState([]);
 
   const loadExistingPOIs = async () => {
     const user = auth.currentUser;
@@ -100,8 +103,31 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
   React.useEffect(() => {
     if (editFriend) {
       loadExistingPOIs();
+        }
+      }, []);
+  
+  // Load all tags from user's friends for autocomplete suggestions
+  React.useEffect(() => {
+    const loadAllTags = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+      
+      try {
+        const friendsData = await getFriends(user.uid);
+        const tagsSet = new Set();
+        friendsData.forEach(({ data: friend }) => {
+          if (Array.isArray(friend.tags)) {
+            friend.tags.forEach((tag) => tagsSet.add(tag));
+          }
+        });
+        setAllTags(Array.from(tagsSet).sort());
+      } catch (error) {
+        console.error('Error loading friend tags:', error);
       }
-     }, []);
+    };
+    
+    loadAllTags();
+  }, []);
 
    // Pre-select the existing POI when opening the picker for a specific field
   const openPOIPicker = async (mode) => {
@@ -301,7 +327,7 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
 
     const friendData = {
       name: formData.name.trim(),
-      tags: parsedTags.length > 0 ? parsedTags : ['Friend'],
+      tags: parsedTags,
       contact: contactData,
         // Only include nested objects when they have actual fields
        ...((Object.keys(locationObj).length > 0) && { location: locationObj }),
@@ -440,40 +466,41 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
                   required
                  />
 
-                     <Autocomplete
-                   multiple
-                   freeSolo
-                   value={typeof formData.tagsInput === 'string' && formData.tagsInput.trim().length > 0
-                            ? formData.tagsInput.split(',').map((t) => t.trim()).filter(Boolean) 
-                            : []}
-                   onChange={(event, newValue) => {
-                     setFormData((prev) => ({
-                           ...prev,
-                       tagsInput: Array.isArray(newValue) && newValue.length > 0 ? newValue.join(', ') : ''
-                          }));
-                        }}
-                    renderInput={(params) => (
-                        <TextField
-                          {...params}
-                        label="Tags (Comma separated)"
-                        placeholder="E.g. UCSC, Hiking, Outdoors"
-                        margin="normal"
-                        size="small"
-                        />
-                      )}
-                     renderTags={(value, getTagProps) =>
-                       value.map((option, index) => (
-                           <Chip
-                           key={`tag-${index}`}
-                           variant="outlined"
-                           label={option}
-                             {...getTagProps({ index })}
-                           sx={{ fontSize: '11px', height: '22px' }}
-                           />
-                         ))
-                       }
-                     sx={{ mb: 2 }}
-                    />
+                      <Autocomplete
+                    multiple
+                    freeSolo
+                    options={allTags}
+                    value={typeof formData.tagsInput === 'string' && formData.tagsInput.trim().length > 0
+                             ? formData.tagsInput.split(',').map((t) => t.trim()).filter(Boolean) 
+                              : []}
+                    onChange={(event, newValue) => {
+                      setFormData((prev) => ({
+                             ...prev,
+                        tagsInput: Array.isArray(newValue) && newValue.length > 0 ? newValue.join(', ') : ''
+                            }));
+                          }}
+                     renderInput={(params) => (
+                          <TextField
+                            {...params}
+                         label="Tags"
+                         placeholder="Type and press Enter to add"
+                         margin="normal"
+                         size="small"
+                          />
+                       )}
+                      renderTags={(value, getTagProps) =>
+                        value.map((option, index) => (
+                             <Chip
+                            key={`tag-${index}`}
+                            variant="outlined"
+                            label={option}
+                               {...getTagProps({ index })}
+                            sx={{ fontSize: '11px', height: '22px' }}
+                             />
+                           ))
+                         }
+                      sx={{ mb: 2 }}
+                      />
 
                  <TextField
                   fullWidth
