@@ -22,27 +22,46 @@ export default function StatsGrid({ friends, plannedHangouts }) {
   const canDriveCount = friends.filter((f) => f.logistics?.canDrive).length;
   const needsRideCount = friends.filter((f) => f.logistics?.pickupRequired).length;
 
+  /**
+    * Calculate days since contact using local calendar dates only.
+    * Both the stored YYYY-MM-DD date and "now" are parsed as local midnight (no UTC conversion)
+    * so the difference correctly reflects calendar day count.
+    */
   const getDaysSinceContact = (dateStr) => {
     if (!dateStr) return 999;
-    const lastDate = new Date(dateStr);
-    const now = new Date();
-    const diffTime = now.getTime() - lastDate.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return isNaN(diffDays) ? 0 : diffDays;
-     };
+
+      // Parse stored date as local midnight (YYYY-MM-DD → local year/month/day)
+     let lastLocal;
+     if (dateStr.length === 10) {
+       const [year, month, day] = dateStr.split('-').map(Number);
+       lastLocal = new Date(year, month - 1, day, 0, 0, 0, 0);
+        } else {
+        // Handle full ISO strings by extracting local date
+       const d = new Date(dateStr);
+       lastLocal = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+        }
+
+      // "Now" as local midnight (drop time component)
+     const now = new Date();
+     const nowLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+
+     const diffTime = nowLocal.getTime() - lastLocal.getTime();
+     const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+     return isNaN(diffDays) ? 0 : diffDays;
+      };
 
   const freshCount = friends.filter((f) => getDaysSinceContact(f.contact?.lastContactDate) <= 7).length;
   const staleCount = friends.filter((f) => {
     const days = getDaysSinceContact(f.contact?.lastContactDate);
     return days > 7 && days <= 30;
-   }).length;
+     }).length;
   const overdueCount = friends.filter((f) => getDaysSinceContact(f.contact?.lastContactDate) > 30).length;
 
   return (
-     <Grid container spacing={2} sx={{ mb: 2 }} id="stats-grid">
-       {/* Stat 1: Total Friends */}
-       <Grid item xs={6} md={3}>
-         <Paper
+      <Grid container spacing={2} sx={{ mb: 2 }} id="stats-grid">
+        {/* Stat 1: Total Friends */}
+        <Grid item xs={6} md={3}>
+          <Paper
            sx={{
              p: 2.5,
              display: 'flex',
@@ -50,9 +69,9 @@ export default function StatsGrid({ friends, plannedHangouts }) {
              gap: 2,
              borderRadius: 2,
              boxShadow: 1,
-           }}
-         >
-           <Box
+            }}
+          >
+            <Box
              sx={{
                p: 1.5,
                backgroundColor: '#F9F8F6',
@@ -61,12 +80,12 @@ export default function StatsGrid({ friends, plannedHangouts }) {
                color: '#666666',
                display: 'flex',
                alignItems: 'center',
-             }}
-           >
-             <Users size={20} />
-           </Box>
-           <Box>
-             <Typography
+              }}
+            >
+              <Users size={20} />
+            </Box>
+            <Box>
+              <Typography
                variant="caption"
                sx={{
                  display: 'block',
@@ -75,26 +94,26 @@ export default function StatsGrid({ friends, plannedHangouts }) {
                  color: '#7D7B6D',
                  letterSpacing: '0.5px',
                  fontWeight: 600,
-               }}
-             >
+                }}
+              >
                Total Friends
-             </Typography>
-             <Typography
+              </Typography>
+              <Typography
                variant="h5"
                sx={{
                  fontWeight: 600,
                  color: '#2D2D20',
-               }}
-             >
-               {totalFriends}
-             </Typography>
-           </Box>
-         </Paper>
-       </Grid>
+                }}
+              >
+                {totalFriends}
+              </Typography>
+            </Box>
+          </Paper>
+        </Grid>
 
-       {/* Stat 2: Logistics */}
-       <Grid item xs={6} md={3}>
-         <Paper
+        {/* Stat 2: Logistics */}
+        <Grid item xs={6} md={3}>
+          <Paper
            sx={{
              p: 2.5,
              display: 'flex',
@@ -102,9 +121,9 @@ export default function StatsGrid({ friends, plannedHangouts }) {
              gap: 2,
              borderRadius: 2,
              boxShadow: 1,
-           }}
-         >
-           <Box
+            }}
+          >
+            <Box
              sx={{
                p: 1.5,
                backgroundColor: '#F9F8F6',
@@ -113,12 +132,12 @@ export default function StatsGrid({ friends, plannedHangouts }) {
                color: '#CC7A5C',
                display: 'flex',
                alignItems: 'center',
-             }}
-           >
-             <Car size={20} />
-           </Box>
-           <Box>
-             <Typography
+              }}
+            >
+              <Car size={20} />
+            </Box>
+            <Box>
+              <Typography
                variant="caption"
                sx={{
                  display: 'block',
@@ -127,37 +146,37 @@ export default function StatsGrid({ friends, plannedHangouts }) {
                  color: '#7D7B6D',
                  letterSpacing: '0.5px',
                  fontWeight: 600,
-               }}
-             >
+                }}
+              >
                Ride Logistics
-             </Typography>
-             <Typography
+              </Typography>
+              <Typography
                variant="body2"
                sx={{
                  fontSize: '12px',
                  fontWeight: 500,
                  color: '#2D2D20',
-               }}
-             >
-               🚗 {canDriveCount} Drivers
-             </Typography>
-             <Typography
+                }}
+              >
+                🚗 {canDriveCount} Drivers
+              </Typography>
+              <Typography
                variant="body2"
                sx={{
                  fontSize: '12px',
                  fontWeight: 500,
                  color: '#CC7A5C',
-               }}
-             >
-               🚌 {needsRideCount} Need Rides
-             </Typography>
-           </Box>
-         </Paper>
-       </Grid>
+                }}
+              >
+                🚌 {needsRideCount} Need Rides
+              </Typography>
+            </Box>
+          </Paper>
+        </Grid>
 
-       {/* Stat 3: Staleness */}
-       <Grid item xs={6} md={3}>
-         <Paper
+        {/* Stat 3: Staleness */}
+        <Grid item xs={6} md={3}>
+          <Paper
            sx={{
              p: 2.5,
              display: 'flex',
@@ -166,9 +185,9 @@ export default function StatsGrid({ friends, plannedHangouts }) {
              borderRadius: 2,
              boxShadow: 1,
              flexWrap: 'wrap',
-           }}
-         >
-           <Box
+            }}
+          >
+            <Box
              sx={{
                p: 1.5,
                backgroundColor: '#F9F8F6',
@@ -177,16 +196,16 @@ export default function StatsGrid({ friends, plannedHangouts }) {
                color: '#25D366',
                display: 'flex',
                alignItems: 'center',
-             }}
-           >
-             <Clock size={20} />
-           </Box>
-           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-             <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '11px', color: '#7D7B6D', fontWeight: 600, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              }}
+            >
+              <Clock size={20} />
+            </Box>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '11px', color: '#7D7B6D', fontWeight: 600, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                Contact Recency
-             </Typography>
-             <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
-               <Chip
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
+                <Chip
                  label={`🟢 ${freshCount} Fresh`}
                  size="small"
                  sx={{
@@ -196,9 +215,9 @@ export default function StatsGrid({ friends, plannedHangouts }) {
                    color: '#1b5e20',
                    fontWeight: 600,
                    borderColor: '#c8e6c9',
-                 }}
-               />
-               <Chip
+                  }}
+                />
+                <Chip
                  label={`🟡 ${staleCount} Stale`}
                  size="small"
                  sx={{
@@ -208,9 +227,9 @@ export default function StatsGrid({ friends, plannedHangouts }) {
                    color: '#f57f17',
                    fontWeight: 600,
                    borderColor: '#ffecb3',
-                 }}
-               />
-               <Chip
+                  }}
+                />
+                <Chip
                  label={`🔴 ${overdueCount} Overdue`}
                  size="small"
                  sx={{
@@ -220,16 +239,16 @@ export default function StatsGrid({ friends, plannedHangouts }) {
                    color: '#c62828',
                    fontWeight: 600,
                    borderColor: '#ffcdd2',
-                 }}
-               />
-             </Box>
-           </Box>
-         </Paper>
-       </Grid>
+                  }}
+                />
+              </Box>
+            </Box>
+          </Paper>
+        </Grid>
 
-       {/* Stat 4: Commitments */}
-       <Grid item xs={6} md={3}>
-         <Paper
+        {/* Stat 4: Commitments */}
+        <Grid item xs={6} md={3}>
+          <Paper
            sx={{
              p: 2.5,
              display: 'flex',
@@ -237,9 +256,9 @@ export default function StatsGrid({ friends, plannedHangouts }) {
              gap: 2,
              borderRadius: 2,
              boxShadow: 1,
-           }}
-         >
-           <Box
+            }}
+          >
+            <Box
              sx={{
                p: 1.5,
                backgroundColor: '#F9F8F6',
@@ -248,12 +267,12 @@ export default function StatsGrid({ friends, plannedHangouts }) {
                color: '#5865F2',
                display: 'flex',
                alignItems: 'center',
-             }}
-           >
-             <Calendar size={20} />
-           </Box>
-           <Box>
-             <Typography
+              }}
+            >
+              <Calendar size={20} />
+            </Box>
+            <Box>
+              <Typography
                variant="caption"
                sx={{
                  display: 'block',
@@ -262,32 +281,32 @@ export default function StatsGrid({ friends, plannedHangouts }) {
                  color: '#7D7B6D',
                  letterSpacing: '0.5px',
                  fontWeight: 600,
-               }}
-             >
+                }}
+              >
                Upcoming Events
-             </Typography>
-             <Typography
+              </Typography>
+              <Typography
                variant="h5"
                sx={{
                  fontWeight: 600,
                  color: '#2D2D20',
-               }}
-             >
-               {plannedHangouts.length}
-             </Typography>
-             <Typography
+                }}
+              >
+                {plannedHangouts.length}
+              </Typography>
+              <Typography
                variant="caption"
                sx={{
                  display: 'block',
                  color: '#7D7B6D',
                  fontSize: '10px',
-               }}
-             >
+                }}
+              >
                Pending syncs
-             </Typography>
-           </Box>
-         </Paper>
-       </Grid>
-     </Grid>
-   );
+              </Typography>
+            </Box>
+          </Paper>
+        </Grid>
+      </Grid>
+    );
  }
