@@ -35,9 +35,9 @@ import { IoLogoWhatsapp } from 'react-icons/io';
  * Add/Edit a friend with location POI selection, temporary locations with dates
  */
 export default function FriendForm({ onSave, onClose, editFriend = null }) {
-   const [formData, setFormData] = useState({
-     name: editFriend?.name || '',
-     tagsInput: (editFriend?.tags || []).join(', '),
+  const [formData, setFormData] = useState({
+    name: editFriend?.name || '',
+    tagsInput: Array.isArray(editFriend?.tags) ? editFriend.tags.join(', ') : '',
      contact: {
        phone: editFriend?.contact?.phone || false,
        whatsapp: editFriend?.contact?.whatsapp || false,
@@ -423,38 +423,40 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
                   required
                 />
 
-                <Autocomplete
-                  multiple
-                  freeSolo
-                  value={formData.tagsInput.split(', ').filter(Boolean)}
-                  onChange={(event, newValue) => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      tagsInput: newValue.join(', '),
-                    }));
-                  }}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="Tags (Comma separated)"
-                      placeholder="E.g. UCSC, Hiking, Outdoors"
-                      margin="normal"
-                      size="small"
-                    />
-                  )}
-                  renderTags={(value, getTagProps) =>
-                    value.map((option, index) => (
-                      <Chip
-                        key={`tag-${index}`}
-                        variant="outlined"
-                        label={option}
-                        {...getTagProps({ index })}
-                        sx={{ fontSize: '11px', height: '22px' }}
-                      />
-                    ))
-                  }
-                  sx={{ mb: 2 }}
-                />
+                    <Autocomplete
+                   multiple
+                   freeSolo
+                   value={typeof formData.tagsInput === 'string' && formData.tagsInput.trim().length > 0
+                           ? formData.tagsInput.split(',').map((t) => t.trim()).filter(Boolean) 
+                           : []}
+                   onChange={(event, newValue) => {
+                     setFormData((prev) => ({
+                          ...prev,
+                       tagsInput: Array.isArray(newValue) && newValue.length > 0 ? newValue.join(', ') : ''
+                         }));
+                       }}
+                    renderInput={(params) => (
+                       <TextField
+                         {...params}
+                        label="Tags (Comma separated)"
+                        placeholder="E.g. UCSC, Hiking, Outdoors"
+                        margin="normal"
+                        size="small"
+                       />
+                     )}
+                     renderTags={(value, getTagProps) =>
+                       value.map((option, index) => (
+                          <Chip
+                           key={`tag-${index}`}
+                           variant="outlined"
+                           label={option}
+                            {...getTagProps({ index })}
+                           sx={{ fontSize: '11px', height: '22px' }}
+                          />
+                        ))
+                      }
+                     sx={{ mb: 2 }}
+                   />
 
                 <TextField
                   fullWidth

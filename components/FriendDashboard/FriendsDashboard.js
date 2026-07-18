@@ -644,6 +644,7 @@ export default function FriendsDashboard({ onSignOut }) {
            <FriendList
             friends={friends}
             cityCache={cityCache}
+            pois={pois}
             selectedFriendId={selectedFriendId}
             onSelectFriend={setSelectedFriendId}
             onRecordContact={handleRecordContact}
@@ -651,7 +652,7 @@ export default function FriendsDashboard({ onSignOut }) {
             onEditFriend={handleEditFriend}
             onToggleAddForm={handleToggleAddForm}
             isAddFormOpen={showAddForm}
-           />
+            />
 
            {showAddForm && (
              <Paper sx={{ mt: 2, p: 2 }}>

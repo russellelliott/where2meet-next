@@ -27,9 +27,43 @@ import { IoLogoWhatsapp } from 'react-icons/io';
  * @param {Function} props.onToggleAddForm - Toggle add form visibility
  * @param {boolean} props.isAddFormOpen - Whether add form is open
  */
+/**
+ * Helper to resolve friend location display from POI data.
+ * Shows the full street address from the POI object if found in the pois array.
+ * Otherwise falls back to city cache or 'Home set' / 'No location set'.
+ */
+function resolveFriendLocation(friendLoc, pois, cityCache) {
+  if (!friendLoc) return 'No location set';
+
+  // Check home POI first
+  if (friendLoc.homePoiId) {
+    const poi = Array.isArray(pois) ? pois.find((p) => p.id === friendLoc.homePoiId) : null;
+    if (poi) {
+      if (poi.location?.address) return poi.location.address;
+      if (poi.location?.lat && poi.location?.lng) return `${poi.location.lat.toFixed(4)}, ${poi.location.lng.toFixed(4)}`;
+    }
+    // Fall back to city cache
+    if (cityCache && cityCache[friendLoc.homePoiId]) return cityCache[friendLoc.homePoiId];
+    return 'Home set';
+  }
+
+  // Check temporary location
+  if (friendLoc.temporaryLocation?.poiId) {
+    const tempPoi = Array.isArray(pois) ? pois.find((p) => p.id === friendLoc.temporaryLocation.poiId) : null;
+    if (tempPoi) {
+      if (tempPoi.location?.address) return `Temp: ${tempPoi.location.address}`;
+      if (tempPoi.location?.lat && tempPoi.location?.lng) return `Temp: ${tempPoi.location.lat.toFixed(4)}, ${tempPoi.location.lng.toFixed(4)}`;
+    }
+    return 'Temporary location';
+  }
+
+  return 'No location set';
+}
+
 export default function FriendList({
   friends,
   cityCache,
+  pois,
   selectedFriendId,
   onSelectFriend,
   onRecordContact,
@@ -334,11 +368,11 @@ export default function FriendList({
                       {friend.name}
                     </Typography>
 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
-                       <MapPin size={12} color="#9B988C" />
-                       <Typography variant="caption" sx={{ color: '#7D7B6D', fontSize: '11px' }}>
-                          {cityCache?.[friend.location?.homePoiId] || (friend.location?.homePoiId ? 'Home set' : 'No location set')}
-                        </Typography>
-                      </Box>
+                          <MapPin size={12} color="#9B988C" />
+                          <Typography variant="caption" sx={{ color: '#7D7B6D', fontSize: '11px' }}>
+                             {resolveFriendLocation(friend.location, pois, cityCache)}
+                           </Typography>
+                         </Box>
                   </Box>
 
                    {/* Right: Days Ago + Contact Icon */}

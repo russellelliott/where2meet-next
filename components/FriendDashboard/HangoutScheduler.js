@@ -681,7 +681,11 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
   const [isScheduling, setIsScheduling] = useState(false);
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
 
-  // Form states for scheduling
+    // Ref to track if we're currently populating form fields from editingHangout
+    // (prevents re-entrant useEffect calls)
+  const isPopulatingRef = React.useRef(false);
+
+    // Form states for scheduling
   const [hangoutTitle, setHangoutTitle] = useState('');
   const [selectedGroupId, setSelectedGroupId] = useState('');
   const [hangoutType, setHangoutType] = useState('physical');
@@ -690,23 +694,66 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
   const [selectedPoiId, setSelectedPoiId] = useState(null);
   const [customAttendeeIds, setCustomAttendeeIds] = useState([]);
 
-   // Sync editing hangout state into form fields when it changes
+    // Sync editing hangout state into form fields when it changes
   React.useEffect(() => {
-    if (editingHangout) {
+    if (editingHangout && !isPopulatingRef.current) {
+      isPopulatingRef.current = true;
       setHangoutTitle(editingHangout.title || '');
       setSelectedGroupId(editingHangout.groupId || '');
       setHangoutType(editingHangout.type || 'physical');
-         // Convert UTC datetime to local time for datetime-local input
+          // Convert UTC datetime to local time for datetime-local input
       setDatetime(editingHangout.datetime ? utcToLocalDatetimeInput(editingHangout.datetime) : '2026-07-15T18:00');
       setDetails(editingHangout.description || '');
-      setSelectedPoiId(editingHangout.poiId || null);
-         // Populate attendee checkboxes from friendIds
+          // Populate attendee checkboxes from friendIds (only when actually editing, not clearing)
       setCustomAttendeeIds(editingHangout.friendIds || []);
-         // Show the scheduler dialog when editing a hangout
+          // Show the scheduler dialog when editing a hangout
       setIsScheduling(true);
       setIsCreatingGroup(false);
-      }
-     }, [editingHangout]);
+      setTimeout(() => { isPopulatingRef.current = false; }, 0);
+       }
+    }, [editingHangout]);
+
+    // When editingHangout is cleared (e.g. by Plan Event), reset form fields to create mode defaults.
+    // This runs AFTER the useEffect above and ensures the dialog shows as a fresh create form.
+  React.useEffect(() => {
+    if (editingHangout === null && isPopulatingRef.current === false) {
+      setHangoutTitle('');
+      setSelectedGroupId('');
+      setHangoutType('physical');
+      setDatetime(dayjs().format('YYYY-MM-DDTHH:mm'));
+      setDetails('');
+      setSelectedPoiId(null);
+      setCustomAttendeeIds([]);
+       }
+    }, [editingHangout]);
+
+    // When a POI ID exists on the hangout being edited but isn't found in existingPOIs,
+    // fetch it from Firestore so the address displays correctly.
+  React.useEffect(() => {
+    if (!editingHangout?.poiId) return;
+    const user = auth.currentUser;
+    if (!user) return;
+
+     // Only fetch if the POI isn't already in our local lists
+    const poiAlreadyLoaded = existingPOIs.some((p) => p.id === editingHangout.poiId) ||
+                              (pois && pois.length > 0 && pois.some((p) => p.id === editingHangout.poiId));
+    if (poiAlreadyLoaded) return;
+
+    let cancelled = false;
+    setLoadingPOIs(true);
+    getDocs(collection(db, 'users', user.uid, 'poi'))
+      .then((snap) => {
+        if (cancelled) return;
+        const doc = snap.docs.find((d) => d.id === editingHangout.poiId);
+        if (doc) {
+          setExistingPOIs((prev) => [...prev, { id: doc.id, ...doc.data() }]);
+        }
+      })
+      .catch((err) => { console.error('Error loading hangout POI:', err); })
+      .finally(() => { if (!cancelled) setLoadingPOIs(false); });
+
+    return () => { cancelled = true; };
+  }, [editingHangout?.poiId, editingHangout]);
 
    // POI picker states
   const [showPoiPicker, setShowPoiPicker] = useState(false);
