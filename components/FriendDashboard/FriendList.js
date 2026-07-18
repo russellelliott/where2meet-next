@@ -21,15 +21,25 @@ import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
 import dayjs from 'dayjs';
 
 /**
- * Parse a UTC ISO date string (e.g. "2026-07-09T00:00:00.000Z") into a local dayjs date.
- * This preserves the user's local calendar day instead of shifting it to the previous day
- * due to UTC-to-local timezone conversion (e.g., PST is UTC-7).
+ * Convert a stored lastContactDate value to a local dayjs date for calendar display.
+ * Handles both old full ISO strings ("2026-07-31T23:00:00.000Z") and new YYYY-MM-DD format.
+ * For YYYY-MM-DD, uses the local constructor so no UTC conversion occurs.
  */
-function parseUTCDateToLocal(utcString) {
-  if (!utcString) return dayjs();
-  const d = new Date(utcString);
-  // Extract year, month, day in UTC and construct a local midnight date
-  return dayjs(new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+function parseLastContactDateToLocal(dateStr) {
+  if (!dateStr || typeof dateStr !== 'string') return dayjs();
+
+   // New format: plain YYYY-MM-DD — construct local midnight directly
+   if (dateStr.length === 10) {
+     const [year, month, day] = dateStr.split('-').map(Number);
+     return dayjs(new Date(year, month - 1, day, 0, 0, 0, 0));
+   }
+
+   // Old format: full ISO string — derive local date key first
+   const d = new Date(dateStr);
+   const yearOld = d.getUTCFullYear();
+   const monthOld = d.getUTCMonth();
+   const dayOld = d.getUTCDate();
+   return dayjs(new Date(yearOld, monthOld, dayOld, 0, 0, 0, 0));
 }
 
 /**
@@ -118,11 +128,10 @@ export default function FriendList({
     setCalendarAnchor(event.currentTarget);
     setCalendarFriendId(friendId);
     const friend = friends.find((f) => f.id === friendId);
-     // Use parseUTCDateToLocal to correctly display the UTC date as local calendar day
-     // Without this, "2026-07-09T00:00:00.000Z" displays as July 8 in PST
+      // Use parseLastContactDateToLocal to correctly display the stored date as local calendar day
     setCalendarDate(friend?.contact?.lastContactDate 
-       ? parseUTCDateToLocal(friend.contact.lastContactDate) 
-       : dayjs());
+        ? parseLastContactDateToLocal(friend.contact.lastContactDate) 
+        : dayjs());
     };
 
   const handleCloseCalendar = () => {
@@ -217,18 +226,17 @@ export default function FriendList({
     }
   };
 
-    // Open calendar popover for a friend
+     // Open calendar popover for a friend
   const handleOpenCalendarCalendar = (event, friendId) => {
     event.stopPropagation();
     setCalendarAnchor(event.currentTarget);
     setCalendarFriendId(friendId);
     const friend = friends.find((f) => f.id === friendId);
-     // Use parseUTCDateToLocal to correctly display the UTC date as local calendar day
-     // Without this, "2026-07-09T00:00:00.000Z" displays as July 8 in PST
+      // Use parseLastContactDateToLocal to correctly display the stored date as local calendar day
     setCalendarDate(friend?.contact?.lastContactDate 
-       ? parseUTCDateToLocal(friend.contact.lastContactDate) 
-       : dayjs());
-    };
+        ? parseLastContactDateToLocal(friend.contact.lastContactDate) 
+        : dayjs());
+     };
 
   // Confirm calendar date selection - save as ISO string
   const handleConfirmCalendarSelect = () => {

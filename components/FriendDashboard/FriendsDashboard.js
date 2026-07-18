@@ -240,9 +240,8 @@ export default function FriendsDashboard({ onSignOut }) {
     if (!user || !friendId || !dateStr) return;
 
     try {
-      // If dateStr is date-only (YYYY-MM-DD), use start of day UTC
-      const normalizedDate = dateStr.length === 10 ? `${dateStr}T00:00:00.000Z` : dateStr;
-      await setLastContactDateApi(user.uid, friendId, normalizedDate);
+        // Store as plain YYYY-MM-DD for consistent timezone-agnostic storage
+      await setLastContactDateApi(user.uid, friendId, dateStr);
       await loadData(user);
       } catch (err) {
       console.error('Error setting last contact date:', err);
@@ -252,7 +251,7 @@ export default function FriendsDashboard({ onSignOut }) {
         setError('Failed to set last contact date.');
         }
       }
-    }, [user, loadData]);
+     }, [user, loadData]);
 
   const handleDeleteFriend = useCallback(async (friendId) => {
     if (!confirm('Are you sure you want to delete this friend?')) return;
@@ -402,36 +401,53 @@ export default function FriendsDashboard({ onSignOut }) {
       }
     }, [user, isEditingHangoutMode, editingHangout, loadData]);
 
+  /**
+   * Convert a UTC ISO datetime string (e.g. "2026-07-31T18:00:00.000Z") to local YYYY-MM-DD.
+   * Uses the user's local timezone getters so the derived date matches what the calendar displays.
+   */
+  function utcToLastContactDate(utcIso) {
+    if (!utcIso) return null;
+    const d = new Date(utcIso);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   const handleCompletePlannedHangout = useCallback(async (hangoutId, actualDate, attendeeIds) => {
     if (!user || !hangoutId) return;
 
     try {
-       // Update lastContactDate for all attendees (friends collection)
+      // Derive local date key from the hangout's UTC datetime so lastContactDate matches
+      // what the calendar displays (e.g. July 31 6pm UTC -> "2026-07-31" for PST user)
+      const localDateKey = utcToLastContactDate(actualDate);
+
+        // Update lastContactDate for all attendees (friends collection)
       for (const friendId of attendeeIds) {
         const friend = friends.find((f) => f.id === friendId);
         if (friend) {
           await updateFriend(user.uid, friendId, {
             contact: {
-               ...friend.contact,
-              lastContactDate: actualDate,
-             },
-           });
-         }
-       }
+                ...friend.contact,
+              lastContactDate: localDateKey,
+              },
+            });
+          }
+        }
 
-       // Move hangout from planned to history
+        // Move hangout from planned to history
       setPlannedHangouts((prev) => prev.filter((h) => h.id !== hangoutId));
 
       await loadData(user);
-     } catch (err) {
+      } catch (err) {
       console.error('Error completing hangout:', err);
       if (isAuthError(err)) {
         setAuthError('Session expired. Please sign in again.');
-       } else {
+        } else {
         setError('Failed to complete hangout.');
-       }
-     }
-   }, [user, friends, loadData]);
+        }
+      }
+    }, [user, friends, loadData]);
 
   const handleTogglePlaceIdea = useCallback(async (friendId, groupId, poiId) => {
     if (!user || !poiId) return;
@@ -527,6 +543,8 @@ export default function FriendsDashboard({ onSignOut }) {
      }
    }, [user, friends, groups, loadData]);
 
+   // Legacy handler for completing individual hangouts from HangoutList (non-scheduled)
+   // Stores lastContactDate as YYYY-MM-DD using local timezone
   const handleCompleteHangout = useCallback(async (hangoutId) => {
     if (!confirm('Mark this hangout as complete? This will update all friends\' lastContactDate.')) return;
     if (!user || !hangoutId) return;
@@ -534,28 +552,31 @@ export default function FriendsDashboard({ onSignOut }) {
     try {
       await completeHangout(user.uid, hangoutId);
 
-       // Update friend records
+       // Derive local date key from current moment for consistent YYYY-MM-DD storage
+      const todayLocal = utcToLastContactDate(new Date().toISOString());
+
+       // Update friend records with local date key
       for (const friend of friends) {
         if ((friend.planning?.hangoutIds || []).includes(hangoutId)) {
           await updateFriend(user.uid, friend.id, {
             contact: {
-               ...friend.contact,
-              lastContactDate: new Date().toISOString(),
-             },
-           });
-         }
-       }
+                ...friend.contact,
+              lastContactDate: todayLocal,
+              },
+            });
+          }
+        }
 
       await loadData(user);
-     } catch (err) {
+      } catch (err) {
       console.error('Error completing hangout:', err);
       if (isAuthError(err)) {
         setAuthError('Session expired. Please sign in again.');
-       } else {
+        } else {
         setError('Failed to complete hangout.');
-       }
-     }
-   }, [user, friends, loadData]);
+        }
+      }
+    }, [user, friends, loadData]);
 
    // Add planned hangout from HangoutScheduler - saves to Firestore + updates friend/group planning
   const handleAddPlannedHangout = useCallback(async (hangoutData) => {
