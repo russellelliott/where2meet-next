@@ -18,19 +18,18 @@ import { Users, Car, Clock, Calendar } from 'lucide-react';
 export default function StatsGrid({ friends, plannedHangouts }) {
   const totalFriends = friends.length;
 
-  // Logistics
+   // Logistics
   const canDriveCount = friends.filter((f) => f.logistics?.canDrive).length;
   const needsRideCount = friends.filter((f) => f.logistics?.pickupRequired).length;
 
-  // Contact Staleness (relative to July 12, 2026)
-  const CURRENT_TIME = new Date('2026-07-12T16:00:00Z');
-
   const getDaysSinceContact = (dateStr) => {
+    if (!dateStr) return 999;
     const lastDate = new Date(dateStr);
-    const diffTime = CURRENT_TIME.getTime() - lastDate.getTime();
+    const now = new Date();
+    const diffTime = now.getTime() - lastDate.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return isNaN(diffDays) ? 0 : diffDays;
-   };
+     };
 
   const freshCount = friends.filter((f) => getDaysSinceContact(f.contact?.lastContactDate) <= 7).length;
   const staleCount = friends.filter((f) => {

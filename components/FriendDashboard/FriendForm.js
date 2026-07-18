@@ -45,33 +45,33 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
        instagram: editFriend?.contact?.instagram || false,
        primary: editFriend?.contact?.primary || 'phone',
        handle: editFriend?.contact?.handle || '',
-      },
+       },
      location: {
        homePoiId: editFriend?.location?.homePoiId || '',
        temporaryLocation: editFriend?.location?.temporaryLocation || {
          startDate: null,
          endDate: null,
          poiId: null,
-        },
-      },
+         },
+       },
      logistics: {
        canDrive: editFriend?.logistics?.canDrive || false,
        pickupRequired: editFriend?.logistics?.pickupRequired || false,
        pickupPoiId: editFriend?.logistics?.pickupPoiId || '',
-      },
+       },
      planning: {
        notes: editFriend?.planning?.notes || '',
-      },
+       },
      notes: editFriend?.notes || '',
-    });
+     });
 
-    // Local state for immediate checkbox toggle feedback (avoids React render delay)
+     // Local state for immediate checkbox toggle feedback (avoids React render delay)
    const [contactToggles, setContactToggles] = useState({
      discord: editFriend?.contact?.discord === true || (typeof editFriend?.contact?.discord === 'string' && editFriend?.contact?.discord.length > 0),
      instagram: editFriend?.contact?.instagram === true || (typeof editFriend?.contact?.instagram === 'string' && editFriend?.contact?.instagram.length > 0),
-    });
+     });
 
-    // State for last contact date calendar (separate from temp location calendars)
+     // State for last contact date calendar (separate from temp location calendars)
   const [lastContactCalendarOpen, setLastContactCalendarOpen] = useState(false);
   const [lastContactDate, setLastContactDate] = useState(dayjs());
 
@@ -83,8 +83,8 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
   const [loadingPOIs, setLoadingPOIs] = useState(false);
   const [selectedExistingPOI, setSelectedExistingPOI] = useState(null);
   const [formErrors, setFormErrors] = useState({});
-  
-  // State for all tags from friends (for autocomplete suggestions)
+
+   // State for all tags from friends (for autocomplete suggestions)
   const [allTags, setAllTags] = useState([]);
 
   const loadExistingPOIs = async () => {
@@ -96,163 +96,163 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
       const poiSnapshot = await getDocs(collection(db, 'users', user.uid, 'poi'));
       const pois = poiSnapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
       setExistingPOIs(pois);
-     } catch (error) {
+      } catch (error) {
       console.error('Error loading POIs:', error);
-     } finally {
+      } finally {
       setLoadingPOIs(false);
-     }
-   };
+      }
+    };
 
-    // Load POIs on mount so existing addresses resolve immediately (fixes "Loading..." in edit mode)
+     // Load POIs on mount so existing addresses resolve immediately (fixes "Loading..." in edit mode)
    React.useEffect(() => {
      if (editFriend) {
        loadExistingPOIs();
-          }
-        }, []);
+           }
+         }, []);
 
-     // Initialize last contact date from editFriend or today
+      // Initialize last contact date from editFriend or today
    React.useEffect(() => {
      if (editFriend?.contact?.lastContactDate) {
        setLastContactDate(dayjs(editFriend.contact.lastContactDate));
-      } else {
+       } else {
        setLastContactDate(dayjs());
-      }
-     }, [editFriend]);
-  
+       }
+      }, [editFriend]);
+
   // Load all tags from user's friends for autocomplete suggestions
   React.useEffect(() => {
     const loadAllTags = async () => {
       const user = auth.currentUser;
       if (!user) return;
-      
+
       try {
         const friendsData = await getFriends(user.uid);
         const tagsSet = new Set();
         friendsData.forEach(({ data: friend }) => {
           if (Array.isArray(friend.tags)) {
             friend.tags.forEach((tag) => tagsSet.add(tag));
-          }
-        });
+           }
+         });
         setAllTags(Array.from(tagsSet).sort());
-      } catch (error) {
+       } catch (error) {
         console.error('Error loading friend tags:', error);
-      }
-    };
-    
-    loadAllTags();
-  }, []);
+       }
+     };
 
-   // Pre-select the existing POI when opening the picker for a specific field
+    loadAllTags();
+   }, []);
+
+    // Pre-select the existing POI when opening the picker for a specific field
   const openPOIPicker = async (mode) => {
     setPoiPickerMode(mode);
     setSelectedExistingPOI(null);
     await loadExistingPOIs();
-    
-    // Pre-select the existing POI for this field if one exists
+
+     // Pre-select the existing POI for this field if one exists
     if (mode === 'home' && formData.location?.homePoiId) {
       setSelectedExistingPOI(formData.location.homePoiId);
-     } else if (mode === 'pickup' && formData.logistics?.pickupPoiId) {
+      } else if (mode === 'pickup' && formData.logistics?.pickupPoiId) {
       setSelectedExistingPOI(formData.logistics.pickupPoiId);
-     } else if (mode === 'tempLocation' && formData.location?.temporaryLocation?.poiId) {
+      } else if (mode === 'tempLocation' && formData.location?.temporaryLocation?.poiId) {
       setSelectedExistingPOI(formData.location.temporaryLocation.poiId);
-     }
-   };
+      }
+    };
 
   const handleSelectExistingPOI = (poiId) => {
     setSelectedExistingPOI(poiId);
-   };
+    };
 
   const updateFriendLocation = (mode, poiId) => {
     if (mode === 'home') {
       setFormData((prev) => ({
-         ...prev,
+          ...prev,
         location: { ...prev.location, homePoiId: poiId },
-       }));
-     } else if (mode === 'pickup') {
+        }));
+      } else if (mode === 'pickup') {
       setFormData((prev) => ({
-         ...prev,
+          ...prev,
         logistics: { ...prev.logistics, pickupPoiId: poiId },
-       }));
-     } else if (mode === 'tempLocation') {
+        }));
+      } else if (mode === 'tempLocation') {
       setFormData((prev) => ({
-         ...prev,
+          ...prev,
         location: {
-           ...prev.location,
+            ...prev.location,
           temporaryLocation: { ...prev.location.temporaryLocation, poiId },
-         },
-       }));
-     }
-   };
+          },
+        }));
+      }
+    };
 
   const confirmPOISelection = () => {
     if (!poiPickerMode || !selectedExistingPOI) return;
     updateFriendLocation(poiPickerMode, selectedExistingPOI);
     setPoiPickerMode(null);
     setSelectedExistingPOI(null);
-   };
+    };
 
   const cancelPOISelection = () => {
     setPoiPickerMode(null);
     setSelectedExistingPOI(null);
-   };
+    };
 
   const handleTabChange = (newValue) => {
     setTabValue(newValue);
-   };
+    };
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-   };
+    };
 
   const handleContactChange = (field, value) => {
     setFormData((prev) => ({
-       ...prev,
+        ...prev,
       contact: { ...prev.contact, [field]: value },
-     }));
-   };
+      }));
+    };
 
   const handleLogisticsChange = (field, value) => {
     const updatedLogistics = { ...formData.logistics, [field]: value };
     if (field === 'canDrive' && value) {
       updatedLogistics.pickupRequired = false;
-     }
+      }
     if (field === 'pickupRequired' && value) {
       updatedLogistics.canDrive = false;
-     }
+      }
     setFormData((prev) => ({ ...prev, logistics: updatedLogistics }));
-   };
+    };
 
   const handleTemporaryLocationChange = (field, value) => {
     setFormData((prev) => ({
-       ...prev,
+        ...prev,
       location: {
-         ...prev.location,
+          ...prev.location,
         temporaryLocation: {
-           ...prev.location.temporaryLocation,
-           [field]: value,
-         },
-       },
-     }));
-   };
+            ...prev.location.temporaryLocation,
+            [field]: value,
+          },
+        },
+      }));
+    };
 
   const handleCalendarChange = (newValue) => {
     if (!newValue) return;
     if (showCalendar === 'tempStart') {
       handleTemporaryLocationChange('startDate', newValue.toISOString());
-     } else if (showCalendar === 'tempEnd') {
+      } else if (showCalendar === 'tempEnd') {
       handleTemporaryLocationChange('endDate', newValue.toISOString());
-     }
-   };
+      }
+    };
 
   const getPoiNameById = (poiId) => {
     const poi = existingPOIs.find((p) => p.id === poiId);
     return poi ? poi.name : null;
-   };
+    };
 
   const handleMapPoiCreated = async (poiData) => {
     if (!poiData || !poiData.location || poiPickerMode !== 'tempLocation') {
       return;
-     }
+      }
 
     const user = auth.currentUser;
     if (!user) return;
@@ -263,27 +263,27 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
         lat: poiData.location.lat,
         lng: poiData.location.lng,
         visibility: { access: 'private', scope: 'selective' },
-       });
+        });
 
       if (newPoi) {
         updateFriendLocation(poiPickerMode, newPoi.id);
         setExistingPOIs((prev) => [...prev, { ...newPoi, id: newPoi.id }]);
         setSelectedExistingPOI(newPoi.id);
-       }
-     } catch (error) {
+        }
+      } catch (error) {
       console.error('Error saving POI:', error);
       toast.error('Failed to save location.');
-     }
-   };
+      }
+    };
 
   const validateForm = () => {
     const errors = {};
     if (!formData.name.trim()) {
       errors.name = 'Name is required';
-     }
+      }
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
-   };
+    };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -294,184 +294,184 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
     if (!user) {
       toast.error('You must be logged in to save a friend.');
       return;
-     }
+      }
 
-       // Use calendar state for lastContactDate if set, otherwise fall back to formData or now
+    // Use YYYY-MM-DD format for lastContactDate to avoid timezone issues
      const resolvedLastContactDate = lastContactDate?.isValid()
-       ? lastContactDate.startOf('day').toISOString()
-       : new Date().toISOString();
+         ? lastContactDate.format('YYYY-MM-DD')
+         : dayjs().format('YYYY-MM-DD');
 
     const parsedTags = formData.tagsInput
-        .split(',')
-        .map((tag) => tag.trim())
-        .filter((tag) => tag.length > 0);
+         .split(',')
+         .map((tag) => tag.trim())
+         .filter((tag) => tag.length > 0);
 
-     // Build contact object per schema:
-     // - phone: boolean
-     // - whatsapp: boolean
-     // - discord: string (handle) or false
-     // - instagram: string (handle) or false
+      // Build contact object per schema:
+      // - phone: boolean
+      // - whatsapp: boolean
+      // - discord: string (handle) or false
+      // - instagram: string (handle) or false
     const contactData = {
       phone: formData.contact.phone || false,
       whatsapp: formData.contact.whatsapp || false,
       discord: formData.contact.discord === true
-         ? (formData.contact.handle || false)
-         : formData.contact.discord,
+          ? (formData.contact.handle || false)
+          : formData.contact.discord,
       instagram: formData.contact.instagram === true
-         ? (formData.contact.handle || false)
-         : formData.contact.instagram,
+          ? (formData.contact.handle || false)
+          : formData.contact.instagram,
         primary: formData.contact.primary || 'phone',
       lastContactDate: resolvedLastContactDate,
-       };
+        };
 
-     // Build nested objects only when they have fields to avoid saving empty objects
+      // Build nested objects only when they have fields to avoid saving empty objects
      const locationObj = {
-          ...((formData.location.homePoiId || '').length > 0 && { homePoiId: formData.location.homePoiId }),
-           ...(formData.location.temporaryLocation?.poiId && {
+           ...((formData.location.homePoiId || '').length > 0 && { homePoiId: formData.location.homePoiId }),
+            ...(formData.location.temporaryLocation?.poiId && {
            temporaryLocation: formData.location.temporaryLocation,
-           }),
-          };
+            }),
+           };
      const logisticsObj = {
           canDrive: formData.logistics.canDrive,
           pickupRequired: formData.logistics.pickupRequired,
-           ...(formData.logistics.pickupPoiId && { pickupPoiId: formData.logistics.pickupPoiId }),
-          };
+            ...(formData.logistics.pickupPoiId && { pickupPoiId: formData.logistics.pickupPoiId }),
+           };
      const planningObj = {
-           ...((formData.planning.notes?.trim() || '').length > 0 && { notes: formData.planning.notes.trim() }),
-          };
+            ...((formData.planning.notes?.trim() || '').length > 0 && { notes: formData.planning.notes.trim() }),
+           };
 
     const friendData = {
       name: formData.name.trim(),
       tags: parsedTags,
       contact: contactData,
-        // Only include nested objects when they have actual fields
-       ...((Object.keys(locationObj).length > 0) && { location: locationObj }),
-       ...((Object.keys(logisticsObj).length > 0) && { logistics: logisticsObj }),
-       ...((Object.keys(planningObj).length > 0) && { planning: planningObj }),
-         // Only include top-level notes when set (Firebase rejects undefined)
-         ...((formData.notes?.trim() || '').length > 0 && { notes: formData.notes.trim() }),
-      };
+         // Only include nested objects when they have actual fields
+        ...((Object.keys(locationObj).length > 0) && { location: locationObj }),
+        ...((Object.keys(logisticsObj).length > 0) && { logistics: logisticsObj }),
+        ...((Object.keys(planningObj).length > 0) && { planning: planningObj }),
+          // Only include top-level notes when set (Firebase rejects undefined)
+          ...((formData.notes?.trim() || '').length > 0 && { notes: formData.notes.trim() }),
+       };
 
     try {
       if (editFriend) {
         await updateFriend(user.uid, editFriend.id, friendData);
         toast.success('Friend updated successfully!');
-       } else {
+        } else {
         await saveFriend(user.uid, friendData);
         toast.success('Friend added successfully!');
-       }
+        }
       onSave(friendData);
       onClose();
-     } catch (error) {
+      } catch (error) {
       console.error('Error saving friend:', error);
       toast.error('Failed to save friend. Please try again.');
-     }
-   };
+      }
+    };
 
-    /**
-     * Render contact channel toggle with icon styling.
-     * Phone/WhatsApp = boolean toggle only (no text field)
-     * Discord/Instagram = boolean toggle + text field for handle when checked
-     */
+     /**
+      * Render contact channel toggle with icon styling.
+      * Phone/WhatsApp = boolean toggle only (no text field)
+      * Discord/Instagram = boolean toggle + text field for handle when checked
+      */
   const renderContactChannel = (channel, label, Icon, color, placeholder) => {
-        // Use formData for initial state / persistence
+         // Use formData for initial state / persistence
     const persistedChecked = formData.contact[channel] === true ||
-        (typeof formData.contact[channel] === 'string' && formData.contact[channel].length > 0);
+         (typeof formData.contact[channel] === 'string' && formData.contact[channel].length > 0);
 
-        // For Discord/Instagram, use local toggle state for immediate feedback
+         // For Discord/Instagram, use local toggle state for immediate feedback
     const isToggled = (channel === 'discord' || channel === 'instagram')
-        ? contactToggles[channel] ?? persistedChecked
-        : persistedChecked;
+         ? contactToggles[channel] ?? persistedChecked
+         : persistedChecked;
 
     const handleToggleClick = () => {
-          // Update local toggle immediately for visual feedback
+           // Update local toggle immediately for visual feedback
       if (channel === 'discord' || channel === 'instagram') {
         setContactToggles((prev) => {
           const newVal = !prev[channel];
-            // Also update formData.contact.channel
+             // Also update formData.contact.channel
           handleContactChange(channel, newVal ? '' : false);
-            // Clear handle when unchecked
+             // Clear handle when unchecked
           if (!newVal) handleContactChange('handle', '');
            return { ...prev, [channel]: newVal };
-         });
-       } else {
-          // Phone/WhatsApp: direct boolean toggle
+          });
+        } else {
+           // Phone/WhatsApp: direct boolean toggle
         const val = !persistedChecked;
         handleContactChange(channel, val);
         if (!val) handleContactChange('handle', '');
-       }
-     };
+        }
+      };
 
     return (
-        <Box key={channel} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1.5, borderRadius: 2, backgroundColor: '#FBFBF9' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Icon size={18} color={color} />
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>{label}</Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, maxWidth: 260 }}>
-            <input
+         <Box key={channel} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1.5, borderRadius: 2, backgroundColor: '#FBFBF9' }}>
+           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+             <Icon size={18} color={color} />
+             <Typography variant="body2" sx={{ fontWeight: 500 }}>{label}</Typography>
+           </Box>
+           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, maxWidth: 260 }}>
+             <input
             type="checkbox"
             checked={isToggled}
             onChange={handleToggleClick}
             style={{ cursor: 'pointer' }}
-            />
-            {(channel === 'discord' || channel === 'instagram') && isToggled && (
-              <TextField
+             />
+             {(channel === 'discord' || channel === 'instagram') && isToggled && (
+               <TextField
               size="small"
               fullWidth
               placeholder={placeholder}
               value={formData.contact.handle || ''}
               onChange={(e) => handleContactChange('handle', e.target.value)}
               sx={{
-                  '& .MuiOutlinedInput-root': { fontSize: '12px', height: 32 },
-                }}
-              />
-            )}
-          </Box>
-        </Box>
-      );
-    };
+                   '& .MuiOutlinedInput-root': { fontSize: '12px', height: 32 },
+                 }}
+               />
+             )}
+           </Box>
+         </Box>
+       );
+     };
 
   return (
-     <LocalizationProvider dateAdapter={AdapterDayjs}>
-       <Dialog
+      <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <Dialog
         open={true}
         onClose={onClose}
         maxWidth="sm"
         fullWidth
         PaperProps={{ sx: { borderRadius: 3, backgroundColor: '#FBFBF9' } }}
-       >
-         <DialogTitle sx={{ pb: 1 }}>
-           {editFriend ? 'Edit Friend' : 'Add New Friend'}
-         </DialogTitle>
+        >
+          <DialogTitle sx={{ pb: 1 }}>
+            {editFriend ? 'Edit Friend' : 'Add New Friend'}
+          </DialogTitle>
 
-         <DialogContent
+          <DialogContent
           dividers
           sx={{
-             '&::-webkit-scrollbar': { width: '6px' },
-             '&::-webkit-scrollbar-thumb': {
+              '&::-webkit-scrollbar': { width: '6px' },
+              '&::-webkit-scrollbar-thumb': {
               backgroundColor: '#ccc',
               borderRadius: '3px',
-             },
-           }}
-         >
-           <form onSubmit={handleSubmit}>
-               <Tabs
+              },
+            }}
+          >
+            <form onSubmit={handleSubmit}>
+                <Tabs
               value={tabValue}
               onChange={(e, newValue) => handleTabChange(newValue)}
               sx={{ mb: 3 }}
-              >
-                <Tab label="Basic Info" />
-                <Tab label="Location" />
-                <Tab label="Logistics" />
-                <Tab label="Notes" />
-                <Tab label="Last Contact" />
-              </Tabs>
+               >
+                 <Tab label="Basic Info" />
+                 <Tab label="Location" />
+                 <Tab label="Logistics" />
+                 <Tab label="Notes" />
+                 <Tab label="Last Contact" />
+               </Tabs>
 
-             {/* Tab 1: Basic Info */}
-             {tabValue === 0 && (
-               <Box sx={{ pt: 2 }}>
-                 <TextField
+              {/* Tab 1: Basic Info */}
+              {tabValue === 0 && (
+                <Box sx={{ pt: 2 }}>
+                  <TextField
                   fullWidth
                   label="Full Name"
                   value={formData.name}
@@ -480,45 +480,45 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
                   helperText={formErrors.name}
                   margin="normal"
                   required
-                 />
+                  />
 
-                       <Autocomplete
+                        <Autocomplete
                     multiple
                     freeSolo
                     options={allTags || []}
                     value={(typeof formData.tagsInput === 'string' && formData.tagsInput.trim().length > 0
-                              ? formData.tagsInput.split(',').map((t) => t.trim()).filter(Boolean) 
-                               : [])}
+                               ? formData.tagsInput.split(',').map((t) => t.trim()).filter(Boolean)
+                                : [])}
                     onChange={(event, newValue) => {
                       setFormData((prev) => ({
-                              ...prev,
+                               ...prev,
                         tagsInput: Array.isArray(newValue) && newValue.length > 0 ? newValue.join(', ') : ''
-                             }));
-                           }}
+                              }));
+                            }}
                      renderInput={(params) => (
-                           <TextField
-                             {...params}
+                            <TextField
+                              {...params}
                          label="Tags"
                          placeholder="Type a tag and press Enter"
                          margin="normal"
                          size="small"
-                           />
-                       )}
+                            />
+                        )}
                       renderTags={(value, getTagProps) =>
                         value.map((option, index) => (
-                              <Chip
+                               <Chip
                             key={`tag-${index}`}
                             variant="outlined"
                             label={option}
-                                {...getTagProps({ index })}
+                                 {...getTagProps({ index })}
                             sx={{ fontSize: '11px', height: '22px' }}
-                              />
-                            ))
-                          }
+                               />
+                             ))
+                           }
                       sx={{ mb: 2 }}
-                       />
+                        />
 
-                 <TextField
+                  <TextField
                   fullWidth
                   select
                   label="Primary Channel"
@@ -526,180 +526,180 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
                   onChange={(e) => handleContactChange('primary', e.target.value)}
                   margin="normal"
                   size="small"
-                 >
-                   <MenuItem value="phone">Phone Call</MenuItem>
-                   <MenuItem value="discord">Discord</MenuItem>
-                   <MenuItem value="whatsapp">WhatsApp</MenuItem>
-                   <MenuItem value="instagram">Instagram</MenuItem>
-                 </TextField>
+                  >
+                    <MenuItem value="phone">Phone Call</MenuItem>
+                    <MenuItem value="discord">Discord</MenuItem>
+                    <MenuItem value="whatsapp">WhatsApp</MenuItem>
+                    <MenuItem value="instagram">Instagram</MenuItem>
+                  </TextField>
 
-                 {/* Contact Channels - New approach per schema */}
-                 <Box sx={{ mt: 2, mb: 1.5 }}>
-                   <Typography variant="subtitle2" gutterBottom>
+                  {/* Contact Channels - New approach per schema */}
+                  <Box sx={{ mt: 2, mb: 1.5 }}>
+                    <Typography variant="subtitle2" gutterBottom>
                     Contact Channels Available
-                   </Typography>
-                   <Typography variant="caption" color="text.secondary" display="block">
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block">
                     Toggle channels on and off. Discord and Instagram require a handle when enabled.
-                   </Typography>
-                 </Box>
+                    </Typography>
+                  </Box>
 
-                 {/* Phone - toggle only, no handle text */}
-                 {renderContactChannel(
-                   'phone',
-                   'Phone Call',
+                  {/* Phone - toggle only, no handle text */}
+                  {renderContactChannel(
+                    'phone',
+                    'Phone Call',
                   FaPhone,
-                   '#666666',
-                   '+1 (555) 000-0000'
-                 )}
+                    '#666666',
+                    '+1 (555) 000-0000'
+                  )}
 
-                 {/* WhatsApp - toggle only, no handle text */}
-                 {renderContactChannel(
-                   'whatsapp',
-                   'WhatsApp',
+                  {/* WhatsApp - toggle only, no handle text */}
+                  {renderContactChannel(
+                    'whatsapp',
+                    'WhatsApp',
                   IoLogoWhatsapp,
-                   '#25D366',
-                   '+1 (555) 000-0000'
-                 )}
+                    '#25D366',
+                    '+1 (555) 000-0000'
+                  )}
 
-                 {/* Discord - toggle + handle text field */}
-                 {renderContactChannel(
-                   'discord',
-                   'Discord',
+                  {/* Discord - toggle + handle text field */}
+                  {renderContactChannel(
+                    'discord',
+                    'Discord',
                   FaDiscord,
-                   '#5865F2',
-                   'username#1234'
-                 )}
+                    '#5865F2',
+                    'username#1234'
+                  )}
 
-                 {/* Instagram - toggle + handle text field */}
-                 {renderContactChannel(
-                   'instagram',
-                   'Instagram',
+                  {/* Instagram - toggle + handle text field */}
+                  {renderContactChannel(
+                    'instagram',
+                    'Instagram',
                   FaInstagram,
-                   '#8a49a1',
-                   '@insta_handle'
-                 )}
-               </Box>
-             )}
+                    '#8a49a1',
+                    '@insta_handle'
+                  )}
+                </Box>
+              )}
 
-             {/* Tab 2: Location */}
-             {tabValue === 1 && (
-               <Box sx={{ pt: 2 }}>
-                 {/* Home POI */}
-                 <Box sx={{ mb: 3 }}>
-                   <Typography variant="subtitle2" gutterBottom>
-                    Friend&#39;s Home Location
-                   </Typography>
-                   {formData.location.homePoiId ? (
-                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                       <Chip
-                        label={`📍 ${getPoiNameById(formData.location.homePoiId) || 'Loading...'}`}
+              {/* Tab 2: Location */}
+              {tabValue === 1 && (
+                <Box sx={{ pt: 2 }}>
+                  {/* Home POI */}
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="subtitle2" gutterBottom>
+                    Friend's Home Location
+                    </Typography>
+                    {formData.location.homePoiId ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        <Chip
+                        label={`\uD83D\uDccd ${getPoiNameById(formData.location.homePoiId) || 'Loading...'}`}
                         size="small"
                         onDelete={() =>
                           setFormData((prev) => ({
-                             ...prev,
+                              ...prev,
                             location: { ...prev.location, homePoiId: '' },
-                           }))
-                         }
-                       />
-                     </Box>
-                   ) : (
-                     <Button
+                            }))
+                          }
+                        />
+                      </Box>
+                    ) : (
+                      <Button
                       variant="outlined"
                       onClick={() => openPOIPicker('home')}
                       sx={{ textTransform: 'none', justifyContent: 'flex-start' }}
-                     >
-                       + Set Home Location (Select on Map)
-                     </Button>
-                   )}
-                 </Box>
+                      >
+                        + Set Home Location (Select on Map)
+                      </Button>
+                    )}
+                  </Box>
 
-                 {/* Temporary Location */}
-                 <Box sx={{ mb: 3 }}>
-                   <Typography variant="subtitle2" gutterBottom>
+                  {/* Temporary Location */}
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="subtitle2" gutterBottom>
                     Temporary Location
-                   </Typography>
+                    </Typography>
 
-                   {formData.location.temporaryLocation?.poiId ? (
-                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                       <Chip
-                        label={`📍 ${getPoiNameById(formData.location.temporaryLocation.poiId) || 'Loading...'}`}
+                    {formData.location.temporaryLocation?.poiId ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                        <Chip
+                        label={`\uD83D\uDccd ${getPoiNameById(formData.location.temporaryLocation.poiId) || 'Loading...'}`}
                         size="small"
                         onDelete={() => handleTemporaryLocationChange('poiId', null)}
-                       />
-                     </Box>
-                   ) : (
-                     <Button
+                        />
+                      </Box>
+                    ) : (
+                      <Button
                       variant="outlined"
                       onClick={() => openPOIPicker('tempLocation')}
                       sx={{ textTransform: 'none', justifyContent: 'flex-start', mb: 2 }}
-                     >
-                       + Set Temporary Location (Select on Map)
-                     </Button>
-                   )}
+                      >
+                        + Set Temporary Location (Select on Map)
+                      </Button>
+                    )}
 
-                     {/* Temporary Location Dates — only show when a temp location POI is set */}
-                     {formData.location.temporaryLocation?.poiId && (
-                       <Box sx={{ display: 'flex', gap: 2 }}>
-                         <Box sx={{ flex: 1 }}>
-                           <Typography variant="caption" display="block" gutterBottom>
+                      {/* Temporary Location Dates — only show when a temp location POI is set */}
+                      {formData.location.temporaryLocation?.poiId && (
+                        <Box sx={{ display: 'flex', gap: 2 }}>
+                          <Box sx={{ flex: 1 }}>
+                            <Typography variant="caption" display="block" gutterBottom>
                            Start Date
-                           </Typography>
-                           <Button
+                            </Typography>
+                            <Button
                            variant="outlined"
                            onClick={() => {
                              setShowCalendar('tempStart');
                              setCalendarDate(
                                formData.location.temporaryLocation?.startDate
-                                   ? dayjs(formData.location.temporaryLocation.startDate)
-                                   : dayjs()
-                               );
-                             }}
+                                    ? dayjs(formData.location.temporaryLocation.startDate)
+                                    : dayjs()
+                                );
+                              }}
                            sx={{
                              textTransform: 'none',
                              justifyContent: 'flex-start',
                              width: '100%',
                              fontSize: '12px',
                              height: '36px',
-                             }}
-                           >
-                             {formData.location.temporaryLocation?.startDate
-                               ? dayjs(formData.location.temporaryLocation.startDate).format('MMM D, YYYY')
-                               : 'Select start date'}
-                           </Button>
-                         </Box>
-                         <Box sx={{ flex: 1 }}>
-                           <Typography variant="caption" display="block" gutterBottom>
+                              }}
+                            >
+                              {formData.location.temporaryLocation?.startDate
+                                ? dayjs(formData.location.temporaryLocation.startDate).format('MMM D, YYYY')
+                                : 'Select start date'}
+                            </Button>
+                          </Box>
+                          <Box sx={{ flex: 1 }}>
+                            <Typography variant="caption" display="block" gutterBottom>
                            End Date
-                           </Typography>
-                           <Button
+                            </Typography>
+                            <Button
                            variant="outlined"
                            onClick={() => {
                              setShowCalendar('tempEnd');
                              setCalendarDate(
                                formData.location.temporaryLocation?.endDate
-                                   ? dayjs(formData.location.temporaryLocation.endDate)
-                                   : dayjs()
-                               );
-                             }}
+                                    ? dayjs(formData.location.temporaryLocation.endDate)
+                                    : dayjs()
+                                );
+                              }}
                            sx={{
                              textTransform: 'none',
                              justifyContent: 'flex-start',
                              width: '100%',
                              fontSize: '12px',
                              height: '36px',
-                             }}
-                           >
-                             {formData.location.temporaryLocation?.endDate
-                               ? dayjs(formData.location.temporaryLocation.endDate).format('MMM D, YYYY')
-                               : 'Select end date'}
-                           </Button>
-                         </Box>
-                       </Box>
-                     )}
+                              }}
+                            >
+                              {formData.location.temporaryLocation?.endDate
+                                ? dayjs(formData.location.temporaryLocation.endDate).format('MMM D, YYYY')
+                                : 'Select end date'}
+                            </Button>
+                          </Box>
+                        </Box>
+                      )}
 
-                     {/* Calendar Popup */}
-                     {showCalendar && (
-                       <Box
+                      {/* Calendar Popup */}
+                      {showCalendar && (
+                        <Box
                        sx={{
                          position: 'absolute',
                          bottom: showCalendar === 'tempEnd' ? 120 : 'auto',
@@ -710,90 +710,90 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
                          borderRadius: 2,
                          boxShadow: 3,
                          p: 2,
-                         }}
-                       >
-                         <DateCalendar
+                          }}
+                        >
+                          <DateCalendar
                          value={calendarDate}
                          onChange={(newValue) => {
                            setCalendarDate(newValue);
                            handleCalendarChange(newValue);
-                           }}
+                            }}
                          views={['year', 'month', 'day']}
-                         />
-                         <Box sx={{ mt: 1, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                           <Button size="small" onClick={() => setShowCalendar(null)}>
+                          />
+                          <Box sx={{ mt: 1, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                            <Button size="small" onClick={() => setShowCalendar(null)}>
                            Cancel
-                           </Button>
-                         </Box>
-                       </Box>
-                     )}
-                   </Box>
-               </Box>
-             )}
+                            </Button>
+                          </Box>
+                        </Box>
+                      )}
+                    </Box>
+                </Box>
+              )}
 
-             {/* Tab 3: Logistics */}
-             {tabValue === 2 && (
-               <Box sx={{ pt: 2 }}>
-                 <Box sx={{ mb: 3 }}>
-                   <Typography variant="subtitle2" gutterBottom>
+              {/* Tab 3: Logistics */}
+              {tabValue === 2 && (
+                <Box sx={{ pt: 2 }}>
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="subtitle2" gutterBottom>
                     Ride Logistics
-                   </Typography>
-                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                       <input
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input
                         type="checkbox"
                         checked={formData.logistics.canDrive}
                         onChange={(e) => handleLogisticsChange('canDrive', e.target.checked)}
-                       />
-                       🚗 Can Drive
-                     </label>
-                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                       <input
+                        />
+                        \uD83D\uDE97 Can Drive
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input
                         type="checkbox"
                         checked={formData.logistics.pickupRequired}
                         onChange={(e) => handleLogisticsChange('pickupRequired', e.target.checked)}
-                       />
-                       🚌 Needs Ride
-                     </label>
-                   </Box>
-                 </Box>
+                        />
+                        \uD83D\uDE8C Needs Ride
+                      </label>
+                    </Box>
+                  </Box>
 
-                 {formData.logistics.canDrive === false && formData.logistics.pickupRequired && (
-                   <Box sx={{ mb: 2 }}>
-                     <Typography variant="subtitle2" gutterBottom>
+                  {formData.logistics.canDrive === false && formData.logistics.pickupRequired && (
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle2" gutterBottom>
                       Pickup Location
-                     </Typography>
-                     {formData.logistics.pickupPoiId ? (
-                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                         <Chip
-                          label={`📍 ${getPoiNameById(formData.logistics.pickupPoiId) || 'Loading...'}`}
+                      </Typography>
+                      {formData.logistics.pickupPoiId ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                          <Chip
+                          label={`\uD83D\uDccd ${getPoiNameById(formData.logistics.pickupPoiId) || 'Loading...'}`}
                           size="small"
                           onDelete={() =>
                             setFormData((prev) => ({
-                               ...prev,
+                                ...prev,
                               logistics: { ...prev.logistics, pickupPoiId: '' },
-                             }))
-                           }
-                         />
-                       </Box>
-                     ) : (
-                       <Button
+                              }))
+                            }
+                          />
+                        </Box>
+                      ) : (
+                        <Button
                         variant="outlined"
                         onClick={() => openPOIPicker('pickup')}
                         sx={{ textTransform: 'none', justifyContent: 'flex-start' }}
-                       >
-                         + Set Pickup Location (Select on Map)
-                       </Button>
-                     )}
-                   </Box>
-                 )}
-               </Box>
-             )}
+                        >
+                          + Set Pickup Location (Select on Map)
+                        </Button>
+                      )}
+                    </Box>
+                  )}
+                </Box>
+              )}
 
-                {/* Tab 4: Notes */}
-                {tabValue === 3 && (
-                  <Box sx={{ pt: 2 }}>
-                    <TextField
+                 {/* Tab 4: Notes */}
+                 {tabValue === 3 && (
+                   <Box sx={{ pt: 2 }}>
+                     <TextField
                     fullWidth
                     multiline
                     rows={4}
@@ -802,8 +802,8 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
                     value={formData.notes}
                     onChange={(e) => handleInputChange('notes', e.target.value)}
                     margin="normal"
-                    />
-                    <TextField
+                     />
+                     <TextField
                     fullWidth
                     multiline
                     rows={3}
@@ -812,100 +812,100 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
                     value={formData.planning.notes}
                     onChange={(e) =>
                       setFormData((prev) => ({
-                          ...prev,
+                           ...prev,
                         planning: { ...prev.planning, notes: e.target.value },
-                        }))
-                      }
+                         }))
+                       }
                     margin="normal"
-                    />
-                  </Box>
-                )}
+                     />
+                   </Box>
+                 )}
 
-                {/* Tab 5: Last Contact */}
-                {tabValue === 4 && (
-                  <Box sx={{ pt: 2 }}>
-                    <Typography variant="subtitle2" gutterBottom>
+                 {/* Tab 5: Last Contact */}
+                 {tabValue === 4 && (
+                   <Box sx={{ pt: 2 }}>
+                     <Typography variant="subtitle2" gutterBottom>
                     Last Time You Contacted Them
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
+                     </Typography>
+                     <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
                     Select a date below, or set it to today's date instantly.
-                    </Typography>
+                     </Typography>
 
-                    {/* Quick action button */}
-                    <Button
+                     {/* Quick action button */}
+                     <Button
                     variant="outlined"
                     fullWidth
                     onClick={() => {
                       const now = dayjs();
                       setLastContactDate(now);
                       setFormData((prev) => ({
-                          ...prev,
-                        contact: { ...prev.contact, lastContactDate: now.toISOString() },
-                        }));
-                      }}
+                           ...prev,
+                        contact: { ...prev.contact, lastContactDate: now.format('YYYY-MM-DD') },
+                         }));
+                       }}
                     sx={{
                       textTransform: 'none',
                       justifyContent: 'flex-start',
                       mb: 2,
                       height: 48,
-                      }}
-                    >
-                    📅 Set to Today ({dayjs().format('MMM D, YYYY')})
-                    </Button>
+                       }}
+                     >
+                     \uD83D\uDCC5 Set to Today ({dayjs().format('MMM D, YYYY')})
+                     </Button>
 
-                    {/* Date Calendar */}
-                    <Box sx={{ position: 'relative' }}>
-                      <Typography variant="caption" display="block" gutterBottom>
+                     {/* Date Calendar */}
+                     <Box sx={{ position: 'relative' }}>
+                       <Typography variant="caption" display="block" gutterBottom>
                       Pick a Date
-                      </Typography>
-                      <DateCalendar
+                       </Typography>
+                       <DateCalendar
                       value={lastContactDate}
                       onChange={(newValue) => {
                         setLastContactDate(newValue);
                         if (newValue) {
-                          // Format to start of day UTC to avoid timezone issues
+                           // Format as YYYY-MM-DD for consistent timezone-agnostic storage
                           setFormData((prev) => ({
-                              ...prev,
-                            contact: { ...prev.contact, lastContactDate: newValue.startOf('day').toISOString() },
-                            }));
-                          }
-                        }}
+                               ...prev,
+                            contact: { ...prev.contact, lastContactDate: newValue.format('YYYY-MM-DD') },
+                             }));
+                           }
+                         }}
                       views={['year', 'month', 'day']}
                       sx={{ mb: 1 }}
-                      />
-                    </Box>
+                       />
+                     </Box>
 
-                    {/* Display selected date */}
-                    <Typography variant="caption" display="block" sx={{ mt: 1, color: '#1976d2' }}>
+                     {/* Display selected date */}
+                     <Typography variant="caption" display="block" sx={{ mt: 1, color: '#1976d2' }}>
                     Selected: {lastContactDate ? lastContactDate.format('MMMM D, YYYY') : 'No date selected'}
-                    </Typography>
-                  </Box>
-                )}
+                     </Typography>
+                   </Box>
+                 )}
 
-                {/* POI Picker Dialog */}
-             {poiPickerMode && (
-               <Dialog
+                 {/* POI Picker Dialog */}
+              {poiPickerMode && (
+                <Dialog
                 open={true}
                 onClose={cancelPOISelection}
                 maxWidth="md"
                 fullWidth
                 PaperProps={{ sx: { borderRadius: 2 } }}
-               >
-                 <DialogTitle>Select or Create a Location</DialogTitle>
-                 <DialogContent>
-                   {/* Existing POIs */}
-                   <Box sx={{ mb: 2 }}>
-                     <Typography variant="subtitle2" gutterBottom>
+                >
+                  <DialogTitle>Select or Create a Location</DialogTitle>
+                  <DialogContent>
+                    {/* Existing POIs */}
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle2" gutterBottom>
                       Existing Locations
-                     </Typography>
-                     {loadingPOIs ? (
-                       <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
-                         <CircularProgress size={24} />
-                       </Box>
-                     ) : (
-                       <Box sx={{ maxHeight: 200, overflowY: 'auto' }}>
-                         {existingPOIs.map((poi) => (
-                           <Box
+                      </Typography>
+                      {loadingPOIs ? (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+                          <CircularProgress size={24} />
+                        </Box>
+                      ) : (
+                        <Box sx={{ maxHeight: 200, overflowY: 'auto' }}>
+                          {existingPOIs.map((poi) => (
+                            <Box
                             key={poi.id}
                             onClick={() => handleSelectExistingPOI(poi.id)}
                             sx={{
@@ -914,64 +914,64 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
                               borderRadius: 1,
                               mb: 0.5,
                               bgcolor: selectedExistingPOI === poi.id ? 'action.selected' : 'transparent',
-                              '&:hover': { bgcolor: 'action.hover' },
-                             }}
-                           >
-                             <Typography variant="body2">{poi.name}</Typography>
-                             <Typography variant="caption" color="text.secondary">
-                               {poi.location?.address || `${poi.location?.lat}, ${poi.location?.lng}`}
-                             </Typography>
-                           </Box>
-                         ))}
-                         {existingPOIs.length === 0 && (
-                           <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
+                               '&:hover': { bgcolor: 'action.hover' },
+                              }}
+                            >
+                              <Typography variant="body2">{poi.name}</Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {poi.location?.address || `${poi.location?.lat}, ${poi.location?.lng}`}
+                              </Typography>
+                            </Box>
+                          ))}
+                          {existingPOIs.length === 0 && (
+                            <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
                             No existing locations found. Search below to create a new one.
-                           </Typography>
-                         )}
-                       </Box>
-                     )}
-                   </Box>
+                            </Typography>
+                          )}
+                        </Box>
+                      )}
+                    </Box>
 
-                   {/* Create New via Map component */}
-                   <Box sx={{ mt: 2, borderTop: '1px solid #e0e0e0', pt: 2 }}>
-                     <Typography variant="subtitle2" gutterBottom>
+                    {/* Create New via Map component */}
+                    <Box sx={{ mt: 2, borderTop: '1px solid #e0e0e0', pt: 2 }}>
+                      <Typography variant="subtitle2" gutterBottom>
                       Create New Location
-                     </Typography>
-                     <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
                       Click the button below to open the map and create a new location.
-                     </Typography>
-                     <POICreateButton key={`poi-create-${poiPickerMode}`} mode={poiPickerMode} onPoiCreated={handleMapPoiCreated} />
-                   </Box>
-                 </DialogContent>
-                 <DialogActions sx={{ p: 2, gap: 1 }}>
-                   <Button onClick={cancelPOISelection}>Cancel</Button>
-                   {selectedExistingPOI && (
-                     <Button variant="contained" onClick={confirmPOISelection} autoFocus>
+                      </Typography>
+                      <POICreateButton key={`poi-create-${poiPickerMode}`} mode={poiPickerMode} onPoiCreated={handleMapPoiCreated} />
+                    </Box>
+                  </DialogContent>
+                  <DialogActions sx={{ p: 2, gap: 1 }}>
+                    <Button onClick={cancelPOISelection}>Cancel</Button>
+                    {selectedExistingPOI && (
+                      <Button variant="contained" onClick={confirmPOISelection} autoFocus>
                       Use Selected Location
-                     </Button>
-                   )}
-                 </DialogActions>
-               </Dialog>
-             )}
-           </form>
-         </DialogContent>
+                      </Button>
+                    )}
+                  </DialogActions>
+                </Dialog>
+              )}
+            </form>
+          </DialogContent>
 
-         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-           <Button onClick={onClose}>Cancel</Button>
-           <Button
+          <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+            <Button onClick={onClose}>Cancel</Button>
+            <Button
             variant="contained"
             onClick={handleSubmit}
             sx={{
               backgroundColor: '#1976d2',
-              '&:hover': { backgroundColor: '#1565c0' },
-             }}
-           >
-             {editFriend ? 'Save Changes' : 'Add Friend'}
-           </Button>
-         </DialogActions>
-       </Dialog>
-     </LocalizationProvider>
-   );
+               '&:hover': { backgroundColor: '#1565c0' },
+              }}
+            >
+              {editFriend ? 'Save Changes' : 'Add Friend'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </LocalizationProvider>
+    );
 }
 
 /**
@@ -981,24 +981,24 @@ function POICreateButton({ mode, onPoiCreated }) {
   const [open, setOpen] = useState(false);
 
   return (
-     <>
-       <Button
+      <>
+        <Button
         variant="outlined"
         onClick={() => setOpen(true)}
         sx={{ textTransform: 'none', mt: 1 }}
-       >
-         + Create New Location on Map
-       </Button>
+        >
+          + Create New Location on Map
+        </Button>
 
-       {open && (
-         <SimpleMapPOIPicker
+        {open && (
+          <SimpleMapPOIPicker
           mode={mode}
           onClose={() => setOpen(false)}
           onPoiCreated={onPoiCreated}
-         />
-       )}
-     </>
-   );
+          />
+        )}
+      </>
+    );
 }
 
 /**
@@ -1009,12 +1009,12 @@ function SimpleMapPOIPicker({ mode, onClose, onPoiCreated }) {
   const [selectedCoords, setSelectedCoords] = useState(null);
   const [mapLoaded, setMapLoaded] = useState(false);
 
-   // Load Google Maps script
+    // Load Google Maps script
   React.useEffect(() => {
     if (typeof window.google !== 'undefined' && window.google.maps) {
       setMapLoaded(true);
       return;
-     }
+      }
 
     const script = document.createElement('script');
     script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || ''}&libraries=places`;
@@ -1024,8 +1024,8 @@ function SimpleMapPOIPicker({ mode, onClose, onPoiCreated }) {
 
     return () => {
       document.head.removeChild(script);
-     };
-   }, []);
+      };
+    }, []);
 
   const handleSearch = () => {
     if (!window.google?.maps?.Geocoder) return;
@@ -1035,86 +1035,86 @@ function SimpleMapPOIPicker({ mode, onClose, onPoiCreated }) {
       if (status === 'OK' && results[0]) {
         const loc = results[0].geometry.location;
         setSelectedCoords({ lat: loc.lat(), lng: loc.lng() });
-       } else {
+        } else {
         alert('Could not find that address.');
-       }
-     });
-   };
+        }
+      });
+    };
 
   const handleUseCenter = (map) => {
     if (!map) return;
     const center = map.getCenter();
     setSelectedCoords({ lat: center.lat(), lng: center.lng() });
-   };
+    };
 
   const handleConfirm = () => {
     if (!selectedCoords) return;
     onPoiCreated({ location: selectedCoords });
     onClose();
-   };
+    };
 
   return (
-     <Dialog open={true} onClose={onClose} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 2 } }}>
-       <DialogTitle>Create New Location</DialogTitle>
-       <DialogContent>
-         <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-           <TextField
+      <Dialog open={true} onClose={onClose} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 2 } }}>
+        <DialogTitle>Create New Location</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+            <TextField
             fullWidth
             size="small"
             placeholder="Search address or place name"
             value={searchAddr}
             onChange={(e) => setSearchAddr(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
-           />
-           <Button variant="outlined" onClick={handleSearch}>Search</Button>
-         </Box>
+            />
+            <Button variant="outlined" onClick={handleSearch}>Search</Button>
+          </Box>
 
-         <Box sx={{ width: '100%', height: 300, borderRadius: 2, overflow: 'hidden', position: 'relative' }}>
-           {mapLoaded && window.google?.maps ? (
-             <GoogleMap
+          <Box sx={{ width: '100%', height: 300, borderRadius: 2, overflow: 'hidden', position: 'relative' }}>
+            {mapLoaded && window.google?.maps ? (
+              <GoogleMap
               center={selectedCoords || { lat: 37.7749, lng: -122.4194 }}
               zoom={12}
               mapTypeId="roadmap"
               options={{
                 streetViewControl: false,
                 mapTypeControl: false,
-               }}
-             >
-               {selectedCoords && (
-                 <Marker
+                }}
+              >
+                {selectedCoords && (
+                  <Marker
                   key="selected-marker"
                   position={selectedCoords}
                   draggable={true}
                   onDragend={(e) => {
                     const loc = e.latLng?.toJSON();
                     if (loc) setSelectedCoords({ lat: loc.lat, lng: loc.lng });
-                   }}
-                 />
-               )}
-             </GoogleMap>
-           ) : (
-             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                    }}
+                  />
+                )}
+              </GoogleMap>
+            ) : (
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
               Loading map...
-             </Box>
-           )}
-         </Box>
-       </DialogContent>
-       <DialogActions sx={{ p: 2, gap: 1 }}>
-         <Button onClick={onClose}>Cancel</Button>
-         <Button variant="outlined" onClick={() => {
-           // Get center of map for new coords
-         }}>
+              </Box>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button variant="outlined" onClick={() => {
+            // Get center of map for new coords
+          }}>
           Reset to Map Center
-         </Button>
-         <Button
+          </Button>
+          <Button
           variant="contained"
           onClick={handleConfirm}
           disabled={!selectedCoords}
           autoFocus
-         >
+          >
           Use This Location
-         </Button>
-       </DialogActions>
-     </Dialog>
-   );
+          </Button>
+        </DialogActions>
+      </Dialog>
+    );
 }
