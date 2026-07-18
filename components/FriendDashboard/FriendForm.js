@@ -71,8 +71,12 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
      instagram: editFriend?.contact?.instagram === true || (typeof editFriend?.contact?.instagram === 'string' && editFriend?.contact?.instagram.length > 0),
     });
 
-  const [tabValue, setTabValue] = useState(0);
-  const [showCalendar, setShowCalendar] = useState(null);
+    // State for last contact date calendar (separate from temp location calendars)
+  const [lastContactCalendarOpen, setLastContactCalendarOpen] = useState(false);
+  const [lastContactDate, setLastContactDate] = useState(dayjs());
+
+   const [tabValue, setTabValue] = useState(0);
+   const [showCalendar, setShowCalendar] = useState(null);
   const [calendarDate, setCalendarDate] = useState(dayjs());
   const [poiPickerMode, setPoiPickerMode] = useState(null);
   const [existingPOIs, setExistingPOIs] = useState([]);
@@ -99,12 +103,21 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
      }
    };
 
-   // Load POIs on mount so existing addresses resolve immediately (fixes "Loading..." in edit mode)
-  React.useEffect(() => {
-    if (editFriend) {
-      loadExistingPOIs();
-        }
-      }, []);
+    // Load POIs on mount so existing addresses resolve immediately (fixes "Loading..." in edit mode)
+   React.useEffect(() => {
+     if (editFriend) {
+       loadExistingPOIs();
+          }
+        }, []);
+
+     // Initialize last contact date from editFriend or today
+   React.useEffect(() => {
+     if (editFriend?.contact?.lastContactDate) {
+       setLastContactDate(dayjs(editFriend.contact.lastContactDate));
+      } else {
+       setLastContactDate(dayjs());
+      }
+     }, [editFriend]);
   
   // Load all tags from user's friends for autocomplete suggestions
   React.useEffect(() => {
@@ -283,13 +296,15 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
       return;
      }
 
-    const parsedTags = formData.tagsInput
-       .split(',')
-       .map((tag) => tag.trim())
-       .filter((tag) => tag.length > 0);
+       // Use calendar state for lastContactDate if set, otherwise fall back to formData or now
+     const resolvedLastContactDate = lastContactDate?.isValid()
+       ? lastContactDate.startOf('day').toISOString()
+       : new Date().toISOString();
 
-    const lastContactDate =
-      formData.contact.lastContactDate || new Date().toISOString();
+    const parsedTags = formData.tagsInput
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter((tag) => tag.length > 0);
 
      // Build contact object per schema:
      // - phone: boolean
@@ -305,9 +320,9 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
       instagram: formData.contact.instagram === true
          ? (formData.contact.handle || false)
          : formData.contact.instagram,
-      primary: formData.contact.primary || 'phone',
-      lastContactDate,
-     };
+        primary: formData.contact.primary || 'phone',
+      lastContactDate: resolvedLastContactDate,
+       };
 
      // Build nested objects only when they have fields to avoid saving empty objects
      const locationObj = {
@@ -441,16 +456,17 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
            }}
          >
            <form onSubmit={handleSubmit}>
-             <Tabs
+               <Tabs
               value={tabValue}
               onChange={(e, newValue) => handleTabChange(newValue)}
               sx={{ mb: 3 }}
-             >
-               <Tab label="Basic Info" />
-               <Tab label="Location" />
-               <Tab label="Logistics" />
-               <Tab label="Notes" />
-             </Tabs>
+              >
+                <Tab label="Basic Info" />
+                <Tab label="Location" />
+                <Tab label="Logistics" />
+                <Tab label="Notes" />
+                <Tab label="Last Contact" />
+              </Tabs>
 
              {/* Tab 1: Basic Info */}
              {tabValue === 0 && (
@@ -466,41 +482,41 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
                   required
                  />
 
-                      <Autocomplete
+                       <Autocomplete
                     multiple
                     freeSolo
-                    options={allTags}
-                    value={typeof formData.tagsInput === 'string' && formData.tagsInput.trim().length > 0
-                             ? formData.tagsInput.split(',').map((t) => t.trim()).filter(Boolean) 
-                              : []}
+                    options={allTags || []}
+                    value={(typeof formData.tagsInput === 'string' && formData.tagsInput.trim().length > 0
+                              ? formData.tagsInput.split(',').map((t) => t.trim()).filter(Boolean) 
+                               : [])}
                     onChange={(event, newValue) => {
                       setFormData((prev) => ({
-                             ...prev,
+                              ...prev,
                         tagsInput: Array.isArray(newValue) && newValue.length > 0 ? newValue.join(', ') : ''
-                            }));
-                          }}
+                             }));
+                           }}
                      renderInput={(params) => (
-                          <TextField
-                            {...params}
+                           <TextField
+                             {...params}
                          label="Tags"
-                         placeholder="Type and press Enter to add"
+                         placeholder="Type a tag and press Enter"
                          margin="normal"
                          size="small"
-                          />
+                           />
                        )}
                       renderTags={(value, getTagProps) =>
                         value.map((option, index) => (
-                             <Chip
+                              <Chip
                             key={`tag-${index}`}
                             variant="outlined"
                             label={option}
-                               {...getTagProps({ index })}
+                                {...getTagProps({ index })}
                             sx={{ fontSize: '11px', height: '22px' }}
-                             />
-                           ))
-                         }
+                              />
+                            ))
+                          }
                       sx={{ mb: 2 }}
-                      />
+                       />
 
                  <TextField
                   fullWidth
@@ -774,38 +790,99 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
                </Box>
              )}
 
-             {/* Tab 4: Notes */}
-             {tabValue === 3 && (
-               <Box sx={{ pt: 2 }}>
-                 <TextField
-                  fullWidth
-                  multiline
-                  rows={4}
-                  label="Logistics & Availability Notes"
-                  placeholder="E.g. Has a car, can host, free on Saturday afternoons..."
-                  value={formData.notes}
-                  onChange={(e) => handleInputChange('notes', e.target.value)}
-                  margin="normal"
-                 />
-                 <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  label="Planning Notes"
-                  placeholder="Notes about planning hangouts, preferences, etc."
-                  value={formData.planning.notes}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                       ...prev,
-                      planning: { ...prev.planning, notes: e.target.value },
-                     }))
-                   }
-                  margin="normal"
-                 />
-               </Box>
-             )}
+                {/* Tab 4: Notes */}
+                {tabValue === 3 && (
+                  <Box sx={{ pt: 2 }}>
+                    <TextField
+                    fullWidth
+                    multiline
+                    rows={4}
+                    label="Logistics & Availability Notes"
+                    placeholder="E.g. Has a car, can host, free on Saturday afternoons..."
+                    value={formData.notes}
+                    onChange={(e) => handleInputChange('notes', e.target.value)}
+                    margin="normal"
+                    />
+                    <TextField
+                    fullWidth
+                    multiline
+                    rows={3}
+                    label="Planning Notes"
+                    placeholder="Notes about planning hangouts, preferences, etc."
+                    value={formData.planning.notes}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                          ...prev,
+                        planning: { ...prev.planning, notes: e.target.value },
+                        }))
+                      }
+                    margin="normal"
+                    />
+                  </Box>
+                )}
 
-             {/* POI Picker Dialog */}
+                {/* Tab 5: Last Contact */}
+                {tabValue === 4 && (
+                  <Box sx={{ pt: 2 }}>
+                    <Typography variant="subtitle2" gutterBottom>
+                    Last Time You Contacted Them
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
+                    Select a date below, or set it to today's date instantly.
+                    </Typography>
+
+                    {/* Quick action button */}
+                    <Button
+                    variant="outlined"
+                    fullWidth
+                    onClick={() => {
+                      const now = dayjs();
+                      setLastContactDate(now);
+                      setFormData((prev) => ({
+                          ...prev,
+                        contact: { ...prev.contact, lastContactDate: now.toISOString() },
+                        }));
+                      }}
+                    sx={{
+                      textTransform: 'none',
+                      justifyContent: 'flex-start',
+                      mb: 2,
+                      height: 48,
+                      }}
+                    >
+                    📅 Set to Today ({dayjs().format('MMM D, YYYY')})
+                    </Button>
+
+                    {/* Date Calendar */}
+                    <Box sx={{ position: 'relative' }}>
+                      <Typography variant="caption" display="block" gutterBottom>
+                      Pick a Date
+                      </Typography>
+                      <DateCalendar
+                      value={lastContactDate}
+                      onChange={(newValue) => {
+                        setLastContactDate(newValue);
+                        if (newValue) {
+                          // Format to start of day UTC to avoid timezone issues
+                          setFormData((prev) => ({
+                              ...prev,
+                            contact: { ...prev.contact, lastContactDate: newValue.startOf('day').toISOString() },
+                            }));
+                          }
+                        }}
+                      views={['year', 'month', 'day']}
+                      sx={{ mb: 1 }}
+                      />
+                    </Box>
+
+                    {/* Display selected date */}
+                    <Typography variant="caption" display="block" sx={{ mt: 1, color: '#1976d2' }}>
+                    Selected: {lastContactDate ? lastContactDate.format('MMMM D, YYYY') : 'No date selected'}
+                    </Typography>
+                  </Box>
+                )}
+
+                {/* POI Picker Dialog */}
              {poiPickerMode && (
                <Dialog
                 open={true}

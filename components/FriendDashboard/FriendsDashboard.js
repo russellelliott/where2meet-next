@@ -17,7 +17,7 @@ import StatsGrid from './StatsGrid';
 import PoiIdeasDialog from './PoiIdeasDialog';
 import CreateHangoutDialog from './CreateHangoutDialog';
 import HangoutList from './HangoutList';
-import { getFriends, getUserPoIs, recordContact as recordContactApi, deleteFriend, updateFriend } from '../../lib/friendService';
+import { getFriends, getUserPoIs, recordContact as recordContactApi, setLastContactDate as setLastContactDateApi, deleteFriend, updateFriend } from '../../lib/friendService';
 import { getGroups, addGroup as addGroupApi, updateGroup, deleteGroup } from '../../lib/groupService';
 import { getHangouts, createHangout as createHangoutApi, completeHangout, deleteHangout as deleteHangoutApi, updateHangout as updateHangoutApi } from '../../lib/hangoutService';
 import FriendForm from './FriendForm';
@@ -226,15 +226,33 @@ export default function FriendsDashboard({ onSignOut }) {
     try {
       await recordContactApi(user.uid, friendId);
       await loadData(user);
-     } catch (err) {
+      } catch (err) {
       console.error('Error recording contact:', err);
       if (isAuthError(err)) {
         setAuthError('Session expired. Please sign in again.');
-       } else {
+        } else {
         setError('Failed to record contact.');
-       }
-     }
-   }, [user, loadData, friends]);
+        }
+      }
+    }, [user, loadData, friends]);
+
+  const handleSetLastContactDate = useCallback(async (friendId, dateStr) => {
+    if (!user || !friendId || !dateStr) return;
+
+    try {
+      // If dateStr is date-only (YYYY-MM-DD), use start of day UTC
+      const normalizedDate = dateStr.length === 10 ? `${dateStr}T00:00:00.000Z` : dateStr;
+      await setLastContactDateApi(user.uid, friendId, normalizedDate);
+      await loadData(user);
+      } catch (err) {
+      console.error('Error setting last contact date:', err);
+      if (isAuthError(err)) {
+        setAuthError('Session expired. Please sign in again.');
+        } else {
+        setError('Failed to set last contact date.');
+        }
+      }
+    }, [user, loadData]);
 
   const handleDeleteFriend = useCallback(async (friendId) => {
     if (!confirm('Are you sure you want to delete this friend?')) return;
@@ -641,18 +659,19 @@ export default function FriendsDashboard({ onSignOut }) {
        <Grid container spacing={{ xs: 2, sm: 3 }}>
          {/* Left Column: Friend List */}
          <Grid item xs={12} md={5}>
-           <FriendList
-            friends={friends}
-            cityCache={cityCache}
-            pois={pois}
-            selectedFriendId={selectedFriendId}
-            onSelectFriend={setSelectedFriendId}
-            onRecordContact={handleRecordContact}
-            onDeleteFriend={handleDeleteFriend}
-            onEditFriend={handleEditFriend}
-            onToggleAddForm={handleToggleAddForm}
-            isAddFormOpen={showAddForm}
-            />
+            <FriendList
+             friends={friends}
+             cityCache={cityCache}
+             pois={pois}
+             selectedFriendId={selectedFriendId}
+             onSelectFriend={setSelectedFriendId}
+             onRecordContact={handleRecordContact}
+             onDeleteFriend={handleDeleteFriend}
+             onSetLastContactDate={handleSetLastContactDate}
+             onEditFriend={handleEditFriend}
+             onToggleAddForm={handleToggleAddForm}
+             isAddFormOpen={showAddForm}
+              />
 
            {showAddForm && (
              <Paper sx={{ mt: 2, p: 2 }}>
