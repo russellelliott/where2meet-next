@@ -340,21 +340,23 @@ function SchedulingFormDialog(props) {
                   <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 0.5 }}>
                     Destination
                   </Typography>
-                  <Button
+                    <Button
                     fullWidth
                     variant="outlined"
-                    onClick={openPoiPicker}
+                    onClick={() => openPoiPicker(editingHangout?.poiId || null)}
                     startIcon={<MapPin size={14} />}
                     sx={{
                       textTransform: 'none',
                       justifyContent: 'flex-start',
                       borderRadius: 2,
                     }}
-                  >
-                    {selectedPoiId
-                      ? `📍 ${getPoiNameById(selectedPoiId) || 'Loading...'}`
-                      : '+ Select Location on Map'}
-                  </Button>
+                    >
+                      {selectedPoiId
+                        ? `📍 ${getPoiNameById(selectedPoiId) || getPoiAddressById(selectedPoiId) || 'Loading...'}`
+                        : editingHangout?.poiId && !selectedPoiId
+                          ? `📍 ${getPoiAddressById(editingHangout.poiId) || getPoiNameById(editingHangout.poiId) || '+ Select Location on Map'}`
+                          : '+ Select Location on Map'}
+                    </Button>
                 </Box>
               )}
 
@@ -805,13 +807,13 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
     }
   }, []);
 
-  // Open the POI picker dialog
-  const openPoiPicker = useCallback(async () => {
+    // Open the POI picker dialog — accepts preSelectPoiId to highlight existing POI in edit mode
+  const openPoiPicker = useCallback(async (preSelectPoiId = null) => {
     setPoiSearchQuery('');
-    setSelectedPoiId(null);
+    setSelectedPoiId(preSelectPoiId);
     setShowPoiPicker(true);
     await loadExistingPOIs();
-  }, [loadExistingPOIs]);
+   }, [loadExistingPOIs]);
 
   // Handle search input change with debouncing — uses refs so the ref
   // doesn't change across renders, avoiding debounce-reset bugs too.
