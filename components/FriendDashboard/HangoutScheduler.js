@@ -374,25 +374,33 @@ function SchedulingFormDialog(props) {
             </Box>
 
             {/* Right: attendees */}
-            <Box>
-              <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 1 }}>
+             <Box>
+               <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 1 }}>
                 Attendees (Customize Selection)
-              </Typography>
-               <Paper variant="outlined" sx={{ p: 1.5, maxHeight: 230, overflowY: 'auto', borderRadius: 2 }}>
-                 {friends.map((f) => {
-                   const isChecked = customAttendeeIds.includes(f.id);
-                   return (
-                      <Box key={f.id} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.5, px: 1, borderRadius: 1, cursor: 'pointer', '&:hover': { backgroundColor: '#FBFBF9' } }}>
-                        <Typography variant="body2" sx={{ fontSize: '12px' }}>{f.name}{f.location?.city ? ` · ${f.location.city}` : ''}</Typography>
-                        <input type="checkbox" checked={isChecked} onChange={() => toggleAttendee(f.id)} style={{ accentColor: '#CC7A5C' }} />
-                      </Box>
-                    );
-                  })}
-                </Paper>
-              <Typography variant="caption" sx={{ display: 'block', fontStyle: 'italic', color: '#7D7B6D', mt: 1, fontSize: '10px' }}>
+               </Typography>
+                 <Paper variant="outlined" sx={{ p: 1.5, maxHeight: 230, overflowY: 'auto', borderRadius: 2 }}>
+                   {friends.map((f) => {
+                    const isChecked = customAttendeeIds.includes(f.id);
+                     // Find which groups this friend belongs to by checking groups[].memberIds
+                    const friendGroups = (groups || [])
+                      .filter(g => Array.isArray(g.memberIds) && g.memberIds.includes(f.id))
+                      .map(g => g.name)
+                      .join(', ');
+                    return (
+                        <Box key={f.id} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.5, px: 1, borderRadius: 1, cursor: 'pointer', '&:hover': { backgroundColor: '#FBFBF9' } }}>
+                          <Typography variant="body2" sx={{ fontSize: '12px', flex: 1 }}>{f.name}</Typography>
+                          {friendGroups && (
+                            <Typography variant="caption" sx={{ fontSize: '9px', color: '#9B988C' }}>{friendGroups}</Typography>
+                          )}
+                          <input type="checkbox" checked={isChecked} onChange={() => toggleAttendee(f.id)} style={{ accentColor: '#CC7A5C' }} />
+                        </Box>
+                      );
+                    })}
+                  </Paper>
+               <Typography variant="caption" sx={{ display: 'block', fontStyle: 'italic', color: '#7D7B6D', mt: 1, fontSize: '10px' }}>
                 Add or remove specific individuals for this hangout commitment.
-              </Typography>
-            </Box>
+               </Typography>
+             </Box>
           </Box>
 
           <Divider sx={{ my: 2 }} />
@@ -532,6 +540,7 @@ function GroupCreationForm(props) {
     groupNotes, setGroupNotes,
     groupMemberIds, setGroupMemberIds,
     friends,
+    groups,
     onSubmit: formOnSubmit,
     toggleGroupMember,
     editingGroup = null,
@@ -610,22 +619,30 @@ function GroupCreationForm(props) {
               )}
             </Box>
 
-            {/* Right: members */}
-            <Box>
-              <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 1 }}>
+             {/* Right: members */}
+             <Box>
+               <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 1 }}>
                 Group Members
-              </Typography>
-                <Paper variant="outlined" sx={{ p: 1.5, maxHeight: 230, overflowY: 'auto', borderRadius: 2 }}>
-                  {friends.map((f) => {
-                   const isChecked = groupMemberIds.includes(f.id);
-                   return (
-                       <Box key={f.id} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.5, px: 1, borderRadius: 1, cursor: 'pointer', '&:hover': { backgroundColor: '#FBFBF9' } }}>
-                         <Typography variant="body2" sx={{ fontSize: '12px' }}>{f.name}{f.location?.city ? ` · ${f.location.city}` : ''}</Typography>
-                         <input type="checkbox" checked={isChecked} onChange={() => toggleGroupMember(f.id)} style={{ accentColor: '#CC7A5C' }} />
-                       </Box>
-                     );
-                   })}
-                 </Paper>
+               </Typography>
+                 <Paper variant="outlined" sx={{ p: 1.5, maxHeight: 230, overflowY: 'auto', borderRadius: 2 }}>
+                   {friends.map((f) => {
+                    const isChecked = groupMemberIds.includes(f.id);
+                      // Find which groups this friend belongs to by checking groups[].memberIds
+                    const friendGroups = (groups || [])
+                       .filter(g => Array.isArray(g.memberIds) && g.memberIds.includes(f.id))
+                       .map(g => g.name)
+                       .join(', ');
+                    return (
+                         <Box key={f.id} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.5, px: 1, borderRadius: 1, cursor: 'pointer', '&:hover': { backgroundColor: '#FBFBF9' } }}>
+                           <Typography variant="body2" sx={{ fontSize: '12px', flex: 1 }}>{f.name}</Typography>
+                           {friendGroups && (
+                             <Typography variant="caption" sx={{ fontSize: '9px', color: '#9B988C' }}>{friendGroups}</Typography>
+                           )}
+                           <input type="checkbox" checked={isChecked} onChange={() => toggleGroupMember(f.id)} style={{ accentColor: '#CC7A5C' }} />
+                         </Box>
+                       );
+                    })}
+                  </Paper>
               <Typography variant="caption" sx={{ display: 'block', fontStyle: 'italic', color: '#7D7B6D', mt: 1, fontSize: '10px' }}>
                 Select friends to include in this custom preset group.
               </Typography>
@@ -1073,13 +1090,14 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
     groupNotes, setGroupNotes,
     groupMemberIds, setGroupMemberIds,
     friends,
+    groups,
     onSubmit: handleGroupSubmit,
     toggleGroupMember,
     editingGroup,
-  }), [
+   }), [
     isCreatingGroup, groupName, groupNotes, groupMemberIds,
-    friends, handleGroupSubmit, toggleGroupMember, editingGroup,
-  ]);
+    friends, groups, handleGroupSubmit, toggleGroupMember, editingGroup,
+   ]);
 
   return (
     <Box>
