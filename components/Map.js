@@ -854,28 +854,11 @@ function Map({ mapId }) {
                  >
                  + Place Ideas
                 </button>
-                <button
-                 onClick={(e) => {
-                   e.stopPropagation();
-                   openCreateHangoutDialog(poi);
-                  }}
-                 style={{
-                   padding: '3px 6px',
-                   fontSize: '10px',
-                   border: '1px solid #4caf50',
-                   borderRadius: '3px',
-                   backgroundColor: '#e8f5e9',
-                   color: '#2e7d32',
-                   cursor: 'pointer'
-                  }}
-                 >
-                 + Hangout
-                </button>
-                <button
-                 onClick={(e) => {
-                   e.stopPropagation();
-                   setDeleteConfirm(poi);
-                  }}
+                  <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDeleteConfirm(poi);
+                    }}
                  style={{
                    padding: '3px 6px',
                    fontSize: '10px',
@@ -1003,22 +986,8 @@ function Map({ mapId }) {
                    >
                    + Place Ideas
                   </button>
-                  <button
-                   onClick={() => openCreateHangoutDialog(selectedMarker)}
-                   style={{
-                     padding: '4px 8px',
-                     fontSize: '12px',
-                     border: '1px solid #4caf50',
-                     borderRadius: '4px',
-                     backgroundColor: '#e8f5e9',
-                     color: '#2e7d32',
-                     cursor: 'pointer'
-                    }}
-                   >
-                   + Hangout
-                  </button>
-                  <button
-                   onClick={() => setDeleteConfirm(selectedMarker)}
+                    <button
+                    onClick={() => setDeleteConfirm(selectedMarker)}
                    style={{
                      padding: '4px 8px',
                      fontSize: '12px',

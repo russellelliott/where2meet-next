@@ -378,20 +378,17 @@ function SchedulingFormDialog(props) {
               <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 1 }}>
                 Attendees (Customize Selection)
               </Typography>
-              <Paper variant="outlined" sx={{ p: 1.5, maxHeight: 230, overflowY: 'auto', borderRadius: 2 }}>
-                {friends.map((f) => {
-                  const isChecked = customAttendeeIds.includes(f.id);
-                  return (
-                    <label key={f.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.75, px: 1, borderRadius: 1, cursor: 'pointer', '&:hover': { backgroundColor: '#FBFBF9' } }}>
-                      <input type="checkbox" checked={isChecked} onChange={() => toggleAttendee(f.id)} style={{ accentColor: '#CC7A5C' }} />
-                      <Typography variant="body2" sx={{ fontSize: '12px', flex: 1 }}>{f.name}</Typography>
-                      <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', color: '#7D7B6D' }}>
-                        ({f.location?.city || 'Unknown'})
-                      </Typography>
-                    </label>
-                  );
-                })}
-              </Paper>
+               <Paper variant="outlined" sx={{ p: 1.5, maxHeight: 230, overflowY: 'auto', borderRadius: 2 }}>
+                 {friends.map((f) => {
+                   const isChecked = customAttendeeIds.includes(f.id);
+                   return (
+                      <Box key={f.id} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.5, px: 1, borderRadius: 1, cursor: 'pointer', '&:hover': { backgroundColor: '#FBFBF9' } }}>
+                        <Typography variant="body2" sx={{ fontSize: '12px' }}>{f.name}{f.location?.city ? ` · ${f.location.city}` : ''}</Typography>
+                        <input type="checkbox" checked={isChecked} onChange={() => toggleAttendee(f.id)} style={{ accentColor: '#CC7A5C' }} />
+                      </Box>
+                    );
+                  })}
+                </Paper>
               <Typography variant="caption" sx={{ display: 'block', fontStyle: 'italic', color: '#7D7B6D', mt: 1, fontSize: '10px' }}>
                 Add or remove specific individuals for this hangout commitment.
               </Typography>
@@ -441,25 +438,49 @@ function SchedulingFormDialog(props) {
                     </Box>
                   ) : (
                     <Box sx={{ maxHeight: 200, overflowY: 'auto' }}>
-                      {existingPOIs.map((poi) => (
-                        <Box
-                          key={poi.id}
-                          onClick={() => handleSelectPoi(poi.id)}
-                          sx={{
-                            p: 1.5,
-                            cursor: 'pointer',
-                            borderRadius: 1,
-                            mb: 0.5,
-                            bgcolor: selectedPoiId === poi.id ? 'action.selected' : 'transparent',
-                            '&:hover': { bgcolor: 'action.hover' },
-                          }}
-                        >
-                          <Typography variant="body2">{poi.name}</Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {poi.location?.address || `${poi.location?.lat}, ${poi.location?.lng}`}
-                          </Typography>
-                        </Box>
-                      ))}
+                       {existingPOIs.map((poi) => {
+                          // Find which friends have this POI in their placeIdeas
+                          const friendsWithPoi = (friends || []).filter(f =>
+                             (f.placeIdeas || []).includes(poi.id)
+                           );
+                          // Find which groups have this POI in their placeIdeas
+                          const groupsWithPoi = (groups || []).filter(g =>
+                             (g.placeIdeas || []).includes(poi.id)
+                           );
+                          return (
+                             <Box
+                              key={poi.id}
+                              onClick={() => handleSelectPoi(poi.id)}
+                              sx={{
+                                p: 1.5,
+                                cursor: 'pointer',
+                                borderRadius: 1,
+                                mb: 0.5,
+                                bgcolor: selectedPoiId === poi.id ? 'action.selected' : 'transparent',
+                                '&:hover': { bgcolor: 'action.hover' },
+                               }}
+                              >
+                               <Typography variant="body2">{poi.name}</Typography>
+                               <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                 {poi.location?.address || `${poi.location?.lat}, ${poi.location?.lng}`}
+                               </Typography>
+                               {(friendsWithPoi.length > 0 || groupsWithPoi.length > 0) && (
+                                 <Box sx={{ mt: 0.5, ml: 1 }}>
+                                   {friendsWithPoi.length > 0 && (
+                                     <Typography variant="caption" sx={{ display: 'block', color: '#7D7B6D' }}>
+                                       📌 {friendsWithPoi.map(f => f.name).join(', ')}
+                                     </Typography>
+                                   )}
+                                   {groupsWithPoi.length > 0 && (
+                                     <Typography variant="caption" sx={{ display: 'block', color: '#7D7B6D' }}>
+                                       👥 {groupsWithPoi.map(g => g.name).join(', ')}
+                                     </Typography>
+                                   )}
+                                 </Box>
+                               )}
+                              </Box>
+                            );
+                         })}
                       {existingPOIs.length === 0 && (
                         <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
                           No locations found. Search above or create a new one below.
@@ -594,20 +615,17 @@ function GroupCreationForm(props) {
               <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 1 }}>
                 Group Members
               </Typography>
-              <Paper variant="outlined" sx={{ p: 1.5, maxHeight: 230, overflowY: 'auto', borderRadius: 2 }}>
-                {friends.map((f) => {
-                  const isChecked = groupMemberIds.includes(f.id);
-                  return (
-                    <label key={f.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.75, px: 1, borderRadius: 1, cursor: 'pointer', '&:hover': { backgroundColor: '#FBFBF9' } }}>
-                      <input type="checkbox" checked={isChecked} onChange={() => toggleGroupMember(f.id)} style={{ accentColor: '#CC7A5C' }} />
-                      <Typography variant="body2" sx={{ fontSize: '12px', flex: 1 }}>{f.name}</Typography>
-                      <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', color: '#7D7B6D' }}>
-                        ({f.location?.city || 'Unknown'})
-                      </Typography>
-                    </label>
-                  );
-                })}
-              </Paper>
+                <Paper variant="outlined" sx={{ p: 1.5, maxHeight: 230, overflowY: 'auto', borderRadius: 2 }}>
+                  {friends.map((f) => {
+                   const isChecked = groupMemberIds.includes(f.id);
+                   return (
+                       <Box key={f.id} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.5, px: 1, borderRadius: 1, cursor: 'pointer', '&:hover': { backgroundColor: '#FBFBF9' } }}>
+                         <Typography variant="body2" sx={{ fontSize: '12px' }}>{f.name}{f.location?.city ? ` · ${f.location.city}` : ''}</Typography>
+                         <input type="checkbox" checked={isChecked} onChange={() => toggleGroupMember(f.id)} style={{ accentColor: '#CC7A5C' }} />
+                       </Box>
+                     );
+                   })}
+                 </Paper>
               <Typography variant="caption" sx={{ display: 'block', fontStyle: 'italic', color: '#7D7B6D', mt: 1, fontSize: '10px' }}>
                 Select friends to include in this custom preset group.
               </Typography>
