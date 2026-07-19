@@ -123,6 +123,7 @@ function PoiInfoDialog({ open, onClose, poi }) {
 export default function HangoutList({
   hangouts = [],
   friends = [],
+  groups = [],
   onCompleteHangout,
   pois = [],
   onEditHangout,
@@ -145,18 +146,23 @@ export default function HangoutList({
     const d = safeToTimestamp(datetime);
     if (!d || isNaN(d.getTime())) return false;
     return dayjs(d).isBefore(dayjs());
-  };
+   };
 
-  const getFriendNamesByIds = (friendIds) => {
-    if (!friendIds || !Array.isArray(friendIds)) return '';
-    return friendIds
-      .map((id) => {
-        const friend = friends.find((f) => f.id === id);
-        return friend ? friend.name : null;
-      })
-      .filter(Boolean)
-      .join(', ');
-  };
+   const getFriendNamesByIds = (friendIds) => {
+     if (!friendIds || !Array.isArray(friendIds)) return '';
+     return friendIds
+       .map((id) => {
+         const friend = friends.find((f) => f.id === id);
+         return friend ? friend.name : null;
+        })
+        .filter(Boolean)
+        .join(', ');
+   };
+
+   const getPoiById = (poiId, pois) => {
+     if (!poiId || !pois || !Array.isArray(pois)) return null;
+     return pois.find((p) => p.id === poiId) || null;
+   };
 
   const handlePoiBadgeClick = (poi) => {
     setSelectedPoiForInfo(poi);
@@ -175,10 +181,13 @@ export default function HangoutList({
       </Typography>
       <List dense sx={{ width: '100%', maxWidth: '100%' }}>
         {hangouts.map((hangout) => {
-          const passed = isHangoutPassed(hangout.datetime);
-          const friendNames = getFriendNamesByIds(hangout.friendIds);
-          const poi = getPoiById(hangout.poiId, pois);
-          const address = poi?.location?.address || null;
+         const passed = isHangoutPassed(hangout.datetime);
+           const friendNames = hangout.friendIds
+             ? getFriendNamesByIds(hangout.friendIds)
+             : '';
+           // Support both legacy poiId and new locationPoiId field
+           const poi = getPoiById(hangout.locationPoiId || hangout.poiId, pois);
+           const address = poi?.location?.address || null;
 
           return (
             <React.Fragment key={hangout.id}>
@@ -259,11 +268,16 @@ export default function HangoutList({
                             📍 {address}
                           </Typography>
                         )}
-                        {friendNames && (
-                          <Typography variant="caption" color="text.secondary">
-                            Friends: {friendNames}
-                          </Typography>
-                        )}
+                         {friendNames && (
+                            <Typography variant="caption" color="text.secondary">
+                              With: {friendNames}
+                            </Typography>
+                          )}
+                        {hangout.groupId && (
+                             <Typography variant="caption" color="text.secondary">
+                              Group: {groups?.find((g) => g.id === hangout.groupId)?.name || 'Unknown Group'}
+                             </Typography>
+                           )}
                       </Box>
                     }
                   />

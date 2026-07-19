@@ -34,32 +34,32 @@
  */
 
 /**
- * @typedef {Object} PlanningInfo
- * @property {string[]} [hangoutIds] List of hangout IDs
- * @property {string[]} [placeIdeas] List of POI IDs
- * @property {string} [notes]
- */
+  * @typedef {Object} PlanningInfo
+  * @property {string} [notes]
+  */
 
 /**
- * @typedef {Object} Friend
- * @property {string} id
- * @property {string} name
- * @property {string[]} [tags]
- * @property {ContactInfo} contact
- * @property {LocationInfo} location
- * @property {LogisticsInfo} logistics
- * @property {PlanningInfo} planning
- * @property {string} [notes] Top-level notes field (same as Group schema)
- */
+  * @typedef {Object} Friend
+  * @property {string} id
+  * @property {string} name
+  * @property {string[]} [tags]
+  * @property {ContactInfo} contact
+  * @property {LocationInfo} location
+  * @property {LogisticsInfo} logistics
+  * @property {PlanningInfo} planning
+  * @property {string[]} [placeIdeas] List of POI IDs — top-level field
+  * @property {string} [notes] Top-level notes field (same as Group schema)
+  */
 
 /**
- * @typedef {Object} Group
- * @property {string} id
- * @property {string} name
- * @property {string[]} memberIds
- * @property {PlanningInfo} planning
- * @property {string} [notes]
- */
+  * @typedef {Object} Group
+  * @property {string} id
+  * @property {string} name
+  * @property {string[]} memberIds
+  * @property {PlanningInfo} planning
+  * @property {string[]} [placeIdeas] List of POI IDs — top-level field
+  * @property {string} [notes]
+  */
 
 /**
  * @typedef {Object} Hangout
