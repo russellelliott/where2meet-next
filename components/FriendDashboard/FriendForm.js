@@ -39,13 +39,12 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
     name: editFriend?.name || '',
     tagsInput: Array.isArray(editFriend?.tags) ? editFriend.tags.join(', ') : '',
      contact: {
-       phone: editFriend?.contact?.phone || false,
-       whatsapp: editFriend?.contact?.whatsapp || false,
-       discord: editFriend?.contact?.discord || false,
-       instagram: editFriend?.contact?.instagram || false,
-       primary: editFriend?.contact?.primary || 'phone',
-       handle: editFriend?.contact?.handle || '',
-       },
+        phone: editFriend?.contact?.phone || false,
+        whatsapp: editFriend?.contact?.whatsapp || false,
+        discord: typeof editFriend?.contact?.discord === 'string' ? editFriend.contact.discord : (editFriend?.contact?.discord || ''),
+        instagram: typeof editFriend?.contact?.instagram === 'string' ? editFriend.contact.instagram : (editFriend?.contact?.instagram || ''),
+        primary: editFriend?.contact?.primary || 'phone',
+        },
      location: {
        homePoiId: editFriend?.location?.homePoiId || '',
        temporaryLocation: editFriend?.location?.temporaryLocation || {
@@ -311,18 +310,14 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
       // - whatsapp: boolean
       // - discord: string (handle) or false
       // - instagram: string (handle) or false
-    const contactData = {
+     const contactData = {
       phone: formData.contact.phone || false,
       whatsapp: formData.contact.whatsapp || false,
-      discord: formData.contact.discord === true
-          ? (formData.contact.handle || false)
-          : formData.contact.discord,
-      instagram: formData.contact.instagram === true
-          ? (formData.contact.handle || false)
-          : formData.contact.instagram,
+      discord: formData.contact.discord || false,
+      instagram: formData.contact.instagram || false,
         primary: formData.contact.primary || 'phone',
       lastContactDate: resolvedLastContactDate,
-        };
+         };
 
       // Build nested objects only when they have fields to avoid saving empty objects
      const locationObj = {
@@ -384,23 +379,29 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
          : persistedChecked;
 
     const handleToggleClick = () => {
-      // Update local toggle immediately for visual feedback
+       // Update local toggle immediately for visual feedback
       if (channel === 'discord' || channel === 'instagram') {
         setContactToggles((prev) => {
           const newVal = !prev[channel];
-          // Set the channel to true when checked, false when unchecked
-          handleContactChange(channel, newVal ? true : false);
-          // Clear handle when unchecked
-          if (!newVal) handleContactChange('handle', '');
+           // When toggling on, don't overwrite the string value - just show the field
+           // When toggling off, preserve the current string value (don't clear it)
+          if (!newVal) {
+             // Toggling off: set to false so the field disappears but keep string for next toggle
+            handleContactChange(channel, formData.contact[channel] || '');
+           }
           return { ...prev, [channel]: newVal };
-        });
-      } else {
-        // Phone/WhatsApp: direct boolean toggle
+         });
+       } else {
+         // Phone/WhatsApp: direct boolean toggle
         const val = !persistedChecked;
         handleContactChange(channel, val);
-        if (!val) handleContactChange('handle', '');
-      }
-    };
+       }
+     };
+
+    // For Discord/Instagram, use the channel-specific value directly
+    const socialValue = (channel === 'discord' || channel === 'instagram') && isToggled
+          ? formData.contact[channel] || ''
+          : '';
 
     return (
           <Box key={channel} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1.5, borderRadius: 2, backgroundColor: '#FBFBF9' }}>
@@ -409,27 +410,27 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
               <Typography variant="body2" sx={{ fontWeight: 500 }}>{label}</Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, maxWidth: 260 }}>
-              <input
+               <input
             type="checkbox"
             checked={isToggled}
             onChange={handleToggleClick}
             style={{ cursor: 'pointer' }}
-              />
-              {(channel === 'discord' || channel === 'instagram') && isToggled && (
-                <TextField
+               />
+                {(channel === 'discord' || channel === 'instagram') && isToggled && (
+                  <TextField
               size="small"
               fullWidth
               placeholder={placeholder}
-              value={formData.contact.handle || ''}
-              onChange={(e) => handleContactChange('handle', e.target.value)}
+              value={socialValue}
+              onChange={(e) => handleContactChange(channel, e.target.value)}
               sx={{
-                    '& .MuiOutlinedInput-root': { fontSize: '12px', height: 32 },
-                  }}
-                />
-              )}
-            </Box>
-          </Box>
-        );
+                       '& .MuiOutlinedInput-root': { fontSize: '12px', height: 32 },
+                     }}
+                   />
+                )}
+             </Box>
+           </Box>
+         );
       };
 
   return (
