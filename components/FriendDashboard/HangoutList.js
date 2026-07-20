@@ -17,6 +17,7 @@ import {
   DialogContent,
   DialogActions,
   IconButton,
+  TextField,
 } from '@mui/material';
 import { MapPin, Pencil, Trash2 } from 'lucide-react';
 
@@ -132,15 +133,37 @@ export default function HangoutList({
   const [selectedPoiForInfo, setSelectedPoiForInfo] = useState(null);
   const [poiDialogOpen, setPoiDialogOpen] = useState(false);
 
+  // Confirmation/cancel dialog state
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [confirmDialogTitle, setConfirmDialogTitle] = useState('');
+  const [confirmDialogContent, setConfirmDialogContent] = useState('');
+  const [confirmDialogAction, setConfirmDialogAction] = useState(null);
+
+  const openConfirmDialog = (title, content, action) => {
+    setConfirmDialogTitle(title);
+    setConfirmDialogContent(content);
+    setConfirmDialogAction(action);
+    setConfirmDialogOpen(true);
+    };
+
+  const handleConfirmDialogAction = () => {
+    if (confirmDialogAction) confirmDialogAction();
+    setConfirmDialogOpen(false);
+    };
+
+  const closeConfirmDialog = () => {
+    setConfirmDialogOpen(false);
+    };
+
   if (!hangouts || hangouts.length === 0) {
-    return (
-      <Box sx={{ p: 2, textAlign: 'center' }}>
-        <Typography variant="body2" color="text.secondary">
-          No hangouts scheduled yet.
-        </Typography>
-      </Box>
-    );
-  }
+     return (
+       <Box sx={{ p: 2, textAlign: 'center' }}>
+          <Typography variant="body2" color="text.secondary">
+           No hangouts scheduled yet.
+           </Typography>
+         </Box>
+       );
+     }
 
   const isHangoutPassed = (datetime) => {
     const d = safeToTimestamp(datetime);
@@ -282,17 +305,17 @@ export default function HangoutList({
                     }
                   />
                 </ListItemButton>
-                <ListItemSecondaryAction sx={{ mr: 1 }}>
+              <ListItemSecondaryAction sx={{ mr: 1 }}>
                   {/* Edit button */}
                   {onEditHangout && (
                     <IconButton
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEditHangout(hangout);
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       onEditHangout(hangout);
                       }}
-                      size="small"
-                      sx={{ color: '#9B988C', mr: 0.5, '&:hover': { color: '#5A5A40', backgroundColor: '#FBFBF9' } }}
-                      title="Edit Hangout"
+                     size="small"
+                     sx={{ color: '#9B988C', mr: 0.5, '&:hover': { color: '#5A5A40', backgroundColor: '#FBFBF9' } }}
+                     title="Edit Hangout"
                     >
                       <Pencil size={14} />
                     </IconButton>
@@ -300,31 +323,52 @@ export default function HangoutList({
                   {/* Delete button */}
                   {onDeleteHangout && (
                     <IconButton
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteHangout(hangout.id);
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       openConfirmDialog(
+                         'Delete Hangout',
+                         `Are you sure you want to delete "${hangout.title || 'Untitled Hangout'}"?`,
+                         () => onDeleteHangout(hangout.id)
+                       );
                       }}
-                      size="small"
-                      sx={{ color: '#9B988C', '&:hover': { color: '#CC7A5C', backgroundColor: '#FBFBF9' } }}
-                      title="Delete Hangout"
+                     size="small"
+                     sx={{ color: '#9B988C', mr: 0.5, '&:hover': { color: '#CC7A5C', backgroundColor: '#FBFBF9' } }}
+                     title="Delete Hangout"
                     >
                       <Trash2 size={14} />
                     </IconButton>
                   )}
-                  {passed && onEditHangout && (
+                  {/* Mark Complete button (for all hangouts) */}
+                  {onCompleteHangout && (
                     <Button
-                      variant="outlined"
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onCompleteHangout(hangout.id);
+                     variant="outlined"
+                     size="small"
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       openConfirmDialog(
+                         'Mark Complete',
+                         `Mark "${hangout.title || 'Untitled Hangout'}" as complete?\nDate: ${formatDatetime(hangout.datetime)}`,
+                         () => onCompleteHangout(hangout.id)
+                       );
                       }}
-                      sx={{ textTransform: 'none', fontSize: '10px' }}
+                     sx={{ textTransform: 'none', fontSize: '9px' }}
                     >
-                      Mark Complete
+                     Mark Complete
                     </Button>
                   )}
                 </ListItemSecondaryAction>
+
+              {/* Confirmation Dialog */}
+              <Dialog open={confirmDialogOpen} onClose={closeConfirmDialog} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 2 } }}>
+                <DialogTitle>{confirmDialogTitle}</DialogTitle>
+                <DialogContent>
+                  <Typography variant="body2" sx={{ whiteSpace: 'pre-line', mt: 1 }}>{confirmDialogContent}</Typography>
+                </DialogContent>
+                <DialogActions sx={{ p: 2, gap: 1 }}>
+                  <Button onClick={closeConfirmDialog} variant="outlined">Cancel</Button>
+                  <Button onClick={handleConfirmDialogAction} variant="contained" sx={{ backgroundColor: '#5A5A40', '&:hover': { backgroundColor: '#434330' } }}>Confirm</Button>
+                </DialogActions>
+              </Dialog>
               </ListItem>
               <Divider />
             </React.Fragment>

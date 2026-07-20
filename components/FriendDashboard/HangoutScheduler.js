@@ -678,6 +678,7 @@ export default function HangoutScheduler({
   onEditGroup,
   onDeleteGroup,
   onDeletePlannedHangout,
+  onEditPlannedHangout = null,
   onTriggerNotification,
   editingGroup = null,
   setEditingGroup = null,
@@ -1004,21 +1005,33 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
     }
   }, [groupMemberIds]);
 
-  // Handle complete hangout leap simulation
+   // Handle complete hangout leap simulation (for upcoming hangouts)
   const handleCompleteLeap = useCallback((hangout) => {
-    // Find attendees. If it is a standard group, we default to group members.
+     // Find attendees. If it is a standard group, we default to group members.
     const groupObj = groups.find((g) => g.id === hangout.groupId);
     const attendees = groupObj ? groupObj.memberIds : friends.map((f) => f.id);
 
     onCompletePlannedHangout(hangout.id, hangout.datetime, attendees);
 
     const namesList = attendees
-      .map((id) => friends.find((f) => f.id === id)?.name)
-      .filter(Boolean)
-      .join(', ');
+       .map((id) => friends.find((f) => f.id === id)?.name)
+       .filter(Boolean)
+       .join(', ');
 
     onTriggerNotification(`Simulated leap! "${hangout.title}" completed. Updated contact records for: ${namesList}.`);
-  }, [groups, friends, onCompletePlannedHangout, onTriggerNotification]);
+   }, [groups, friends, onCompletePlannedHangout, onTriggerNotification]);
+
+   // Handle complete hangout from history (uses friendIds directly)
+  const handleCompleteHistoryHangout = useCallback((hangout) => {
+    const attendees = hangout.friendIds || [];
+    onCompletePlannedHangout(hangout.id, hangout.datetime, attendees);
+    onTriggerNotification(`"${hangout.title}" marked as complete.`);
+   }, [onCompletePlannedHangout, onTriggerNotification]);
+
+   // Handle delete from history
+  const handleDeleteHistoryHangout = useCallback((hangoutId) => {
+    onDeletePlannedHangout(hangoutId);
+   }, [onDeletePlannedHangout]);
 
     // Get POI name + address by ID — merges pois (parent) with local existingPOIs.
     // In edit mode this resolves friend-owned POIs (home, places) that don't live in the current user's POI collection.
@@ -1232,12 +1245,12 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
           </Box>
         </Box>
 
-        {/* Pending Commitments */}
-        <Box sx={{ mb: 3 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-            <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D' }}>
-              Pending Commitments
-            </Typography>
+          {/* Upcoming Hangouts */}
+          <Box sx={{ mb: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+              <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D' }}>
+               Upcoming Hangouts
+              </Typography>
             <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', fontStyle: 'italic', color: '#CC7A5C' }}>
               Time-Leap simulates event completion
             </Typography>
@@ -1292,33 +1305,40 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
                         <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '10px', color: '#7D7B6D' }}>
                           {formatDate(hangout.datetime)}
                         </Typography>
-                        <Box sx={{ display: 'flex', gap: 0.5 }}>
-                          <Button
-                            onClick={() => handleCompleteLeap(hangout)}
+                         <Box sx={{ display: 'flex', gap: 0.5 }}>
+                           <Button
+                             onClick={() => handleCompleteLeap(hangout)}
+                             size="small"
+                             sx={{
+                               textTransform: 'none',
+                               fontSize: '9px',
+                               fontWeight: 700,
+                               fontFamily: 'monospace',
+                               backgroundColor: '#5A5A40',
+                               color: '#FFFFFF',
+                                '&:hover': { backgroundColor: '#434330' },
+                               }}
+                             title="Mark this event as complete"
+                             >
+                             Mark Complete
+                             </Button>
+                           <IconButton
+                            onClick={() => onEditPlannedHangout(hangout)}
                             size="small"
-                            startIcon={<Flame size={12} color="#FFDD6B" />}
-                            sx={{
-                              textTransform: 'none',
-                              fontSize: '9px',
-                              fontWeight: 700,
-                              fontFamily: 'monospace',
-                              backgroundColor: '#5A5A40',
-                              color: '#FFFFFF',
-                              '&:hover': { backgroundColor: '#434330' },
-                            }}
-                            title="Leap time forward to simulate completing this event"
-                          >
-                            Leap Complete
-                          </Button>
-                          <IconButton
+                            sx={{ color: '#9B988C', '&:hover': { color: '#5A5A40', backgroundColor: '#FBFBF9' } }}
+                            title="Edit Hangout"
+                           >
+                             <Pencil size={14} />
+                           </IconButton>
+                           <IconButton
                             onClick={() => onDeletePlannedHangout(hangout.id)}
                             size="small"
                             sx={{ color: '#9B988C', '&:hover': { color: '#CC7A5C', backgroundColor: '#FBFBF9' } }}
-                            title="Cancel Commitment"
-                          >
-                            <X size={14} />
-                          </IconButton>
-                        </Box>
+                            title="Delete Hangout"
+                           >
+                             <Trash2 size={14} />
+                           </IconButton>
+                         </Box>
                       </Box>
                     </Box>
 
@@ -1340,51 +1360,98 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
           )}
         </Box>
 
-        {/* Historical Logs */}
-        <Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}>
-            <ClipboardList size={14} color="#7D7B6D" />
-            <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D' }}>
-              Past Completed Logs ({history.length})
-            </Typography>
-          </Box>
-
-          {history.length > 0 ? (
-            <Box sx={{ maxHeight: 200, overflowY: 'auto', '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '3px' } }}>
-              {history.map((h, idx) => {
-                const attendeeNames = h.friendIds
-                  .map((fId) => friends.find((f) => f.id === fId)?.name?.split(' ')[0])
-                  .filter(Boolean)
-                  .join(', ');
-
-                return (
-                  <Box key={h.id || idx} sx={{ pb: 1.5, mb: 1.5, borderBottom: '1px solid #F2F0EA', '&:last-child': { borderBottom: 'none', pb: 0 } }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.25 }}>
-                      <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '10px', color: '#9B988C' }}>
-                        {formatDate(h.datetime)}
-                      </Typography>
-                      <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '10px', color: '#5A5A40', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>
-                        {attendeeNames || 'No attendees'}
-                      </Typography>
-                    </Box>
-                    <Typography variant="subtitle2" sx={{ fontFamily: 'serif', fontWeight: 700, fontSize: '0.8rem', color: '#2D2D20', display: 'block', mt: 0.25 }}>
-                      {h.title}
-                    </Typography>
-                    {h.details && (
-                      <Typography variant="caption" sx={{ display: 'block', color: '#7D7B6D', fontStyle: 'italic', fontSize: '10px', mt: 0.25 }}>
-                        {h.details}
-                      </Typography>
-                    )}
-                  </Box>
-                );
-              })}
+          {/* Historical Logs */}
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <ClipboardList size={14} color="#7D7B6D" />
+                <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D' }}>
+               Past Completed Logs ({history.length})
+              </Typography>
+              </Box>
             </Box>
-          ) : (
-            <Typography variant="body2" sx={{ color: '#9B988C', fontStyle: 'italic', fontSize: '12px' }}>
-              No past completed logs.
-            </Typography>
-          )}
-        </Box>
+
+            {history.length > 0 ? (
+              <Box sx={{ maxHeight: 250, overflowY: 'auto', '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '3px' } }}>
+                {history.map((h, idx) => {
+                 const attendeeNames = h.friendIds
+                    .map((fId) => friends.find((f) => f.id === fId)?.name?.split(' ')[0])
+                    .filter(Boolean)
+                    .join(', ');
+
+                 return (
+                    <Paper key={h.id || idx} variant="outlined" sx={{ p: 1.5, mb: 1, borderRadius: 2, backgroundColor: '#FFFFFF' }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography variant="subtitle2" sx={{ fontFamily: 'serif', fontWeight: 700, fontSize: '0.8rem', color: '#2D2D20', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {h.title}
+                          </Typography>
+                          <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', color: '#9B988C' }}>
+                            {formatDate(h.datetime)}
+                          </Typography>
+                        </Box>
+                        <Chip
+                         label={h.type === 'physical' ? 'PHYSICAL' : 'VIRTUAL'}
+                         size="small"
+                         sx={{
+                           backgroundColor: h.type === 'physical' ? '#25D36610' : '#5865F210',
+                           color: h.type === 'physical' ? '#1e8544' : '#5865F2',
+                           fontFamily: 'monospace',
+                           fontSize: '9px',
+                           fontWeight: 700,
+                           height: 18,
+                           border: `1px solid ${h.type === 'physical' ? '#25D36630' : '#5865F230'}`,
+                          }}
+                        />
+                      </Box>
+                      {h.details && (
+                        <Typography variant="caption" sx={{ display: 'block', color: '#7D7B6D', fontStyle: 'italic', fontSize: '9px', mt: 0.5 }}>
+                          {h.details}
+                        </Typography>
+                      )}
+                       <Box sx={{ display: 'flex', gap: 0.5, mt: 1, justifyContent: 'flex-end' }}>
+                         <Button
+                         onClick={() => {
+                           if (confirm(`Mark "${h.title}" as complete?\nDate: ${formatDate(h.datetime)}`)) {
+                             handleCompleteHistoryHangout(h);
+                            }
+                          }}
+                         size="small"
+                         sx={{
+                           textTransform: 'none',
+                           fontSize: '9px',
+                           fontWeight: 700,
+                           fontFamily: 'monospace',
+                           backgroundColor: '#5A5A40',
+                           color: '#FFFFFF',
+                            '&:hover': { backgroundColor: '#434330' },
+                          }}
+                        >
+                         Mark Complete
+                        </Button>
+                        <IconButton
+                         onClick={() => {
+                           if (confirm(`Delete "${h.title}"?\nDate: ${formatDate(h.datetime)}`)) {
+                             onDeletePlannedHangout(h.id);
+                           }
+                         }}
+                         size="small"
+                         sx={{ color: '#9B988C', '&:hover': { color: '#CC7A5C', backgroundColor: '#FBFBF9' } }}
+                         title="Delete Hangout"
+                        >
+                          <Trash2 size={12} />
+                        </IconButton>
+                      </Box>
+                    </Paper>
+                  );
+                })}
+              </Box>
+            ) : (
+              <Typography variant="body2" sx={{ color: '#9B988C', fontStyle: 'italic', fontSize: '12px' }}>
+               No past completed logs.
+              </Typography>
+            )}
+          </Box>
       </Paper>
     </Box>
   );

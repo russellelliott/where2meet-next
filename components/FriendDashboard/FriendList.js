@@ -497,25 +497,8 @@ export default function FriendList({
                     )}
                   </Box>
 
-                    <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-                      {/* Edit Place Ideas Button */}
-                      <IconButton
-                     size="small"
-                     onClick={(e) => {
-                       e.stopPropagation();
-                       onOpenPlaceIdeasPicker?.(friend.id);
-                        }}
-                     sx={{
-                       color: '#9B988C',
-                          '&:hover': { color: '#CC7A5C', backgroundColor: '#FBFBF9' },
-                        }}
-                     title="Edit Place Ideas"
-                     id={`place-ideas-${friend.id}`}
-                      >
-                        <Pencil size={14} />
-                      </IconButton>
-
-                      {/* Calendar Icon Button */}
+      <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+                        {/* Calendar Icon Button */}
                     <IconButton
                     size="small"
                     onClick={(e) => {

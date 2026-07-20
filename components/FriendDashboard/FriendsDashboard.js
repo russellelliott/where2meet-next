@@ -350,15 +350,16 @@ export default function FriendsDashboard({ onSignOut }) {
       await deleteHangoutApi(user.uid, hangoutId);
       setHangouts((prev) => prev.filter((h) => h.id !== hangoutId));
       setPlannedHangouts((prev) => prev.filter((h) => h.id !== hangoutId));
-       } catch (err) {
+      setHistory((prev) => prev.filter((h) => h.id !== hangoutId));
+        } catch (err) {
       console.error('Error deleting hangout:', err);
       if (isAuthError(err)) {
         setAuthError('Session expired. Please sign in again.');
-         } else {
+          } else {
         setError('Failed to cancel hangout.');
-         }
-       }
-     }, [user]);
+          }
+        }
+      }, [user]);
 
      // Delete hangout from the hangout list (full delete from Firestore)
   const handleDeleteHangout = useCallback(async (hangoutId) => {
@@ -382,9 +383,21 @@ export default function FriendsDashboard({ onSignOut }) {
        }
      }, [user, loadData]);
 
-     // Edit hangout - open the scheduler in edit mode
+      // Edit hangout - open the scheduler in edit mode (from HangoutList or HangoutScheduler)
   const handleEditHangout = useCallback((hangout) => {
     setEditingHangout(hangout);
+    setIsEditingHangoutMode(true);
+       }, []);
+
+       // Edit planned/upcoming hangout from HangoutScheduler — pre-populates the scheduler dialog
+  const handleEditPlannedHangout = useCallback((hangout) => {
+     setEditingHangout({
+       ...hangout,
+       friendIds: hangout.friendIds || [],
+       groupId: hangout.groupId || '',
+       poiId: hangout.poiId || hangout.locationPoiId || null,
+       description: hangout.description || hangout.details || '',
+     });
     setIsEditingHangoutMode(true);
       }, []);
 
@@ -853,47 +866,35 @@ export default function FriendsDashboard({ onSignOut }) {
             )}
           </Grid>
 
-           {/* Right Column: Hangouts, Groups */}
-          <Grid item xs={12} md={7}>
-             {/* Hangout Scheduler (commitments, groups, plan/create buttons) */}
-            <HangoutScheduler
-             friends={friends}
-             groups={groups}
-             plannedHangouts={plannedHangouts}
-             history={history}
-             onAddPlannedHangout={handleAddPlannedHangout}
-             onCompletePlannedHangout={handleCompletePlannedHangout}
-             onAddGroup={handleAddGroup}
-             onEditGroup={handleEditGroup}
-             onDeleteGroup={handleDeleteGroup}
-             onDeletePlannedHangout={handleDeletePlannedHangout}
-             onTriggerNotification={() => {}}
-             editingGroup={editingGroup}
-             setEditingGroup={setEditingGroup}
-             editingHangout={editingHangout}
-             isEditingHangoutMode={isEditingHangoutMode}
-             onSaveHangout={handleSaveHangout}
-             pois={pois}
-             onPlanEvent={handlePlanEvent}
-             onOpenGroupPlaceIdeasPicker={openGroupPlaceIdeasPicker}
-             />
-          </Grid>
+             {/* Right Column: Hangouts, Groups */}
+            <Grid item xs={12} md={7}>
+               {/* Hangout Scheduler (commitments, groups, plan/create buttons) */}
+              <HangoutScheduler
+              friends={friends}
+              groups={groups}
+              plannedHangouts={plannedHangouts}
+              history={history}
+              onAddPlannedHangout={handleAddPlannedHangout}
+              onCompletePlannedHangout={handleCompletePlannedHangout}
+              onAddGroup={handleAddGroup}
+              onEditGroup={handleEditGroup}
+              onDeleteGroup={handleDeleteGroup}
+              onDeletePlannedHangout={handleDeletePlannedHangout}
+              onEditPlannedHangout={handleEditPlannedHangout}
+              onTriggerNotification={() => {}}
+              editingGroup={editingGroup}
+              setEditingGroup={setEditingGroup}
+              editingHangout={editingHangout}
+              isEditingHangoutMode={isEditingHangoutMode}
+              onSaveHangout={handleSaveHangout}
+              pois={pois}
+              onPlanEvent={handlePlanEvent}
+              onOpenGroupPlaceIdeasPicker={openGroupPlaceIdeasPicker}
+              />
+            </Grid>
         </Grid>
 
-           {/* HangoutList - upcoming & past hangouts */}
-           <Box sx={{ mt: 3 }}>
-           <HangoutList
-            hangouts={hangouts}
-            friends={friends}
-            groups={groups}
-            pois={pois}
-            onCompleteHangout={handleCompleteHangout}
-            onEditHangout={handleEditHangout}
-            onDeleteHangout={handleDeleteHangout}
-             />
-            </Box>
-
-          {/* Legacy Place Ideas Dialog (for specific POI selection) */}
+           {/* Legacy Place Ideas Dialog (for specific POI selection) */}
         <PoiIdeasDialog
          open={poiIdeasOpen && selectedPoiId !== null}
          onClose={() => { setPoiIdeasOpen(false); setSelectedPoiId(null); }}
@@ -903,18 +904,20 @@ export default function FriendsDashboard({ onSignOut }) {
          onTogglePlaceIdea={handleTogglePlaceIdea}
          />
 
-        {/* Shared PoiIdeasPicker (for friend/group editing from dashboard) */}
-        <PoiIdeasPicker
-          open={poiIdeasOpen && pickerEntityId !== null}
-          onClose={() => { setPoiIdeasOpen(false); setPickerEntityId(null); }}
-          friends={pickerFriends}
-          groups={pickerGroups}
-          selectedPoiId={selectedFriend ? selectedFriend.location?.homePoiId : (groups.find(g => g.id === pickerEntityId)?.memberIds ? '__group_members__' : null)}
-          selectedPoiName={(pickerEntityType === 'friend'
-            ? friends.find(f => f.id === pickerEntityId)?.name
-            : groups.find(g => g.id === pickerEntityId)?.name) || null}
-          onTogglePlaceIdea={handleTogglePickerPlaceIdea}
-        />
+          {/* Shared PoiIdeasPicker (for friend/group editing from dashboard) */}
+          <PoiIdeasPicker
+           open={poiIdeasOpen && pickerEntityId !== null}
+           onClose={() => { setPoiIdeasOpen(false); }}
+           // eslint-disable-next-line react-hooks/exhaustive-deps
+           onTransitionCompleted={() => { setPickerEntityId(null); }}
+           friends={pickerFriends}
+           groups={groups}
+           selectedPoiId={selectedFriend ? selectedFriend.location?.homePoiId : (groups.find(g => g.id === pickerEntityId)?.memberIds ? '__group_members__' : null)}
+           selectedPoiName={(pickerEntityType === 'friend'
+              ? friends.find(f => f.id === pickerEntityId)?.name
+              : groups.find(g => g.id === pickerEntityId)?.name) || null}
+           onTogglePlaceIdea={handleTogglePickerPlaceIdea}
+          />
 
          {/* Create Hangout Dialog */}
         <CreateHangoutDialog
