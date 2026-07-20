@@ -719,6 +719,10 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
   const [isScheduling, setIsScheduling] = useState(false);
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
 
+   // Hangout delete confirmation dialog state
+  const [hangoutDeleteOpen, setHangoutDeleteOpen] = useState(false);
+  const [hangoutDeleteTarget, setHangoutDeleteTarget] = useState(null);
+
     // Ref to track if we're currently populating form fields from editingHangout
     // (prevents re-entrant useEffect calls)
   const isPopulatingRef = React.useRef(false);
@@ -1330,14 +1334,17 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
                            >
                              <Pencil size={14} />
                            </IconButton>
-                           <IconButton
-                            onClick={() => onDeletePlannedHangout(hangout.id)}
-                            size="small"
-                            sx={{ color: '#9B988C', '&:hover': { color: '#CC7A5C', backgroundColor: '#FBFBF9' } }}
-                            title="Delete Hangout"
-                           >
-                             <Trash2 size={14} />
-                           </IconButton>
+                              <IconButton
+                              onClick={() => {
+                                setHangoutDeleteTarget(hangout);
+                                setHangoutDeleteOpen(true);
+                               }}
+                              size="small"
+                              sx={{ color: '#9B988C', '&:hover': { color: '#CC7A5C', backgroundColor: '#FBFBF9' } }}
+                              title="Delete Hangout"
+                              >
+                                <Trash2 size={14} />
+                              </IconButton>
                          </Box>
                       </Box>
                     </Box>
@@ -1409,39 +1416,111 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
                           {h.details}
                         </Typography>
                       )}
-                       <Box sx={{ display: 'flex', gap: 0.5, mt: 1, justifyContent: 'flex-end' }}>
-                         <Button
-                         onClick={() => {
-                           if (confirm(`Mark "${h.title}" as complete?\nDate: ${formatDate(h.datetime)}`)) {
-                             handleCompleteHistoryHangout(h);
-                            }
-                          }}
-                         size="small"
-                         sx={{
-                           textTransform: 'none',
-                           fontSize: '9px',
-                           fontWeight: 700,
-                           fontFamily: 'monospace',
-                           backgroundColor: '#5A5A40',
-                           color: '#FFFFFF',
-                            '&:hover': { backgroundColor: '#434330' },
-                          }}
-                        >
-                         Mark Complete
-                        </Button>
-                        <IconButton
-                         onClick={() => {
-                           if (confirm(`Delete "${h.title}"?\nDate: ${formatDate(h.datetime)}`)) {
-                             onDeletePlannedHangout(h.id);
-                           }
-                         }}
-                         size="small"
-                         sx={{ color: '#9B988C', '&:hover': { color: '#CC7A5C', backgroundColor: '#FBFBF9' } }}
-                         title="Delete Hangout"
-                        >
-                          <Trash2 size={12} />
-                        </IconButton>
-                      </Box>
+                         <Box sx={{ display: 'flex', gap: 0.5, mt: 1, justifyContent: 'flex-end' }}>
+                           <Button
+                          onClick={() => {
+                            setHangoutDeleteTarget({ ...h, isCompleteAction: true });
+                            setHangoutDeleteOpen(true);
+                           }}
+                          size="small"
+                          sx={{
+                            textTransform: 'none',
+                            fontSize: '9px',
+                            fontWeight: 700,
+                            fontFamily: 'monospace',
+                            backgroundColor: '#5A5A40',
+                            color: '#FFFFFF',
+                              '&:hover': { backgroundColor: '#434330' },
+                            }}
+                          >
+                          Mark Complete
+                          </Button>
+                          <IconButton
+                          onClick={() => {
+                            setHangoutDeleteTarget({ ...h, isCompleteAction: false });
+                            setHangoutDeleteOpen(true);
+                           }}
+                          size="small"
+                          sx={{ color: '#9B988C', '&:hover': { color: '#CC7A5C', backgroundColor: '#FBFBF9' } }}
+                          title="Delete Hangout"
+                          >
+                            <Trash2 size={12} />
+                          </IconButton>
+                        </Box>
+
+                         {/* Hangout Delete Confirmation Dialog */}
+                         <Dialog
+                          open={hangoutDeleteOpen}
+                          onClose={() => setHangoutDeleteOpen(false)}
+                          maxWidth="xs"
+                          fullWidth
+                          PaperProps={{ sx: { borderRadius: 2 } }}
+                         >
+                           {!hangoutDeleteTarget && (
+                             <DialogContent>
+                               <Typography variant="body2">Invalid hangout. Please try again.</Typography>
+                             </DialogContent>
+                           )}
+                           {hangoutDeleteTarget && (<>
+                           <DialogTitle sx={{ fontWeight: 700 }}>
+                            {hangoutDeleteTarget.isCompleteAction ? 'Complete Hangout' : 'Delete Hangout'}
+                           </DialogTitle>
+                           <DialogContent>
+                             <Typography variant="body2" sx={{ mb: 1 }}>
+                               {hangoutDeleteTarget.isCompleteAction
+                                 ? `Mark "${hangoutDeleteTarget.title || 'Untitled Hangout'}" as complete?`
+                                 : `Are you sure you want to delete "${hangoutDeleteTarget.title || 'Untitled Hangout'}"?`}
+                             </Typography>
+                             <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.5 }}>
+                               <strong>Date:</strong> {formatDate(hangoutDeleteTarget.datetime)}
+                             </Typography>
+                             {!hangoutDeleteTarget.isCompleteAction && (
+                               <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.5 }}>
+                                 <strong>With:</strong> {(() => {
+                                  const names = [];
+                                  if (hangoutDeleteTarget.friendIds && Array.isArray(hangoutDeleteTarget.friendIds)) {
+                                    hangoutDeleteTarget.friendIds.forEach((id) => {
+                                      const f = friends.find((fr) => fr.id === id);
+                                      if (f) names.push(f.name);
+                                     });
+                                   }
+                                  if (hangoutDeleteTarget.groupId) {
+                                    const g = groups.find((gr) => gr.id === hangoutDeleteTarget.groupId);
+                                    if (g) names.push(`Group: ${g.name}`);
+                                   }
+                                  return names.length > 0 ? names.join(', ') : 'No one listed';
+                                 })()}
+                               </Typography>
+                             )}
+                             {!hangoutDeleteTarget.isCompleteAction && (
+                               <Typography variant="caption" sx={{ display: 'block', mt: 1, color: 'error.main' }}>
+                                This action cannot be undone.
+                               </Typography>
+                             )}
+                           </DialogContent>
+                            </>) }
+                          <DialogActions sx={{ p: 2, gap: 1 }}>
+                            <Button onClick={() => setHangoutDeleteOpen(false)} variant="outlined">Cancel</Button>
+                            <Button
+                              onClick={() => {
+                                if (hangoutDeleteTarget?.isCompleteAction) {
+                                  handleCompleteHistoryHangout(hangoutDeleteTarget);
+                                } else {
+                                  onDeletePlannedHangout(hangoutDeleteTarget.id);
+                                }
+                                setHangoutDeleteOpen(false);
+                                setHangoutDeleteTarget(null);
+                              }}
+                              variant="contained"
+                              sx={{
+                                backgroundColor: hangoutDeleteTarget?.isCompleteAction ? '#5A5A40' : '#c62828',
+                                '&:hover': { backgroundColor: hangoutDeleteTarget?.isCompleteAction ? '#434330' : '#b71c1c' },
+                              }}
+                            >
+                              {hangoutDeleteTarget?.isCompleteAction ? 'Complete' : 'Delete'}
+                            </Button>
+                          </DialogActions>
+                        </Dialog>
                     </Paper>
                   );
                 })}

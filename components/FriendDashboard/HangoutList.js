@@ -183,11 +183,38 @@ export default function HangoutList({
    };
 
    const getPoiById = (poiId, pois) => {
-     if (!poiId || !pois || !Array.isArray(pois)) return null;
-     return pois.find((p) => p.id === poiId) || null;
+      if (!poiId || !pois || !Array.isArray(pois)) return null;
+      return pois.find((p) => p.id === poiId) || null;
+     };
+
+   /**
+    * Format the hangout datetime for display in confirmation dialogs
+    */
+   const formatHangoutDate = (datetime) => {
+     const d = safeToTimestamp(datetime);
+     if (!d || isNaN(d.getTime())) return 'No date set';
+     return dayjs(d).format('MMMM D, YYYY h:mm A');
    };
 
-  const handlePoiBadgeClick = (poi) => {
+   /**
+    * Get list of friend names for a hangout
+    */
+   const getFriendNamesForHangout = (hangout) => {
+     const names = [];
+     if (hangout.friendIds && Array.isArray(hangout.friendIds)) {
+       hangout.friendIds.forEach((id) => {
+         const friend = friends.find((f) => f.id === id);
+         if (friend) names.push(friend.name);
+       });
+     }
+     if (hangout.groupId) {
+       const group = groups?.find((g) => g.id === hangout.groupId);
+       if (group) names.push(`Group: ${group.name}`);
+     }
+     return names.length > 0 ? names.join(', ') : 'No one';
+   };
+
+   const handlePoiBadgeClick = (poi) => {
     setSelectedPoiForInfo(poi);
     setPoiDialogOpen(true);
   };
@@ -320,42 +347,48 @@ export default function HangoutList({
                       <Pencil size={14} />
                     </IconButton>
                   )}
-                  {/* Delete button */}
-                  {onDeleteHangout && (
-                    <IconButton
-                     onClick={(e) => {
-                       e.stopPropagation();
-                       openConfirmDialog(
-                         'Delete Hangout',
-                         `Are you sure you want to delete "${hangout.title || 'Untitled Hangout'}"?`,
-                         () => onDeleteHangout(hangout.id)
-                       );
-                      }}
-                     size="small"
-                     sx={{ color: '#9B988C', mr: 0.5, '&:hover': { color: '#CC7A5C', backgroundColor: '#FBFBF9' } }}
-                     title="Delete Hangout"
-                    >
-                      <Trash2 size={14} />
-                    </IconButton>
-                  )}
-                  {/* Mark Complete button (for all hangouts) */}
-                  {onCompleteHangout && (
-                    <Button
-                     variant="outlined"
-                     size="small"
-                     onClick={(e) => {
-                       e.stopPropagation();
-                       openConfirmDialog(
-                         'Mark Complete',
-                         `Mark "${hangout.title || 'Untitled Hangout'}" as complete?\nDate: ${formatDatetime(hangout.datetime)}`,
-                         () => onCompleteHangout(hangout.id)
-                       );
-                      }}
-                     sx={{ textTransform: 'none', fontSize: '9px' }}
-                    >
-                     Mark Complete
-                    </Button>
-                  )}
+                 {/* Delete button */}
+                   {onDeleteHangout && (
+                     <IconButton
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openConfirmDialog(
+                           'Delete Hangout',
+                           `Are you sure you want to delete "${hangout.title || 'Untitled Hangout'}"?
+
+Date: ${formatHangoutDate(hangout.datetime)}
+With: ${getFriendNamesForHangout(hangout)}`,
+                          () => onDeleteHangout(hangout.id)
+                         );
+                        }}
+                      size="small"
+                      sx={{ color: '#9B988C', mr: 0.5, '&:hover': { color: '#CC7A5C', backgroundColor: '#FBFBF9' } }}
+                      title="Delete Hangout"
+                      >
+                        <Trash2 size={14} />
+                      </IconButton>
+                    )}
+                 {/* Mark Complete button (for all hangouts) */}
+                   {onCompleteHangout && (
+                      <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openConfirmDialog(
+                           'Mark Complete',
+                           `Mark "${hangout.title || 'Untitled Hangout'}" as complete?
+
+Date: ${formatHangoutDate(hangout.datetime)}
+With: ${getFriendNamesForHangout(hangout)}`,
+                          () => onCompleteHangout(hangout.id)
+                         );
+                        }}
+                      sx={{ textTransform: 'none', fontSize: '9px' }}
+                      >
+                      Mark Complete
+                      </Button>
+                    )}
                 </ListItemSecondaryAction>
 
               {/* Confirmation Dialog */}
