@@ -384,53 +384,53 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
          : persistedChecked;
 
     const handleToggleClick = () => {
-           // Update local toggle immediately for visual feedback
+      // Update local toggle immediately for visual feedback
       if (channel === 'discord' || channel === 'instagram') {
         setContactToggles((prev) => {
           const newVal = !prev[channel];
-             // Also update formData.contact.channel
-          handleContactChange(channel, newVal ? '' : false);
-             // Clear handle when unchecked
+          // Set the channel to true when checked, false when unchecked
+          handleContactChange(channel, newVal ? true : false);
+          // Clear handle when unchecked
           if (!newVal) handleContactChange('handle', '');
-           return { ...prev, [channel]: newVal };
-          });
-        } else {
-           // Phone/WhatsApp: direct boolean toggle
+          return { ...prev, [channel]: newVal };
+        });
+      } else {
+        // Phone/WhatsApp: direct boolean toggle
         const val = !persistedChecked;
         handleContactChange(channel, val);
         if (!val) handleContactChange('handle', '');
-        }
-      };
+      }
+    };
 
     return (
-         <Box key={channel} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1.5, borderRadius: 2, backgroundColor: '#FBFBF9' }}>
-           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-             <Icon size={18} color={color} />
-             <Typography variant="body2" sx={{ fontWeight: 500 }}>{label}</Typography>
-           </Box>
-           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, maxWidth: 260 }}>
-             <input
+          <Box key={channel} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1.5, borderRadius: 2, backgroundColor: '#FBFBF9' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Icon size={18} color={color} />
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>{label}</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, maxWidth: 260 }}>
+              <input
             type="checkbox"
             checked={isToggled}
             onChange={handleToggleClick}
             style={{ cursor: 'pointer' }}
-             />
-             {(channel === 'discord' || channel === 'instagram') && isToggled && (
-               <TextField
+              />
+              {(channel === 'discord' || channel === 'instagram') && isToggled && (
+                <TextField
               size="small"
               fullWidth
               placeholder={placeholder}
               value={formData.contact.handle || ''}
               onChange={(e) => handleContactChange('handle', e.target.value)}
               sx={{
-                   '& .MuiOutlinedInput-root': { fontSize: '12px', height: 32 },
-                 }}
-               />
-             )}
-           </Box>
-         </Box>
-       );
-     };
+                    '& .MuiOutlinedInput-root': { fontSize: '12px', height: 32 },
+                  }}
+                />
+              )}
+            </Box>
+          </Box>
+        );
+      };
 
   return (
       <LocalizationProvider dateAdapter={AdapterDayjs}>

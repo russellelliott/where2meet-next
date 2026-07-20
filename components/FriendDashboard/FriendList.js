@@ -75,6 +75,7 @@ export default function FriendList({
   onSelectFriend,
   onRecordContact,
   onDeleteFriend,
+  onOpenDeleteConfirm,
   onSetLastContactDate,
   onEditFriend,
   onToggleAddForm,
@@ -532,22 +533,23 @@ export default function FriendList({
                       <Pencil size={14} />
                     </IconButton>
 
-                    {/* Delete Button */}
-                    <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteFriend(friend.id);
-                      }}
-                    sx={{
-                      color: '#9B988C',
-                        '&:hover': { color: '#CC7A5C', backgroundColor: '#FBFBF9' },
-                      }}
-                    title="Remove Friend"
-                    id={`delete-friend-${friend.id}`}
-                    >
-                      <Trash2 size={14} />
-                    </IconButton>
+                      {/* Delete Button */}
+                      <IconButton
+                     size="small"
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       // Use the confirmation dialog handler if available, otherwise direct delete
+                       onOpenDeleteConfirm ? onOpenDeleteConfirm(friend.id) : onDeleteFriend(friend.id);
+                        }}
+                     sx={{
+                       color: '#9B988C',
+                          '&:hover': { color: '#CC7A5C', backgroundColor: '#FBFBF9' },
+                        }}
+                     title="Remove Friend"
+                     id={`delete-friend-${friend.id}`}
+                      >
+                        <Trash2 size={14} />
+                      </IconButton>
                   </Box>
                 </Box>
 

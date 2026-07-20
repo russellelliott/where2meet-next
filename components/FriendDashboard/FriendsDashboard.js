@@ -9,6 +9,10 @@ import {
   Alert,
   Snackbar,
   Grid,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import { auth } from '../../firebaseConfig';
 import FriendList from './FriendList';
@@ -71,6 +75,10 @@ export default function FriendsDashboard({ onSignOut }) {
    // Hangout editing state
   const [editingHangout, setEditingHangout] = useState(null);
   const [isEditingHangoutMode, setIsEditingHangoutMode] = useState(false);
+
+  // Delete confirmation dialog state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteTargetFriend, setDeleteTargetFriend] = useState(null);
 
    // Shared PoiIdeasPicker state (used on maps + friend dashboard)
   const [pickerEntityType, setPickerEntityType] = useState('friend'); // 'friend' or 'group'
@@ -190,7 +198,53 @@ export default function FriendsDashboard({ onSignOut }) {
       }
     }, []);
 
-   // Resolve coordinates to a city name using Google reverse geocoding.
+  // Helper: resolve friend's home location display text from POI data
+  function resolveFriendHomeLocation(friend, poisList) {
+    if (!friend?.location?.homePoiId) return 'No home location set';
+    const poi = poisList?.find((p) => p.id === friend.location.homePoiId);
+    if (poi) {
+      if (poi.location?.address) return poi.location.address;
+      if (poi.location?.lat && poi.location?.lng) return `${poi.location.lat.toFixed(4)}, ${poi.location.lng.toFixed(4)}`;
+    }
+    return 'Home set';
+  }
+
+  // Open delete confirmation dialog for a friend
+  const handleOpenDeleteConfirm = useCallback((friendId) => {
+    const friend = friends.find((f) => f.id === friendId);
+    if (friend) {
+      setDeleteTargetFriend(friend);
+      setDeleteConfirmOpen(true);
+    }
+  }, [friends]);
+
+  // Handle delete confirmation
+  const handleConfirmDeleteFriend = useCallback(async () => {
+    if (!deleteTargetFriend) return;
+    
+    try {
+      await deleteFriend(user.uid, deleteTargetFriend.id);
+      await loadData(user);
+      if (selectedFriendId === deleteTargetFriend.id) setSelectedFriendId(null);
+    } catch (err) {
+      console.error('Error deleting friend:', err);
+      if (isAuthError(err)) {
+        setAuthError('Session expired. Please sign in again.');
+      } else {
+        setError('Failed to delete friend.');
+      }
+    } finally {
+      setDeleteConfirmOpen(false);
+      setDeleteTargetFriend(null);
+    }
+  }, [deleteTargetFriend, user, loadData, selectedFriendId]);
+
+  const handleCloseDeleteConfirm = useCallback(() => {
+    setDeleteConfirmOpen(false);
+    setDeleteTargetFriend(null);
+  }, []);
+
+  // Resolve coordinates to a city name using Google reverse geocoding.
   function resolveCity(lat, lng) {
     return new Promise((resolve) => {
       try {
@@ -273,22 +327,23 @@ export default function FriendsDashboard({ onSignOut }) {
       }, [user, loadData]);
 
   const handleDeleteFriend = useCallback(async (friendId) => {
-    if (!confirm('Are you sure you want to delete this friend?')) return;
+    // This is kept as fallback for direct calls from FriendList
+    // The primary flow now goes through handleOpenDeleteConfirm
     if (!user || !friendId) return;
 
     try {
       await deleteFriend(user.uid, friendId);
       await loadData(user);
       if (selectedFriendId === friendId) setSelectedFriendId(null);
-      } catch (err) {
+       } catch (err) {
       console.error('Error deleting friend:', err);
       if (isAuthError(err)) {
         setAuthError('Session expired. Please sign in again.');
         } else {
         setError('Failed to delete friend.');
         }
-      }
-    }, [user, loadData, selectedFriendId, friends]);
+       }
+     }, [user, loadData, selectedFriendId, friends]);
 
   const handleEditFriend = useCallback((friend) => {
     setEditingFriend(friend);
@@ -733,7 +788,7 @@ export default function FriendsDashboard({ onSignOut }) {
    const selectedFriend = friends.find((f) => f.id === selectedFriendId);
 
   return (
-      <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: 1400, mx: 'auto' }}>
+      <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: 'none', mx: 0, width: '100%' }}>
          {/* Error Alerts */}
         {error && (
           <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError(null)}>
@@ -763,22 +818,23 @@ export default function FriendsDashboard({ onSignOut }) {
 
          {/* Two-Column Dashboard Layout */}
         <Grid container spacing={{ xs: 2, sm: 3 }}>
-           {/* Left Column: Friend List */}
-          <Grid item xs={12} md={5}>
-             <FriendList
-              friends={friends}
-              cityCache={cityCache}
-              pois={pois}
-              selectedFriendId={selectedFriendId}
-              onSelectFriend={setSelectedFriendId}
-              onRecordContact={handleRecordContact}
-              onDeleteFriend={handleDeleteFriend}
-              onSetLastContactDate={handleSetLastContactDate}
-              onEditFriend={handleEditFriend}
-              onToggleAddForm={handleToggleAddForm}
-              onOpenPlaceIdeasPicker={openFriendPlaceIdeasPicker}
-                isAddFormOpen={showAddForm}
-               />
+{/* Left Column: Friend List */}
+<Grid item xs={12} md={6}>
+<FriendList
+friends={friends}
+cityCache={cityCache}
+pois={pois}
+selectedFriendId={selectedFriendId}
+onSelectFriend={setSelectedFriendId}
+onRecordContact={handleRecordContact}
+onDeleteFriend={handleDeleteFriend}
+onOpenDeleteConfirm={handleOpenDeleteConfirm}
+onSetLastContactDate={handleSetLastContactDate}
+onEditFriend={handleEditFriend}
+onToggleAddForm={handleToggleAddForm}
+onOpenPlaceIdeasPicker={openFriendPlaceIdeasPicker}
+isAddFormOpen={showAddForm}
+/>
 
             {showAddForm && (
               <Paper sx={{ mt: 2, p: 2 }}>
@@ -866,8 +922,8 @@ export default function FriendsDashboard({ onSignOut }) {
             )}
           </Grid>
 
-             {/* Right Column: Hangouts, Groups */}
-            <Grid item xs={12} md={7}>
+{/* Right Column: Hangouts, Groups */}
+<Grid item xs={12} md={6}>
                {/* Hangout Scheduler (commitments, groups, plan/create buttons) */}
               <HangoutScheduler
               friends={friends}
@@ -932,7 +988,44 @@ export default function FriendsDashboard({ onSignOut }) {
         poiName={selectedHangoutPoiName}
         friends={friends}
         groups={groups}
-        />
-      </Box>
-    );
+         />
+
+       {/* Delete Friend Confirmation Dialog */}
+       <Dialog
+         open={deleteConfirmOpen}
+         onClose={handleCloseDeleteConfirm}
+         maxWidth="sm"
+         fullWidth
+         PaperProps={{ sx: { borderRadius: 3 } }}
+       >
+         <DialogTitle sx={{ fontWeight: 700 }}>Remove Friend</DialogTitle>
+         <DialogContent>
+           <Typography variant="body2" sx={{ mb: 1.5 }}>
+             Are you sure you want to remove <strong>{deleteTargetFriend?.name || 'this friend'}</strong>?
+           </Typography>
+           {deleteTargetFriend && (
+             <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+               Home location: <strong>{resolveFriendHomeLocation(deleteTargetFriend, pois)}</strong>
+             </Typography>
+           )}
+           <Typography variant="caption" sx={{ display: 'block', mt: 2, color: 'error.main' }}>
+             This action cannot be undone. All hangout history and planning data will be permanently removed.
+           </Typography>
+         </DialogContent>
+         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+           <Button onClick={handleCloseDeleteConfirm}>Cancel</Button>
+           <Button
+             onClick={handleConfirmDeleteFriend}
+             variant="contained"
+             sx={{
+               backgroundColor: '#c62828',
+               '&:hover': { backgroundColor: '#b71c1c' },
+             }}
+           >
+             Remove Friend
+           </Button>
+         </DialogActions>
+       </Dialog>
+     </Box>
+   );
 }
