@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import dayjs from 'dayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -15,18 +15,18 @@ import {
   Tabs,
   Tab,
   Chip,
-  Autocomplete,
   CircularProgress,
   MenuItem,
   IconButton,
   InputAdornment,
+  Autocomplete as MuiAutocomplete,
 } from '@mui/material';
+import { MapAutocomplete } from '@react-google-maps/api';
 import { createPoiFromCoordinates } from '../../lib/poiService';
 import { saveFriend, updateFriend, getFriends } from '../../lib/friendService';
 import { auth, db } from '../../firebaseConfig';
 import { collection, getDocs } from 'firebase/firestore';
 import { toast } from 'react-toastify';
-import { GoogleMap, Marker } from '@react-google-maps/api';
 import { FaPhone, FaDiscord, FaInstagram } from 'react-icons/fa6';
 import { IoLogoWhatsapp } from 'react-icons/io';
 
@@ -249,9 +249,7 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
     };
 
   const handleMapPoiCreated = async (poiData) => {
-    if (!poiData || !poiData.location || poiPickerMode !== 'tempLocation') {
-      return;
-      }
+    if (!poiData || !poiData.location) return;
 
     const user = auth.currentUser;
     if (!user) return;
@@ -261,19 +259,19 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
         userId: user.uid,
         lat: poiData.location.lat,
         lng: poiData.location.lng,
-        visibility: { access: 'private', scope: 'selective' },
-        });
+        visibility: { access: 'private', scope: 'all' },
+          });
 
       if (newPoi) {
         updateFriendLocation(poiPickerMode, newPoi.id);
         setExistingPOIs((prev) => [...prev, { ...newPoi, id: newPoi.id }]);
         setSelectedExistingPOI(newPoi.id);
-        }
-      } catch (error) {
+          }
+       } catch (error) {
       console.error('Error saving POI:', error);
       toast.error('Failed to save location.');
-      }
-    };
+       }
+     };
 
   const validateForm = () => {
     const errors = {};
@@ -435,12 +433,12 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
 
   return (
       <LocalizationProvider dateAdapter={AdapterDayjs}>
-        <Dialog
+         <Dialog
         open={true}
         onClose={onClose}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 3, backgroundColor: '#FBFBF9' } }}
+        PaperProps={{ sx: { borderRadius: 3, backgroundColor: '#FBFBF9', maxHeight: '85vh' } }}
         >
           <DialogTitle sx={{ pb: 1 }}>
             {editFriend ? 'Edit Friend' : 'Add New Friend'}
@@ -483,7 +481,7 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
                   required
                   />
 
-                        <Autocomplete
+                      <MuiAutocomplete
                     multiple
                     freeSolo
                     options={allTags || []}
@@ -492,13 +490,13 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
                                 : [])}
                     onChange={(event, newValue) => {
                       setFormData((prev) => ({
-                               ...prev,
+                                ...prev,
                         tagsInput: Array.isArray(newValue) && newValue.length > 0 ? newValue.join(', ') : ''
-                              }));
-                            }}
+                               }));
+                             }}
                      renderInput={(params) => (
                             <TextField
-                              {...params}
+                               {...params}
                          label="Tags"
                          placeholder="Type a tag and press Enter"
                          margin="normal"
@@ -511,11 +509,11 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
                             key={`tag-${index}`}
                             variant="outlined"
                             label={option}
-                                 {...getTagProps({ index })}
+                                  {...getTagProps({ index })}
                             sx={{ fontSize: '11px', height: '22px' }}
-                               />
+                                />
                              ))
-                           }
+                            }
                       sx={{ mb: 2 }}
                         />
 
@@ -698,36 +696,22 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
                         </Box>
                       )}
 
-                      {/* Calendar Popup */}
-                      {showCalendar && (
-                        <Box
-                       sx={{
-                         position: 'absolute',
-                         bottom: showCalendar === 'tempEnd' ? 120 : 'auto',
-                         top: showCalendar === 'tempStart' ? 200 : 'auto',
-                         left: 0,
-                         zIndex: 10,
-                         bgcolor: 'background.paper',
-                         borderRadius: 2,
-                         boxShadow: 3,
-                         p: 2,
-                          }}
-                        >
-                          <DateCalendar
-                         value={calendarDate}
-                         onChange={(newValue) => {
-                           setCalendarDate(newValue);
-                           handleCalendarChange(newValue);
-                            }}
-                         views={['year', 'month', 'day']}
-                          />
-                          <Box sx={{ mt: 1, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                            <Button size="small" onClick={() => setShowCalendar(null)}>
-                           Cancel
-                            </Button>
+            {/* Calendar popup — render inline below the date buttons */}
+                        {showCalendar && (
+                          <Box sx={{ mt: 1, mb: 2 }}>
+                            <DateCalendar
+                              value={calendarDate}
+                              onChange={(newValue) => {
+                                setCalendarDate(newValue);
+                                handleCalendarChange(newValue);
+                              }}
+                              views={['year', 'month', 'day']}
+                            />
+                            <Box sx={{ mt: 1, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                              <Button size="small" onClick={() => setShowCalendar(null)}>Cancel</Button>
+                            </Box>
                           </Box>
-                        </Box>
-                      )}
+                        )}
                     </Box>
                 </Box>
               )}
@@ -1003,119 +987,48 @@ function POICreateButton({ mode, onPoiCreated }) {
 }
 
 /**
- * Simple map POI picker using existing Google Maps library
- */
+    * SimpleMapPOIPicker — uses Google Places Autocomplete (no map).
+    * When a place is selected, creates a POI with access='private' and scope='all'.
+    */
 function SimpleMapPOIPicker({ mode, onClose, onPoiCreated }) {
-  const [searchAddr, setSearchAddr] = useState('');
-  const [selectedCoords, setSelectedCoords] = useState(null);
-  const [mapLoaded, setMapLoaded] = useState(false);
+  const autocompleteRef = useRef(null);
 
-    // Load Google Maps script
-  React.useEffect(() => {
-    if (typeof window.google !== 'undefined' && window.google.maps) {
-      setMapLoaded(true);
-      return;
-      }
-
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || ''}&libraries=places`;
-    script.async = true;
-    script.onload = () => setMapLoaded(true);
-    document.head.appendChild(script);
-
-    return () => {
-      document.head.removeChild(script);
+  const handlePlaceChanged = () => {
+    if (!autocompleteRef.current) return;
+    const place = autocompleteRef.current.getPlace();
+    if (!place?.geometry?.location) return;
+    const coords = {
+      lat: place.geometry.location.lat(),
+      lng: place.geometry.location.lng(),
       };
-    }, []);
-
-  const handleSearch = () => {
-    if (!window.google?.maps?.Geocoder) return;
-
-    const geocoder = new window.google.maps.Geocoder();
-    geocoder.geocode({ address: searchAddr }, (results, status) => {
-      if (status === 'OK' && results[0]) {
-        const loc = results[0].geometry.location;
-        setSelectedCoords({ lat: loc.lat(), lng: loc.lng() });
-        } else {
-        alert('Could not find that address.');
-        }
-      });
-    };
-
-  const handleUseCenter = (map) => {
-    if (!map) return;
-    const center = map.getCenter();
-    setSelectedCoords({ lat: center.lat(), lng: center.lng() });
-    };
-
-  const handleConfirm = () => {
-    if (!selectedCoords) return;
-    onPoiCreated({ location: selectedCoords });
+    onPoiCreated({ location: coords });
     onClose();
     };
 
   return (
-      <Dialog open={true} onClose={onClose} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 2 } }}>
-        <DialogTitle>Create New Location</DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-            <TextField
-            fullWidth
-            size="small"
-            placeholder="Search address or place name"
-            value={searchAddr}
-            onChange={(e) => setSearchAddr(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
-            />
-            <Button variant="outlined" onClick={handleSearch}>Search</Button>
-          </Box>
-
-          <Box sx={{ width: '100%', height: 300, borderRadius: 2, overflow: 'hidden', position: 'relative' }}>
-            {mapLoaded && window.google?.maps ? (
-              <GoogleMap
-              center={selectedCoords || { lat: 37.7749, lng: -122.4194 }}
-              zoom={12}
-              mapTypeId="roadmap"
-              options={{
-                streetViewControl: false,
-                mapTypeControl: false,
-                }}
-              >
-                {selectedCoords && (
-                  <Marker
-                  key="selected-marker"
-                  position={selectedCoords}
-                  draggable={true}
-                  onDragend={(e) => {
-                    const loc = e.latLng?.toJSON();
-                    if (loc) setSelectedCoords({ lat: loc.lat, lng: loc.lng });
-                    }}
+         <Dialog open={true} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 2, maxHeight: '80vh', overflowY: 'auto' } }}>
+           <DialogTitle>Create New Location</DialogTitle>
+            <DialogContent>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+             Search for a place below. Selecting a suggestion will create a private location visible on all your maps.
+              </Typography>
+              <MapAutocomplete
+                onLoad={(ac) => { autocompleteRef.current = ac; }}
+                onPlaceChanged={handlePlaceChanged}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    fullWidth
+                    size="small"
+                    placeholder="Search for a place..."
+                    autoComplete="off"
                   />
                 )}
-              </GoogleMap>
-            ) : (
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-              Loading map...
-              </Box>
-            )}
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ p: 2, gap: 1 }}>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button variant="outlined" onClick={() => {
-            // Get center of map for new coords
-          }}>
-          Reset to Map Center
-          </Button>
-          <Button
-          variant="contained"
-          onClick={handleConfirm}
-          disabled={!selectedCoords}
-          autoFocus
-          >
-          Use This Location
-          </Button>
-        </DialogActions>
-      </Dialog>
-    );
+              />
+            </DialogContent>
+            <DialogActions sx={{ p: 2, gap: 1 }}>
+              <Button onClick={onClose}>Cancel</Button>
+            </DialogActions>
+          </Dialog>
+        );
 }

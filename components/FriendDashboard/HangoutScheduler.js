@@ -1,6 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import dayjs from 'dayjs';
-import { GoogleMap, Marker } from '@react-google-maps/api';
+import { GoogleMap, Marker, MapAutocomplete } from '@react-google-maps/api';
 import {
   Box,
   Typography,
@@ -40,101 +40,46 @@ import { auth, db } from '../../firebaseConfig';
 import { collection, getDocs } from 'firebase/firestore';
 
 /* ========================================================================
- * SimpleMapPOIPicker — Top-level component (defined OUTSIDE HangoutScheduler
- * to prevent re-creation / re-mount issues on every parent render).
- * Matches the same pattern used in FriendForm.js.
+ * SimpleMapPOIPicker — uses Google Places Autocomplete (no map).
+ * When a place is selected, creates a POI with access='private' and scope='all'.
  * ======================================================================== */
 function SimpleMapPOIPicker({ onClose, onPoiCreated }) {
-  const [searchAddr, setSearchAddr] = useState('');
-  const [selectedCoords, setSelectedCoords] = useState(null);
-  const [mapLoaded, setMapLoaded] = useState(false);
+  const autocompleteRef = useRef(null);
 
-  React.useEffect(() => {
-    if (typeof window.google !== 'undefined' && window.google.maps) {
-      setMapLoaded(true);
-      return;
-    }
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || ''}&libraries=places`;
-    script.async = true;
-    script.onload = () => setMapLoaded(true);
-    document.head.appendChild(script);
-    return () => { document.head.removeChild(script); };
-  }, []);
+  const handlePlaceChanged = () => {
+    if (!autocompleteRef.current) return;
+    const place = autocompleteRef.current.getPlace();
+    if (!place?.geometry?.location) return;
 
-  const handleSearch = () => {
-    if (!window.google?.maps?.Geocoder) return;
-    const geocoder = new window.google.maps.Geocoder();
-    geocoder.geocode({ address: searchAddr }, (results, status) => {
-      if (status === 'OK' && results[0]) {
-        const loc = results[0].geometry.location;
-        setSelectedCoords({ lat: loc.lat(), lng: loc.lng() });
-      } else {
-        alert('Could not find that address.');
-      }
-    });
-  };
-
-  const handleConfirm = () => {
-    if (!selectedCoords) return;
-    onPoiCreated(selectedCoords);
+    const coords = {
+      lat: place.geometry.location.lat(),
+      lng: place.geometry.location.lng(),
+     };
+    onPoiCreated(coords);
     onClose();
-  };
+   };
 
   return (
-    <Box sx={{ mt: 2 }}>
-      <Typography variant="subtitle2" gutterBottom>Create New Location</Typography>
-      <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-        Click the button below to open the map and create a new location.
-      </Typography>
-      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-        <TextField
-          fullWidth
-          size="small"
-          placeholder="Search address or place name"
-          value={searchAddr}
-          onChange={(e) => setSearchAddr(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
+      <Box sx={{ mt: 2 }}>
+        <Typography variant="subtitle2" gutterBottom>Create New Location</Typography>
+        <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+         Search for a place below. Selecting a suggestion will create a private location visible on all your maps.
+        </Typography>
+        <MapAutocomplete
+         onLoad={(ac) => { autocompleteRef.current = ac; }}
+         onPlaceChanged={handlePlaceChanged}
+         renderInput={(params) => (
+           <TextField
+             {...params}
+            fullWidth
+            size="small"
+            placeholder="Search for a place..."
+           />
+         )}
         />
-        <Button variant="outlined" onClick={handleSearch}>Search</Button>
       </Box>
-
-      <Box sx={{ width: '100%', height: 300, borderRadius: 2, overflow: 'hidden', position: 'relative' }}>
-        {mapLoaded && window.google?.maps ? (
-          <GoogleMap
-            center={selectedCoords || { lat: 37.7749, lng: -122.4194 }}
-            zoom={12}
-            mapTypeId="roadmap"
-            options={{ streetViewControl: false, mapTypeControl: false }}
-          >
-            {selectedCoords && (
-              <Marker
-                key="selected-marker"
-                position={selectedCoords}
-                draggable={true}
-                onDragend={(e) => {
-                  const loc = e.latLng?.toJSON();
-                  if (loc) setSelectedCoords({ lat: loc.lat, lng: loc.lng });
-                }}
-              />
-            )}
-          </GoogleMap>
-        ) : (
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-            Loading map...
-          </Box>
-        )}
-      </Box>
-
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={handleConfirm} disabled={!selectedCoords} autoFocus>
-          Use This Location
-        </Button>
-      </Box>
-    </Box>
-  );
-}
+    );
+ }
 
 /* ========================================================================
  * SchedulingFormDialog — Extracted to top-level so React keeps a stable
