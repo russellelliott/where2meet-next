@@ -806,20 +806,13 @@ export default function FriendsDashboard({ onSignOut }) {
           </Snackbar>
         )}
 
-         {/* Header - Title only (Add Friend button is in FriendList) */}
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="h4" fontWeight="bold">
-          Friends Dashboard
-          </Typography>
-        </Box>
-
          {/* StatsGrid - Full Width, Spans Both Columns */}
         <StatsGrid friends={friends} plannedHangouts={plannedHangouts} />
 
          {/* Two-Column Dashboard Layout */}
         <Grid container spacing={{ xs: 2, sm: 3 }}>
 {/* Left Column: Friend List */}
-<Grid item xs={12} md={5}>
+<Grid item xs={12} md={4}>
 <FriendList
 friends={friends}
 cityCache={cityCache}
@@ -923,7 +916,7 @@ isAddFormOpen={showAddForm}
           </Grid>
 
 {/* Right Column: Hangouts, Groups */}
-<Grid item xs={12} md={7}>
+<Grid item xs={12} md={8}>
                {/* Hangout Scheduler (commitments, groups, plan/create buttons) */}
               <HangoutScheduler
               friends={friends}

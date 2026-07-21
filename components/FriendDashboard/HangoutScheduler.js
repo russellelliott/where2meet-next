@@ -1185,13 +1185,15 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
           </Box>
         </Box>
 
-        {/* Groups Quick Overview */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 1.5 }}>
-            Preset Friend Groups
-          </Typography>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
-            {(groups || []).map((group) => {
+          {/* Scrollable container for entire right column content */}
+          <Box sx={{ flex: 1, overflowY: 'auto', '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '3px' } }}>
+          {/* Groups Quick Overview */}
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 1.5 }}>
+             Preset Friend Groups
+            </Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
+              {(groups || []).map((group) => {
               const memberNames = (group.memberIds || [])
                 .map((id) => (friends || []).find((f) => f.id === id)?.name?.split(' ')[0])
                 .filter(Boolean)
@@ -1358,17 +1360,17 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
                 );
               })}
             </Box>
-          ) : (
-            <Box sx={{ textAlign: 'center', py: 4, px: 3, backgroundColor: '#FBFBF9', border: '1px dashed #E0DED7', borderRadius: 2 }}>
-              <Typography variant="body2" sx={{ color: '#9B988C', fontStyle: 'italic', fontSize: '12px' }}>
-                No active planned events. Click Plan Event to schedule.
-              </Typography>
-            </Box>
-          )}
-        </Box>
+            ) : (
+              <Box sx={{ textAlign: 'center', py: 4, px: 3, backgroundColor: '#FBFBF9', border: '1px dashed #E0DED7', borderRadius: 2 }}>
+                <Typography variant="body2" sx={{ color: '#9B988C', fontStyle: 'italic', fontSize: '12px' }}>
+                 No active planned events. Click Plan Event to schedule.
+                </Typography>
+              </Box>
+            )}
+          </Box>
 
-          {/* Historical Logs */}
-          <Box>
+            {/* Historical Logs */}
+            <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <ClipboardList size={14} color="#7D7B6D" />
@@ -1378,8 +1380,8 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
               </Box>
             </Box>
 
-             {history.length > 0 ? (
-               <Box sx={{ maxHeight: 250, overflowY: 'auto', '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '3px' } }}>
+              {history.length > 0 ? (
+                <Box sx={{ flex: 1, overflowY: 'auto', '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '3px' } }}>
                  {history.map((h, idx) => {
                  const attendeeNames = h.friendIds
                      .map((fId) => friends.find((f) => f.id === fId)?.name?.split(' ')[0])
@@ -1536,13 +1538,16 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
                   );
                 })}
               </Box>
-            ) : (
-              <Typography variant="body2" sx={{ color: '#9B988C', fontStyle: 'italic', fontSize: '12px' }}>
-               No past completed logs.
-              </Typography>
-            )}
-          </Box>
-      </Paper>
-    </Box>
-  );
+              ) : (
+                <Box sx={{ py: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Typography variant="body2" sx={{ color: '#9B988C', fontStyle: 'italic', fontSize: '12px' }}>
+                 No past completed logs.
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+           </Box>
+       </Paper>
+     </Box>
+   );
 }
