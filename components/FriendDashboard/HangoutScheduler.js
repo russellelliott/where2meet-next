@@ -1,6 +1,5 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import dayjs from 'dayjs';
-import { GoogleMap, Marker, Autocomplete as GoogleAutocomplete } from '@react-google-maps/api';
 import {
   Box,
   Typography,
@@ -35,54 +34,11 @@ import {
   Pencil,
   Trash2,
 } from 'lucide-react';
-import { createPoiFromCoordinates } from '../../lib/poiService';
 import { auth, db } from '../../firebaseConfig';
 import { collection, getDocs } from 'firebase/firestore';
 
 /* ========================================================================
- * SimpleMapPOIPicker — uses Google Places Autocomplete (no map).
- * When a place is selected, creates a POI with access='private' and scope='all'.
- * ======================================================================== */
-function SimpleMapPOIPicker({ onClose, onPoiCreated }) {
-  const autocompleteRef = useRef(null);
-
-  const handlePlaceChanged = () => {
-    if (!autocompleteRef.current) return;
-    const place = autocompleteRef.current.getPlace();
-    if (!place?.geometry?.location) return;
-
-    const coords = {
-      lat: place.geometry.location.lat(),
-      lng: place.geometry.location.lng(),
-     };
-    onPoiCreated(coords);
-    onClose();
-   };
-
-  return (
-      <Box sx={{ mt: 2 }}>
-        <Typography variant="subtitle2" gutterBottom>Create New Location</Typography>
-        <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-         Search for a place below. Selecting a suggestion will create a private location visible on all your maps.
-        </Typography>
-        <GoogleAutocomplete
-         onLoad={(ac) => { autocompleteRef.current = ac; }}
-         onPlaceChanged={handlePlaceChanged}
-         renderInput={(params) => (
-           <TextField
-             {...params}
-            fullWidth
-            size="small"
-            placeholder="Search for a place..."
-           />
-         )}
-        />
-      </Box>
-    );
- }
-
-/* ========================================================================
- * SchedulingFormDialog — Extracted to top-level so React keeps a stable
+   * SchedulingFormDialog — Extracted to top-level so React keeps a stable
  * component reference across parent re-renders.  All state / callbacks are
  * passed in via props (the same pattern that works in FriendForm.js).
  * ======================================================================== */
@@ -443,14 +399,7 @@ function SchedulingFormDialog(props) {
                   )}
                 </Box>
 
-                {/* Create New via Map component */}
-                <Box sx={{ mt: 0, borderTop: '1px solid #e0e0e0', pt: 2 }}>
-                  <SimpleMapPOIPicker key={`poi-picker-schedule-${selectedPoiId}`} onClose={cancelLocationSelection} onPoiCreated={(coords) => {
-                    setSelectedPoiId(null);
-                    cancelLocationSelection();
-                  }} />
-                </Box>
-              </DialogContent>
+                 </DialogContent>
 
               <DialogActions sx={{ p: 2, gap: 1 }}>
                 <Button onClick={cancelLocationSelection}>Cancel</Button>

@@ -21,8 +21,6 @@ import {
   InputAdornment,
   Autocomplete as MuiAutocomplete,
 } from '@mui/material';
-import { Autocomplete as GoogleAutocomplete } from '@react-google-maps/api';
-import { createPoiFromCoordinates } from '../../lib/poiService';
 import { saveFriend, updateFriend, getFriends } from '../../lib/friendService';
 import { auth, db } from '../../firebaseConfig';
 import { collection, getDocs } from 'firebase/firestore';
@@ -247,31 +245,6 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
     const poi = existingPOIs.find((p) => p.id === poiId);
     return poi ? poi.name : null;
     };
-
-  const handleMapPoiCreated = async (poiData) => {
-    if (!poiData || !poiData.location) return;
-
-    const user = auth.currentUser;
-    if (!user) return;
-
-    try {
-      const newPoi = await createPoiFromCoordinates({
-        userId: user.uid,
-        lat: poiData.location.lat,
-        lng: poiData.location.lng,
-        visibility: { access: 'private', scope: 'all' },
-          });
-
-      if (newPoi) {
-        updateFriendLocation(poiPickerMode, newPoi.id);
-        setExistingPOIs((prev) => [...prev, { ...newPoi, id: newPoi.id }]);
-        setSelectedExistingPOI(newPoi.id);
-          }
-       } catch (error) {
-      console.error('Error saving POI:', error);
-      toast.error('Failed to save location.');
-       }
-     };
 
   const validateForm = () => {
     const errors = {};
@@ -917,17 +890,7 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
                       )}
                     </Box>
 
-                    {/* Create New via Map component */}
-                    <Box sx={{ mt: 2, borderTop: '1px solid #e0e0e0', pt: 2 }}>
-                      <Typography variant="subtitle2" gutterBottom>
-                      Create New Location
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-                      Click the button below to open the map and create a new location.
-                      </Typography>
-                      <POICreateButton key={`poi-create-${poiPickerMode}`} mode={poiPickerMode} onPoiCreated={handleMapPoiCreated} />
-                    </Box>
-                  </DialogContent>
+                   </DialogContent>
                   <DialogActions sx={{ p: 2, gap: 1 }}>
                     <Button onClick={cancelPOISelection}>Cancel</Button>
                     {selectedExistingPOI && (
@@ -957,78 +920,4 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
         </Dialog>
       </LocalizationProvider>
     );
-}
-
-/**
- * Sub-component: Button that opens a map for POI creation
- */
-function POICreateButton({ mode, onPoiCreated }) {
-  const [open, setOpen] = useState(false);
-
-  return (
-      <>
-        <Button
-        variant="outlined"
-        onClick={() => setOpen(true)}
-        sx={{ textTransform: 'none', mt: 1 }}
-        >
-          + Create New Location on Map
-        </Button>
-
-        {open && (
-          <SimpleMapPOIPicker
-          mode={mode}
-          onClose={() => setOpen(false)}
-          onPoiCreated={onPoiCreated}
-          />
-        )}
-      </>
-    );
-}
-
-/**
-    * SimpleMapPOIPicker — uses Google Places Autocomplete (no map).
-    * When a place is selected, creates a POI with access='private' and scope='all'.
-    */
-function SimpleMapPOIPicker({ mode, onClose, onPoiCreated }) {
-  const autocompleteRef = useRef(null);
-
-  const handlePlaceChanged = () => {
-    if (!autocompleteRef.current) return;
-    const place = autocompleteRef.current.getPlace();
-    if (!place?.geometry?.location) return;
-    const coords = {
-      lat: place.geometry.location.lat(),
-      lng: place.geometry.location.lng(),
-      };
-    onPoiCreated({ location: coords });
-    onClose();
-    };
-
-  return (
-         <Dialog open={true} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 2, maxHeight: '80vh', overflowY: 'auto' } }}>
-           <DialogTitle>Create New Location</DialogTitle>
-            <DialogContent>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-             Search for a place below. Selecting a suggestion will create a private location visible on all your maps.
-              </Typography>
-               <GoogleAutocomplete
-                onLoad={(ac) => { autocompleteRef.current = ac; }}
-                onPlaceChanged={handlePlaceChanged}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    fullWidth
-                    size="small"
-                    placeholder="Search for a place..."
-                    autoComplete="off"
-                  />
-                )}
-              />
-            </DialogContent>
-            <DialogActions sx={{ p: 2, gap: 1 }}>
-              <Button onClick={onClose}>Cancel</Button>
-            </DialogActions>
-          </Dialog>
-        );
 }
