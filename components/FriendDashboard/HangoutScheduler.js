@@ -38,7 +38,7 @@ import { auth, db } from '../../firebaseConfig';
 import { collection, getDocs } from 'firebase/firestore';
 
 /* ========================================================================
-   * SchedulingFormDialog — Extracted to top-level so React keeps a stable
+    * SchedulingFormDialog — Extracted to top-level so React keeps a stable
  * component reference across parent re-renders.  All state / callbacks are
  * passed in via props (the same pattern that works in FriendForm.js).
  * ======================================================================== */
@@ -73,34 +73,34 @@ function SchedulingFormDialog(props) {
     editingHangout = null,
     onSaveHangout = null,
     userPois = [],
-    } = props;
+     } = props;
 
   const handleSubmit = useCallback((e) => {
     e.preventDefault();
 
     if (isEditingHangoutMode && onSaveHangout && editingHangout) {
-      // Update existing hangout - only include fields that have values
+       // Update existing hangout - only include fields that have values
       const hangoutData = {
         title: hangoutTitle.trim() || 'Untitled Hangout',
         type: hangoutType,
         datetime: new Date(datetime).toISOString(),
         friendIds: customAttendeeIds.length > 0 ? [...customAttendeeIds] : [],
-       };
+        };
 
-      // Only add poiId if selected
+       // Only add poiId if selected
       if (selectedPoiId) {
         hangoutData.poiId = selectedPoiId;
-       }
+        }
 
-      // Only add description if non-empty
+       // Only add description if non-empty
       if (details.trim()) {
         hangoutData.description = details.trim();
-       }
+        }
 
-      // Only add groupId if selected
+       // Only add groupId if selected
       if (selectedGroupId) {
         hangoutData.groupId = selectedGroupId;
-       }
+        }
 
       onSaveHangout(hangoutData).then(() => {
         setHangoutTitle('');
@@ -109,51 +109,51 @@ function SchedulingFormDialog(props) {
         setSelectedPoiId(null);
         setDetails('');
         setIsScheduling(false);
-       }).catch((err) => {
+        }).catch((err) => {
         console.error('Error updating hangout:', err);
-       });
-    } else if (!isEditingHangoutMode && formOnSubmit) {
-      // Create new hangout (original behavior)
+        });
+     } else if (!isEditingHangoutMode && formOnSubmit) {
+       // Create new hangout (original behavior)
       if (!hangoutTitle.trim() || customAttendeeIds.length === 0) {
         return;
-      }
+       }
       const hangoutData = {
         title: hangoutTitle.trim(),
         poiId: selectedPoiId || null,
         type: hangoutType,
         datetime: new Date(datetime).toISOString(),
         friendIds: customAttendeeIds.length > 0 ? [...customAttendeeIds] : [],
-      };
-       // Only add optional fields if they have actual values
+       };
+        // Only add optional fields if they have actual values
       if (details.trim()) {
         hangoutData.description = details.trim();
-       }
+        }
       if (selectedGroupId) {
         hangoutData.groupId = selectedGroupId;
-       }
+        }
       formOnSubmit(e);
-    }
-  }, [isEditingHangoutMode, onSaveHangout, editingHangout, hangoutTitle, selectedPoiId, hangoutType, datetime, details, customAttendeeIds, selectedGroupId, formOnSubmit]);
+     }
+   }, [isEditingHangoutMode, onSaveHangout, editingHangout, hangoutTitle, selectedPoiId, hangoutType, datetime, details, customAttendeeIds, selectedGroupId, formOnSubmit]);
 
   return (
-    <Dialog
+     <Dialog
       open={isScheduling}
       onClose={() => setIsScheduling(false)}
       maxWidth="md"
       fullWidth
       PaperProps={{ sx: { borderRadius: 3, backgroundColor: '#FBFBF9' } }}
-    >
-      <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Calendar size={18} color="#CC7A5C" />
-        {isEditingHangoutMode ? 'Edit Hangout' : 'Schedule Group Hangout'}
-      </DialogTitle>
+     >
+       <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+         <Calendar size={18} color="#CC7A5C" />
+         {isEditingHangoutMode ? 'Edit Hangout' : 'Schedule Group Hangout'}
+       </DialogTitle>
 
-      <DialogContent dividers>
-        <form id="scheduleHangoutForm" onSubmit={handleSubmit}>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-            {/* Left: event details */}
-            <Box>
-              <TextField
+       <DialogContent dividers>
+         <form id="scheduleHangoutForm" onSubmit={handleSubmit}>
+           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
+             {/* Left: event details */}
+             <Box>
+               <TextField
                 fullWidth
                 size="small"
                 label="Hangout Title"
@@ -162,36 +162,36 @@ function SchedulingFormDialog(props) {
                 onChange={(e) => setHangoutTitle(e.target.value)}
                 required={!isEditingHangoutMode}
                 sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-              />
+               />
 
-              <FormControl fullWidth size="small" sx={{ mb: 2 }}>
-                <InputLabel>Pre-set Group</InputLabel>
-                <Select
+               <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+                 <InputLabel>Pre-set Group</InputLabel>
+                 <Select
                   value={selectedGroupId}
                   onChange={(e) => handleGroupChange(e.target.value)}
                   label="Pre-set Group"
-                >
-                  <MenuItem value="">-- Custom (Select Friends Below) --</MenuItem>
-                  {groups.map((g) => (
-                    <MenuItem key={g.id} value={g.id}>{g.name}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+                 >
+                   <MenuItem value="">-- Custom (Select Friends Below) --</MenuItem>
+                   {groups.map((g) => (
+                     <MenuItem key={g.id} value={g.id}>{g.name}</MenuItem>
+                   ))}
+                 </Select>
+               </FormControl>
 
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, mb: 2 }}>
-                {/* Type toggle using MUI ToggleButtonGroup */}
-                <Box>
-                  <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 0.5 }}>
+               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, mb: 2 }}>
+                 {/* Type toggle using MUI ToggleButtonGroup */}
+                 <Box>
+                   <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 0.5 }}>
                     Type
-                  </Typography>
-                  <ToggleButtonGroup
+                   </Typography>
+                   <ToggleButtonGroup
                     value={hangoutType}
                     exclusive
                     onChange={(e, newType) => newType && setHangoutType(newType)}
                     sx={{
                       width: '100%',
                       borderRadius: 2,
-                      '& .MuiToggleButton-root': {
+                       '& .MuiToggleButton-root': {
                         fontSize: '11px',
                         fontWeight: 600,
                         fontFamily: 'monospace',
@@ -200,30 +200,30 @@ function SchedulingFormDialog(props) {
                         border: '1px solid #E0DED7',
                         borderRadius: 2,
                         transition: 'all 0.2s ease',
-                      },
-                      '& .Mui-selected': {
+                       },
+                       '& .Mui-selected': {
                         backgroundColor: '#5A5A40',
                         color: '#FFFFFF',
-                      },
-                      '& .MuiToggleButton-root:first-of-type': {
+                       },
+                       '& .MuiToggleButton-root:first-of-type': {
                         borderRadius: hangoutType === 'physical' ? '2px 0 0 2px' : 2,
-                      },
-                      '& .MuiToggleButton-root:last-of-type': {
+                       },
+                       '& .MuiToggleButton-root:last-of-type': {
                         borderRadius: hangoutType === 'virtual' ? '0 2px 2px 0' : 2,
-                      },
-                    }}
-                  >
-                    <ToggleButton value="physical">Physical</ToggleButton>
-                    <ToggleButton value="virtual">Virtual</ToggleButton>
-                  </ToggleButtonGroup>
-                </Box>
+                       },
+                     }}
+                   >
+                     <ToggleButton value="physical">Physical</ToggleButton>
+                     <ToggleButton value="virtual">Virtual</ToggleButton>
+                   </ToggleButtonGroup>
+                 </Box>
 
-                {/* Date & time */}
-                <Box>
-                  <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 0.5 }}>
+                 {/* Date & time */}
+                 <Box>
+                   <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 0.5 }}>
                     Date & Time
-                  </Typography>
-                  <TextField
+                   </Typography>
+                   <TextField
                     fullWidth
                     type="datetime-local"
                     value={datetime}
@@ -231,17 +231,17 @@ function SchedulingFormDialog(props) {
                     size="small"
                     InputLabelProps={{ shrink: true }}
                     sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                  />
-                </Box>
-              </Box>
+                   />
+                 </Box>
+               </Box>
 
-              {/* Location selection button - only for physical type */}
-              {hangoutType === 'physical' && (
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 0.5 }}>
+               {/* Location selection button - only for physical type */}
+               {hangoutType === 'physical' && (
+                 <Box sx={{ mb: 2 }}>
+                   <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 0.5 }}>
                     Destination
-                  </Typography>
-                    <Button
+                   </Typography>
+                     <Button
                     fullWidth
                     variant="outlined"
                     onClick={() => openPoiPicker(editingHangout?.poiId || null)}
@@ -250,18 +250,18 @@ function SchedulingFormDialog(props) {
                       textTransform: 'none',
                       justifyContent: 'flex-start',
                       borderRadius: 2,
-                    }}
-                    >
-                      {selectedPoiId
-                        ? `📍 ${getPoiNameById(selectedPoiId) || getPoiAddressById(selectedPoiId) || 'Loading...'}`
-                        : editingHangout?.poiId && !selectedPoiId
-                          ? `📍 ${getPoiAddressById(editingHangout.poiId) || getPoiNameById(editingHangout.poiId) || '+ Select Location on Map'}`
-                          : '+ Select Location on Map'}
-                    </Button>
-                </Box>
-              )}
+                     }}
+                     >
+                       {selectedPoiId
+                         ? `📍 ${getPoiNameById(selectedPoiId) || getPoiAddressById(selectedPoiId) || 'Loading...'}`
+                         : editingHangout?.poiId && !selectedPoiId
+                           ? `📍 ${getPoiAddressById(editingHangout.poiId) || getPoiNameById(editingHangout.poiId) || '+ Select Location on Map'}`
+                           : '+ Select Location on Map'}
+                     </Button>
+                 </Box>
+               )}
 
-              <TextField
+               <TextField
                 fullWidth
                 size="small"
                 multiline
@@ -271,56 +271,56 @@ function SchedulingFormDialog(props) {
                 value={details}
                 onChange={(e) => setDetails(e.target.value)}
                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-              />
-            </Box>
-
-            {/* Right: attendees */}
-             <Box>
-               <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 1 }}>
-                Attendees (Customize Selection)
-               </Typography>
-                 <Paper variant="outlined" sx={{ p: 1.5, maxHeight: 230, overflowY: 'auto', borderRadius: 2 }}>
-                   {friends.map((f) => {
-                    const isChecked = customAttendeeIds.includes(f.id);
-                     // Find which groups this friend belongs to by checking groups[].memberIds
-                    const friendGroups = (groups || [])
-                      .filter(g => Array.isArray(g.memberIds) && g.memberIds.includes(f.id))
-                      .map(g => g.name)
-                      .join(', ');
-                    return (
-                        <Box key={f.id} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.5, px: 1, borderRadius: 1, cursor: 'pointer', '&:hover': { backgroundColor: '#FBFBF9' } }}>
-                          <Typography variant="body2" sx={{ fontSize: '12px', flex: 1 }}>{f.name}</Typography>
-                          {friendGroups && (
-                            <Typography variant="caption" sx={{ fontSize: '9px', color: '#9B988C' }}>{friendGroups}</Typography>
-                          )}
-                          <input type="checkbox" checked={isChecked} onChange={() => toggleAttendee(f.id)} style={{ accentColor: '#CC7A5C' }} />
-                        </Box>
-                      );
-                    })}
-                  </Paper>
-               <Typography variant="caption" sx={{ display: 'block', fontStyle: 'italic', color: '#7D7B6D', mt: 1, fontSize: '10px' }}>
-                Add or remove specific individuals for this hangout commitment.
-               </Typography>
+               />
              </Box>
-          </Box>
 
-          <Divider sx={{ my: 2 }} />
+             {/* Right: attendees */}
+              <Box>
+                <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 1 }}>
+                Attendees (Customize Selection)
+                </Typography>
+                  <Paper variant="outlined" sx={{ p: 1.5, maxHeight: 230, overflowY: 'auto', borderRadius: 2 }}>
+                    {friends.map((f) => {
+                    const isChecked = customAttendeeIds.includes(f.id);
+                      // Find which groups this friend belongs to by checking groups[].memberIds
+                    const friendGroups = (groups || [])
+                       .filter(g => Array.isArray(g.memberIds) && g.memberIds.includes(f.id))
+                       .map(g => g.name)
+                       .join(', ');
+                    return (
+                         <Box key={f.id} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.5, px: 1, borderRadius: 1, cursor: 'pointer', '&:hover': { backgroundColor: '#FBFBF9' } }}>
+                           <Typography variant="body2" sx={{ fontSize: '12px', flex: 1 }}>{f.name}</Typography>
+                           {friendGroups && (
+                             <Typography variant="caption" sx={{ fontSize: '9px', color: '#9B988C' }}>{friendGroups}</Typography>
+                           )}
+                           <input type="checkbox" checked={isChecked} onChange={() => toggleAttendee(f.id)} style={{ accentColor: '#CC7A5C' }} />
+                         </Box>
+                       );
+                     })}
+                   </Paper>
+                <Typography variant="caption" sx={{ display: 'block', fontStyle: 'italic', color: '#7D7B6D', mt: 1, fontSize: '10px' }}>
+                Add or remove specific individuals for this hangout commitment.
+                </Typography>
+              </Box>
+           </Box>
 
-          {/* POI Picker Dialog — nested inside SchedulingFormDialog so it appears on top */}
-          {showPoiPicker && hangoutType === 'physical' && (
-            <Dialog
+           <Divider sx={{ my: 2 }} />
+
+           {/* POI Picker Dialog — nested inside SchedulingFormDialog so it appears on top */}
+           {showPoiPicker && hangoutType === 'physical' && (
+             <Dialog
               open={true}
               onClose={cancelLocationSelection}
               maxWidth="md"
               fullWidth
               PaperProps={{ sx: { borderRadius: 2 } }}
-            >
-              <DialogTitle>Select or Create a Location</DialogTitle>
+             >
+               <DialogTitle>Select or Create a Location</DialogTitle>
 
-              {/* Search bar */}
-              <DialogContent>
-                <Box sx={{ mb: 2 }}>
-                  <TextField
+               {/* Search bar */}
+               <DialogContent>
+                 <Box sx={{ mb: 2 }}>
+                   <TextField
                     fullWidth
                     size="small"
                     placeholder="Search locations by name, address, or city..."
@@ -328,36 +328,36 @@ function SchedulingFormDialog(props) {
                     onChange={handlePoiSearchChange}
                     InputProps={{
                       startAdornment: (
-                        <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
-                          <Search size={14} color="#9B988C" />
-                        </Box>
-                      ),
-                    }}
-                  />
-                </Box>
+                         <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
+                           <Search size={14} color="#9B988C" />
+                         </Box>
+                       ),
+                     }}
+                   />
+                 </Box>
 
-                {/* Existing POIs list */}
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2" gutterBottom>
+                 {/* Existing POIs list */}
+                 <Box sx={{ mb: 2 }}>
+                   <Typography variant="subtitle2" gutterBottom>
                     Existing Locations
-                  </Typography>
-                  {loadingPOIs ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
-                      <CircularProgress size={24} />
-                    </Box>
-                  ) : (
-                    <Box sx={{ maxHeight: 200, overflowY: 'auto' }}>
-                       {existingPOIs.map((poi) => {
-                          // Find which friends have this POI in their placeIdeas
+                   </Typography>
+                   {loadingPOIs ? (
+                     <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+                       <CircularProgress size={24} />
+                     </Box>
+                   ) : (
+                     <Box sx={{ maxHeight: 200, overflowY: 'auto' }}>
+                        {existingPOIs.map((poi) => {
+                           // Find which friends have this POI in their placeIdeas
                           const friendsWithPoi = (friends || []).filter(f =>
-                             (f.placeIdeas || []).includes(poi.id)
-                           );
-                          // Find which groups have this POI in their placeIdeas
+                              (f.placeIdeas || []).includes(poi.id)
+                            );
+                           // Find which groups have this POI in their placeIdeas
                           const groupsWithPoi = (groups || []).filter(g =>
-                             (g.placeIdeas || []).includes(poi.id)
-                           );
+                              (g.placeIdeas || []).includes(poi.id)
+                            );
                           return (
-                             <Box
+                              <Box
                               key={poi.id}
                               onClick={() => handleSelectPoi(poi.id)}
                               sx={{
@@ -366,62 +366,62 @@ function SchedulingFormDialog(props) {
                                 borderRadius: 1,
                                 mb: 0.5,
                                 bgcolor: selectedPoiId === poi.id ? 'action.selected' : 'transparent',
-                                '&:hover': { bgcolor: 'action.hover' },
-                               }}
-                              >
-                               <Typography variant="body2">{poi.name}</Typography>
-                               <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                                 {poi.location?.address || `${poi.location?.lat}, ${poi.location?.lng}`}
-                               </Typography>
-                               {(friendsWithPoi.length > 0 || groupsWithPoi.length > 0) && (
-                                 <Box sx={{ mt: 0.5, ml: 1 }}>
-                                   {friendsWithPoi.length > 0 && (
-                                     <Typography variant="caption" sx={{ display: 'block', color: '#7D7B6D' }}>
-                                       📌 {friendsWithPoi.map(f => f.name).join(', ')}
-                                     </Typography>
-                                   )}
-                                   {groupsWithPoi.length > 0 && (
-                                     <Typography variant="caption" sx={{ display: 'block', color: '#7D7B6D' }}>
-                                       👥 {groupsWithPoi.map(g => g.name).join(', ')}
-                                     </Typography>
-                                   )}
-                                 </Box>
-                               )}
-                              </Box>
-                            );
-                         })}
-                      {existingPOIs.length === 0 && (
-                        <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
+                                 '&:hover': { bgcolor: 'action.hover' },
+                                }}
+                               >
+                                <Typography variant="body2">{poi.name}</Typography>
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                  {poi.location?.address || `${poi.location?.lat}, ${poi.location?.lng}`}
+                                </Typography>
+                                {(friendsWithPoi.length > 0 || groupsWithPoi.length > 0) && (
+                                  <Box sx={{ mt: 0.5, ml: 1 }}>
+                                    {friendsWithPoi.length > 0 && (
+                                      <Typography variant="caption" sx={{ display: 'block', color: '#7D7B6D' }}>
+                                        📌 {friendsWithPoi.map(f => f.name).join(', ')}
+                                      </Typography>
+                                    )}
+                                    {groupsWithPoi.length > 0 && (
+                                      <Typography variant="caption" sx={{ display: 'block', color: '#7D7B6D' }}>
+                                        👥 {groupsWithPoi.map(g => g.name).join(', ')}
+                                      </Typography>
+                                    )}
+                                  </Box>
+                                )}
+                               </Box>
+                             );
+                          })}
+                       {existingPOIs.length === 0 && (
+                         <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
                           No locations found. Search above or create a new one below.
-                        </Typography>
-                      )}
-                    </Box>
-                  )}
-                </Box>
+                         </Typography>
+                       )}
+                     </Box>
+                   )}
+                 </Box>
 
-                 </DialogContent>
+                  </DialogContent>
 
-              <DialogActions sx={{ p: 2, gap: 1 }}>
-                <Button onClick={cancelLocationSelection}>Cancel</Button>
-                {selectedPoiId && (
-                  <Button variant="contained" onClick={confirmLocationSelection} autoFocus>
+               <DialogActions sx={{ p: 2, gap: 1 }}>
+                 <Button onClick={cancelLocationSelection}>Cancel</Button>
+                 {selectedPoiId && (
+                   <Button variant="contained" onClick={confirmLocationSelection} autoFocus>
                     Use Selected Location
-                  </Button>
-                )}
-              </DialogActions>
-            </Dialog>
-          )}
-        </form>
-      </DialogContent>
+                   </Button>
+                 )}
+               </DialogActions>
+             </Dialog>
+           )}
+         </form>
+       </DialogContent>
 
-      <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-        <Button onClick={() => setIsScheduling(false)}>Cancel</Button>
-        <Button type="submit" form="scheduleHangoutForm" variant="contained" sx={{ backgroundColor: '#5A5A40', '&:hover': { backgroundColor: '#434330' } }}>
-          {isEditingHangoutMode ? 'Save Hangout' : 'Create Hangout'}
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
+       <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+         <Button onClick={() => setIsScheduling(false)}>Cancel</Button>
+         <Button type="submit" form="scheduleHangoutForm" variant="contained" sx={{ backgroundColor: '#5A5A40', '&:hover': { backgroundColor: '#434330' } }}>
+           {isEditingHangoutMode ? 'Save Hangout' : 'Create Hangout'}
+         </Button>
+       </DialogActions>
+     </Dialog>
+   );
 }
 
 /* ========================================================================
@@ -438,20 +438,20 @@ function GroupCreationForm(props) {
     onSubmit: formOnSubmit,
     toggleGroupMember,
     editingGroup = null,
-  } = props;
+   } = props;
 
-  // Populate form when editing a group
+   // Populate form when editing a group
   React.useEffect(() => {
     if (editingGroup) {
       setGroupName(editingGroup.name || '');
       setGroupNotes(editingGroup.planning?.notes || editingGroup.notes || '');
       setGroupMemberIds(editingGroup.memberIds || []);
       setIsCreatingGroup(true);
-    }
-  }, [editingGroup]);
+     }
+   }, [editingGroup]);
 
   return (
-    <Dialog
+     <Dialog
       open={isCreatingGroup}
       onClose={() => {
         if (!editingGroup) {
@@ -459,25 +459,25 @@ function GroupCreationForm(props) {
           setGroupName('');
           setGroupNotes('');
           setGroupMemberIds([]);
-        } else {
+         } else {
           setIsCreatingGroup(false);
-        }
-      }}
+         }
+       }}
       maxWidth="md"
       fullWidth
       PaperProps={{ sx: { borderRadius: 3, backgroundColor: '#FBFBF9' } }}
-    >
-      <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Users size={18} color="#CC7A5C" />
-        {editingGroup ? 'Edit Group' : 'Create New Friend Group'}
-      </DialogTitle>
+     >
+       <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+         <Users size={18} color="#CC7A5C" />
+         {editingGroup ? 'Edit Group' : 'Create New Friend Group'}
+       </DialogTitle>
 
-      <DialogContent dividers>
-        <form id="createGroupForm" onSubmit={formOnSubmit}>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-            {/* Left: group details */}
-            <Box>
-              <TextField
+       <DialogContent dividers>
+         <form id="createGroupForm" onSubmit={formOnSubmit}>
+           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
+             {/* Left: group details */}
+             <Box>
+               <TextField
                 fullWidth
                 size="small"
                 label="Group Name"
@@ -486,9 +486,9 @@ function GroupCreationForm(props) {
                 onChange={(e) => setGroupName(e.target.value)}
                 required
                 sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-              />
+               />
 
-              <TextField
+               <TextField
                 fullWidth
                 size="small"
                 multiline
@@ -498,63 +498,63 @@ function GroupCreationForm(props) {
                 value={groupNotes}
                 onChange={(e) => setGroupNotes(e.target.value)}
                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-              />
+               />
 
-              {/* Planning Place Ideas - show existing place ideas count */}
-              {editingGroup && editingGroup.planning?.placeIdeas && editingGroup.placingPlaceIdeas?.length > 0 && (
-                <Box sx={{ mt: 2 }}>
-                  <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#CC7A5C', mb: 0.5 }}>
+               {/* Planning Place Ideas - show existing place ideas count */}
+               {editingGroup && editingGroup.planning?.placeIdeas && editingGroup.placingPlaceIdeas?.length > 0 && (
+                 <Box sx={{ mt: 2 }}>
+                   <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#CC7A5C', mb: 0.5 }}>
                     Place Ideas ({editingGroup.placingPlaceIdeas?.length || 0})
-                  </Typography>
-                  <Typography variant="caption" sx={{ display: 'block', color: '#7D7B6D' }}>
-                    {editingGroup.placingPlaceIdeas.map(id => id).join(', ')}
-                  </Typography>
-                </Box>
-              )}
-            </Box>
+                   </Typography>
+                   <Typography variant="caption" sx={{ display: 'block', color: '#7D7B6D' }}>
+                     {editingGroup.placingPlaceIdeas.map(id => id).join(', ')}
+                   </Typography>
+                 </Box>
+               )}
+             </Box>
 
-             {/* Right: members */}
-             <Box>
-               <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 1 }}>
+              {/* Right: members */}
+              <Box>
+                <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 1 }}>
                 Group Members
-               </Typography>
-                 <Paper variant="outlined" sx={{ p: 1.5, maxHeight: 230, overflowY: 'auto', borderRadius: 2 }}>
-                   {friends.map((f) => {
+                </Typography>
+                  <Paper variant="outlined" sx={{ p: 1.5, maxHeight: 230, overflowY: 'auto', borderRadius: 2 }}>
+                    {friends.map((f) => {
                     const isChecked = groupMemberIds.includes(f.id);
-                      // Find which groups this friend belongs to by checking groups[].memberIds
+                       // Find which groups this friend belongs to by checking groups[].memberIds
                     const friendGroups = (groups || [])
-                       .filter(g => Array.isArray(g.memberIds) && g.memberIds.includes(f.id))
-                       .map(g => g.name)
-                       .join(', ');
+                        .filter(g => Array.isArray(g.memberIds) && g.memberIds.includes(f.id))
+                        .map(g => g.name)
+                        .join(', ');
                     return (
-                         <Box key={f.id} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.5, px: 1, borderRadius: 1, cursor: 'pointer', '&:hover': { backgroundColor: '#FBFBF9' } }}>
-                           <Typography variant="body2" sx={{ fontSize: '12px', flex: 1 }}>{f.name}</Typography>
-                           {friendGroups && (
-                             <Typography variant="caption" sx={{ fontSize: '9px', color: '#9B988C' }}>{friendGroups}</Typography>
-                           )}
-                           <input type="checkbox" checked={isChecked} onChange={() => toggleGroupMember(f.id)} style={{ accentColor: '#CC7A5C' }} />
-                         </Box>
-                       );
-                    })}
-                  </Paper>
-              <Typography variant="caption" sx={{ display: 'block', fontStyle: 'italic', color: '#7D7B6D', mt: 1, fontSize: '10px' }}>
+                          <Box key={f.id} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.5, px: 1, borderRadius: 1, cursor: 'pointer', '&:hover': { backgroundColor: '#FBFBF9' } }}>
+                            <Typography variant="body2" sx={{ fontSize: '12px', flex: 1 }}>{f.name}</Typography>
+                            {friendGroups && (
+                              <Typography variant="caption" sx={{ fontSize: '9px', color: '#9B988C' }}>{friendGroups}</Typography>
+                            )}
+                            <input type="checkbox" checked={isChecked} onChange={() => toggleGroupMember(f.id)} style={{ accentColor: '#CC7A5C' }} />
+                          </Box>
+                        );
+                     })}
+                   </Paper>
+               <Typography variant="caption" sx={{ display: 'block', fontStyle: 'italic', color: '#7D7B6D', mt: 1, fontSize: '10px' }}>
                 Select friends to include in this custom preset group.
-              </Typography>
-            </Box>
-          </Box>
+               </Typography>
+             </Box>
+           </Box>
 
-          <Divider sx={{ my: 2 }} />
-        </form>
-      </DialogContent>
+           <Divider sx={{ my: 2 }} />
+         </form>
+       </DialogContent>
 
-      <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-        <Button onClick={() => { setIsCreatingGroup(false); if (!editingGroup) { setGroupName(''); setGroupNotes(''); setGroupMemberIds([]); } }}>Cancel</Button>
-        <Button type="submit" form="createGroupForm" variant="contained" sx={{ backgroundColor: '#5A5A40', '&:hover': { backgroundColor: '#434330' } }}>
-          {editingGroup ? 'Save Group' : 'Create Group'}
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
+       <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+         <Button onClick={() => { setIsCreatingGroup(false); if (!editingGroup) { setGroupName(''); setGroupNotes(''); setGroupMemberIds([]); } }}>Cancel</Button>
+         <Button type="submit" form="createGroupForm" variant="contained" sx={{ backgroundColor: '#5A5A40', '&:hover': { backgroundColor: '#434330' } }}>
+           {editingGroup ? 'Save Group' : 'Create Group'}
+         </Button>
+       </DialogActions>
+     </Dialog>
+   );
 }
 
 /* ========================================================================
@@ -601,27 +601,32 @@ function utcToLocalDatetimeInput(utcIso) {
  */
 function resolvePoiInfo(poiId, userPois, localPoisArray) {
   if (!poiId) return { name: null, address: null };
-  // Prefer userPOIs (which may include friend POIs loaded by the parent), fall back to local
+   // Prefer userPOIs (which may include friend POIs loaded by the parent), fall back to local
   const poi = (userPois && userPois.length > 0 ? userPois : localPoisArray)?.find((p) => p.id === poiId);
   if (!poi) return { name: null, address: null };
   return {
     name: poi.name || poi.location?.address || null,
     address: poi.location?.address || null,
-  };
+   };
 }
 
+  // State declarations for scheduling and forms
   const [isScheduling, setIsScheduling] = useState(false);
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
 
-   // Hangout delete confirmation dialog state
+  // Hangout delete confirmation dialog state
   const [hangoutDeleteOpen, setHangoutDeleteOpen] = useState(false);
   const [hangoutDeleteTarget, setHangoutDeleteTarget] = useState(null);
 
-    // Ref to track if we're currently populating form fields from editingHangout
-    // (prevents re-entrant useEffect calls)
+  // Group delete confirmation dialog state
+  const [groupDeleteOpen, setGroupDeleteOpen] = useState(false);
+  const [groupDeleteTarget, setGroupDeleteTarget] = useState(null);
+
+     // Ref to track if we're currently populating form fields from editingHangout
+     // (prevents re-entrant useEffect calls)
   const isPopulatingRef = React.useRef(false);
 
-    // Form states for scheduling
+     // Form states for scheduling
   const [hangoutTitle, setHangoutTitle] = useState('');
   const [selectedGroupId, setSelectedGroupId] = useState('');
   const [hangoutType, setHangoutType] = useState('physical');
@@ -630,27 +635,27 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
   const [selectedPoiId, setSelectedPoiId] = useState(null);
   const [customAttendeeIds, setCustomAttendeeIds] = useState([]);
 
-    // Sync editing hangout state into form fields when it changes
+     // Sync editing hangout state into form fields when it changes
   React.useEffect(() => {
     if (editingHangout && !isPopulatingRef.current) {
       isPopulatingRef.current = true;
       setHangoutTitle(editingHangout.title || '');
       setSelectedGroupId(editingHangout.groupId || '');
       setHangoutType(editingHangout.type || 'physical');
-          // Convert UTC datetime to local time for datetime-local input
+           // Convert UTC datetime to local time for datetime-local input
       setDatetime(editingHangout.datetime ? utcToLocalDatetimeInput(editingHangout.datetime) : '2026-07-15T18:00');
       setDetails(editingHangout.description || '');
-          // Populate attendee checkboxes from friendIds (only when actually editing, not clearing)
+           // Populate attendee checkboxes from friendIds (only when actually editing, not clearing)
       setCustomAttendeeIds(editingHangout.friendIds || []);
-          // Show the scheduler dialog when editing a hangout
+           // Show the scheduler dialog when editing a hangout
       setIsScheduling(true);
       setIsCreatingGroup(false);
       setTimeout(() => { isPopulatingRef.current = false; }, 0);
-       }
-    }, [editingHangout]);
+        }
+     }, [editingHangout]);
 
-    // When editingHangout is cleared (e.g. by Plan Event), reset form fields to create mode defaults.
-    // This runs AFTER the useEffect above and ensures the dialog shows as a fresh create form.
+     // When editingHangout is cleared (e.g. by Plan Event), reset form fields to create mode defaults.
+     // This runs AFTER the useEffect above and ensures the dialog shows as a fresh create form.
   React.useEffect(() => {
     if (editingHangout === null && isPopulatingRef.current === false) {
       setHangoutTitle('');
@@ -660,49 +665,49 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
       setDetails('');
       setSelectedPoiId(null);
       setCustomAttendeeIds([]);
-       }
-    }, [editingHangout]);
+        }
+     }, [editingHangout]);
 
-    // When a POI ID exists on the hangout being edited but isn't found in existingPOIs,
-    // fetch it from Firestore so the address displays correctly.
+     // When a POI ID exists on the hangout being edited but isn't found in existingPOIs,
+     // fetch it from Firestore so the address displays correctly.
   React.useEffect(() => {
     if (!editingHangout?.poiId) return;
     const user = auth.currentUser;
     if (!user) return;
 
-     // Only fetch if the POI isn't already in our local lists
+      // Only fetch if the POI isn't already in our local lists
     const poiAlreadyLoaded = existingPOIs.some((p) => p.id === editingHangout.poiId) ||
-                              (pois && pois.length > 0 && pois.some((p) => p.id === editingHangout.poiId));
+                               (pois && pois.length > 0 && pois.some((p) => p.id === editingHangout.poiId));
     if (poiAlreadyLoaded) return;
 
     let cancelled = false;
     setLoadingPOIs(true);
     getDocs(collection(db, 'users', user.uid, 'poi'))
-      .then((snap) => {
+       .then((snap) => {
         if (cancelled) return;
         const doc = snap.docs.find((d) => d.id === editingHangout.poiId);
         if (doc) {
           setExistingPOIs((prev) => [...prev, { id: doc.id, ...doc.data() }]);
-        }
-      })
-      .catch((err) => { console.error('Error loading hangout POI:', err); })
-      .finally(() => { if (!cancelled) setLoadingPOIs(false); });
+         }
+       })
+       .catch((err) => { console.error('Error loading hangout POI:', err); })
+       .finally(() => { if (!cancelled) setLoadingPOIs(false); });
 
     return () => { cancelled = true; };
-  }, [editingHangout?.poiId, editingHangout]);
+   }, [editingHangout?.poiId, editingHangout]);
 
-   // POI picker states
+    // POI picker states
   const [showPoiPicker, setShowPoiPicker] = useState(false);
   const [existingPOIs, setExistingPOIs] = useState([]);
   const [loadingPOIs, setLoadingPOIs] = useState(false);
   const [poiSearchQuery, setPoiSearchQuery] = useState('');
 
-  // Form states for creating a group
+   // Form states for creating a group
   const [groupName, setGroupName] = useState('');
   const [groupNotes, setGroupNotes] = useState('');
   const [groupMemberIds, setGroupMemberIds] = useState([]);
 
-  // Format date nicely
+   // Format date nicely
   const formatDate = (dateStr) => {
     const d = new Date(dateStr);
     return d.toLocaleDateString('en-US', {
@@ -711,10 +716,10 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-    });
-  };
+     });
+   };
 
-  // Load existing POIs from Firestore
+   // Load existing POIs from Firestore
   const loadExistingPOIs = useCallback(async (search = '') => {
     const user = auth.currentUser;
     if (!user) return;
@@ -723,34 +728,34 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
     try {
       const poiSnapshot = await getDocs(collection(db, 'users', user.uid, 'poi'));
       let pois = poiSnapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-      // Filter by search query if provided
+       // Filter by search query if provided
       if (search.trim()) {
         const q = search.toLowerCase();
         pois = pois.filter(
-          (p) =>
+           (p) =>
             p.name.toLowerCase().includes(q) ||
-            (p.location?.address && p.location.address.toLowerCase().includes(q)) ||
-            (p.location?.city && p.location.city.toLowerCase().includes(q))
-        );
-      }
+             (p.location?.address && p.location.address.toLowerCase().includes(q)) ||
+             (p.location?.city && p.location.city.toLowerCase().includes(q))
+         );
+       }
       setExistingPOIs(pois);
-    } catch (error) {
+     } catch (error) {
       console.error('Error loading POIs:', error);
-    } finally {
+     } finally {
       setLoadingPOIs(false);
-    }
-  }, []);
+     }
+   }, []);
 
-    // Open the POI picker dialog — accepts preSelectPoiId to highlight existing POI in edit mode
+     // Open the POI picker dialog — accepts preSelectPoiId to highlight existing POI in edit mode
   const openPoiPicker = useCallback(async (preSelectPoiId = null) => {
     setPoiSearchQuery('');
     setSelectedPoiId(preSelectPoiId);
     setShowPoiPicker(true);
     await loadExistingPOIs();
-   }, [loadExistingPOIs]);
+    }, [loadExistingPOIs]);
 
-  // Handle search input change with debouncing — uses refs so the ref
-  // doesn't change across renders, avoiding debounce-reset bugs too.
+   // Handle search input change with debouncing — uses refs so the ref
+   // doesn't change across renders, avoiding debounce-reset bugs too.
   const timeoutRef = React.useRef(null);
   const handlePoiSearchChange = useCallback((e) => {
     const query = e.target.value;
@@ -758,73 +763,73 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
     clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
       loadExistingPOIs(query);
-    }, 300);
-  }, [loadExistingPOIs]);
+     }, 300);
+   }, [loadExistingPOIs]);
 
-  // Select a POI from the list
+   // Select a POI from the list
   const handleSelectPoi = useCallback((poiId) => {
     setSelectedPoiId(poiId);
-  }, []);
+   }, []);
 
-  // Confirm the POI selection and close the picker
+   // Confirm the POI selection and close the picker
   const confirmLocationSelection = useCallback(() => {
     if (!selectedPoiId) return;
     setShowPoiPicker(false);
-  }, [selectedPoiId]);
+   }, [selectedPoiId]);
 
-  // Cancel and close the POI picker
+   // Cancel and close the POI picker
   const cancelLocationSelection = useCallback(() => {
     setShowPoiPicker(false);
     setSelectedPoiId(null);
     setPoiSearchQuery('');
-  }, []);
+   }, []);
 
-  // Helper to handle group selection change in scheduler form
+   // Helper to handle group selection change in scheduler form
   const handleGroupChange = useCallback((groupId) => {
     setSelectedGroupId(groupId);
     const group = groups.find((g) => g.id === groupId);
     if (group) {
       setCustomAttendeeIds(group.memberIds);
-    } else {
+     } else {
       setCustomAttendeeIds([]);
-    }
-  }, [groups]);
+     }
+   }, [groups]);
 
-  // Toggle custom attendee selection
+   // Toggle custom attendee selection
   const toggleAttendee = useCallback((friendId) => {
     if (customAttendeeIds.includes(friendId)) {
       setCustomAttendeeIds(customAttendeeIds.filter((id) => id !== friendId));
-    } else {
+     } else {
       setCustomAttendeeIds([...customAttendeeIds, friendId]);
-    }
-  }, [customAttendeeIds]);
+     }
+   }, [customAttendeeIds]);
 
-   // Handle schedule submission for planning hangouts
+    // Handle schedule submission for planning hangouts
   const handleScheduleSubmit = useCallback((e) => {
     e.preventDefault();
     if (!hangoutTitle.trim() || customAttendeeIds.length === 0) {
       onTriggerNotification('Please provide a title and select at least one attendee.');
       return;
-    }
+     }
 
-     // Build the hangout data object with proper friendIds field (required by Hangout schema)
+      // Build the hangout data object with proper friendIds field (required by Hangout schema)
     const hangoutData = {
       title: hangoutTitle.trim(),
       poiId: selectedPoiId || null,
       type: hangoutType,
       datetime: new Date(datetime).toISOString(),
       friendIds: customAttendeeIds.length > 0 ? [...customAttendeeIds] : [],
-     };
-     // Only add optional fields if they have actual values
+      };
+      // Only add optional fields if they have actual values
     if (details.trim()) {
       hangoutData.description = details.trim();
-    }
+     }
     if (selectedGroupId) {
       hangoutData.groupId = selectedGroupId;
-    }
+     }
 
     onAddPlannedHangout(hangoutData).then(() => {
-      // Reset scheduler state on success
+       // Reset scheduler state on success
       setHangoutTitle('');
       setSelectedGroupId('');
       setCustomAttendeeIds([]);
@@ -832,22 +837,22 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
       setDetails('');
       setIsScheduling(false);
       onTriggerNotification(`Scheduled upcoming hangout "${hangoutData.title}"!`);
-    }).catch((err) => {
+     }).catch((err) => {
       console.error('Error creating hangout:', err);
       onTriggerNotification(`Failed to create hangout: ${err.message}`);
-    });
-  }, [hangoutTitle, selectedGroupId, hangoutType, datetime, details, customAttendeeIds, selectedPoiId, onAddPlannedHangout, onTriggerNotification]);
+     });
+   }, [hangoutTitle, selectedGroupId, hangoutType, datetime, details, customAttendeeIds, selectedPoiId, onAddPlannedHangout, onTriggerNotification]);
 
-  // Handle group creation / editing submission
+   // Handle group creation / editing submission
   const handleGroupSubmit = useCallback((e) => {
     e.preventDefault();
     if (!groupName.trim() || groupMemberIds.length === 0) {
       onTriggerNotification('Please provide a group name and select at least one member.');
       return;
-    }
+     }
 
     if (editingGroup) {
-      // For editing: use editGroup data, preserve planning object
+       // For editing: use editGroup data, preserve planning object
       const updatedGroup = {
         name: groupName.trim(),
         memberIds: groupMemberIds,
@@ -855,8 +860,8 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
           hangoutIds: editingGroup.planning?.hangoutIds || [],
           placeIdeas: editingGroup.placingPlaceIdeas || editingGroup.planning?.placeIdeas || [],
           notes: groupNotes.trim() || '',
-        },
-      };
+         },
+       };
 
       onAddGroup(updatedGroup, editingGroup.id).then(() => {
         setIsCreatingGroup(false);
@@ -865,12 +870,12 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
         setGroupNotes('');
         setGroupMemberIds([]);
         onTriggerNotification(`Updated group "${groupName.trim()}"!`);
-      }).catch((err) => {
+       }).catch((err) => {
         console.error('Error updating group:', err);
         onTriggerNotification(`Failed to update group: ${err.message}`);
-      });
-    } else {
-      // New group with proper schema: planning object per JSON schema
+       });
+     } else {
+       // New group with proper schema: planning object per JSON schema
       const newGroup = {
         name: groupName.trim(),
         memberIds: groupMemberIds,
@@ -878,83 +883,101 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
           hangoutIds: [],
           placeIdeas: [],
           notes: groupNotes.trim() || '',
-        },
-      };
+         },
+       };
 
       onAddGroup(newGroup).then(() => {
-        // Reset group form state
+         // Reset group form state
         setGroupName('');
         setGroupNotes('');
         setGroupMemberIds([]);
         setIsCreatingGroup(false);
         onTriggerNotification(`Created new group "${groupName.trim()}"!`);
-      }).catch((err) => {
+       }).catch((err) => {
         console.error('Error creating group:', err);
         onTriggerNotification(`Failed to create group: ${err.message}`);
-      });
-    }
-  }, [groupName, groupMemberIds, groupNotes, onAddGroup, editingGroup, setEditingGroup, onTriggerNotification]);
+       });
+     }
+   }, [groupName, groupMemberIds, groupNotes, onAddGroup, editingGroup, setEditingGroup, onTriggerNotification]);
 
   const toggleGroupMember = useCallback((friendId) => {
     if (groupMemberIds.includes(friendId)) {
       setGroupMemberIds(groupMemberIds.filter((id) => id !== friendId));
-    } else {
+     } else {
       setGroupMemberIds([...groupMemberIds, friendId]);
-    }
-  }, [groupMemberIds]);
+     }
+   }, [groupMemberIds]);
 
-   // Handle complete hangout leap simulation (for upcoming hangouts)
+    // Handle complete hangout leap simulation (for upcoming hangouts)
   const handleCompleteLeap = useCallback((hangout) => {
-     // Find attendees. If it is a standard group, we default to group members.
+      // Find attendees. If it is a standard group, we default to group members.
     const groupObj = groups.find((g) => g.id === hangout.groupId);
     const attendees = groupObj ? groupObj.memberIds : friends.map((f) => f.id);
 
     onCompletePlannedHangout(hangout.id, hangout.datetime, attendees);
 
     const namesList = attendees
-       .map((id) => friends.find((f) => f.id === id)?.name)
-       .filter(Boolean)
-       .join(', ');
+        .map((id) => friends.find((f) => f.id === id)?.name)
+        .filter(Boolean)
+        .join(', ');
 
     onTriggerNotification(`Simulated leap! "${hangout.title}" completed. Updated contact records for: ${namesList}.`);
-   }, [groups, friends, onCompletePlannedHangout, onTriggerNotification]);
+    }, [groups, friends, onCompletePlannedHangout, onTriggerNotification]);
 
-   // Handle complete hangout from history (uses friendIds directly)
+    // Handle complete hangout from history (uses friendIds directly)
   const handleCompleteHistoryHangout = useCallback((hangout) => {
     const attendees = hangout.friendIds || [];
     onCompletePlannedHangout(hangout.id, hangout.datetime, attendees);
     onTriggerNotification(`"${hangout.title}" marked as complete.`);
-   }, [onCompletePlannedHangout, onTriggerNotification]);
+    }, [onCompletePlannedHangout, onTriggerNotification]);
 
-   // Handle delete from history
+    // Handle delete from history
   const handleDeleteHistoryHangout = useCallback((hangoutId) => {
     onDeletePlannedHangout(hangoutId);
-   }, [onDeletePlannedHangout]);
+    }, [onDeletePlannedHangout]);
 
-    // Get POI name + address by ID — merges pois (parent) with local existingPOIs.
-    // In edit mode this resolves friend-owned POIs (home, places) that don't live in the current user's POI collection.
+    // Handle group delete with confirmation dialog
+  const handleDeleteGroupDialog = useCallback((groupId) => {
+    const group = groups.find((g) => g.id === groupId);
+    if (group) {
+      setGroupDeleteTarget(group);
+      setGroupDeleteOpen(true);
+     }
+   }, [groups]);
+
+    // Resolve member names from memberIds array
+  const resolveMemberNames = useCallback((memberIds) => {
+    if (!memberIds || !Array.isArray(memberIds)) return 'No members';
+    return memberIds
+      .map((id) => friends.find((f) => f.id === id)?.name?.split(' ')[0])
+      .filter(Boolean)
+      .join(', ');
+   }, [friends]);
+
+     // Get POI name + address by ID — merges pois (parent) with local existingPOIs.
+     // In edit mode this resolves friend-owned POIs (home, places) that don't live in the current user's POI collection.
   const getPoiNameById = useCallback((poiId) => {
-      // If editing, prefer pois which contains all POIs for this user/friends
+       // If editing, prefer pois which contains all POIs for this user/friends
     if (isEditingHangoutMode && pois && pois.length > 0) {
       const poi = pois.find((p) => p.id === poiId);
       if (poi) return poi.name || poi.location?.address || 'Unnamed Location';
-    }
+     }
     const poi = existingPOIs.find((p) => p.id === poiId);
     return poi ? poi.name : null;
-    }, [existingPOIs, pois, isEditingHangoutMode]);
+     }, [existingPOIs, pois, isEditingHangoutMode]);
 
-    // Get POI address by ID (for displaying full street address in edit mode)
+     // Get POI address by ID (for displaying full street address in edit mode)
   const getPoiAddressById = useCallback((poiId) => {
     if (isEditingHangoutMode && pois && pois.length > 0) {
       const poi = pois.find((p) => p.id === poiId);
       if (poi && poi.location?.address) return poi.location.address;
-    }
+     }
     const poi = existingPOIs.find((p) => p.id === poiId);
     return poi ? poi.location?.address : null;
-    }, [existingPOIs, pois, isEditingHangoutMode]);
+     }, [existingPOIs, pois, isEditingHangoutMode]);
 
-   // Build the shared props object so the extracted component always
-   // receives fresh state without being re-created itself.
+    // Build the shared props object so the extracted component always
+    // receives fresh state without being re-created itself.
   const schedulingFormProps = React.useMemo(() => ({
     isScheduling, setIsScheduling,
     hangoutTitle, setHangoutTitle,
@@ -985,7 +1008,7 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
     editingHangout,
     onSaveHangout,
     pois,
-    }), [
+     }), [
     isScheduling, hangoutTitle, selectedGroupId, hangoutType, datetime, details,
     selectedPoiId, showPoiPicker, existingPOIs, loadingPOIs, poiSearchQuery,
     loadExistingPOIs, friends, groups, customAttendeeIds,
@@ -993,7 +1016,7 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
     handlePoiSearchChange, handleSelectPoi, confirmLocationSelection,
     cancelLocationSelection, getPoiNameById, getPoiAddressById,
     isEditingHangoutMode, editingHangout, onSaveHangout, pois,
-    ]);
+     ]);
 
   const groupFormProps = React.useMemo(() => ({
     isCreatingGroup, setIsCreatingGroup,
@@ -1005,33 +1028,33 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
     onSubmit: handleGroupSubmit,
     toggleGroupMember,
     editingGroup,
-   }), [
+    }), [
     isCreatingGroup, groupName, groupNotes, groupMemberIds,
     friends, groups, handleGroupSubmit, toggleGroupMember, editingGroup,
-   ]);
+    ]);
 
   return (
-     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        {/* Plan Event / Create Group dialogs — stable component references */}
-        <SchedulingFormDialog {...schedulingFormProps} />
-        <GroupCreationForm {...groupFormProps} />
+      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+         {/* Plan Event / Create Group dialogs — stable component references */}
+         <SchedulingFormDialog {...schedulingFormProps} />
+         <GroupCreationForm {...groupFormProps} />
 
-        {/* Main Hub */}
-        <Paper sx={{ p: 3, borderRadius: 3, border: '1px solid #EBE9E2', backgroundColor: '#FFFFFF', flex: 1, display: 'flex', flexDirection: 'column' }}>
-        {/* Header with buttons */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1.5, borderBottom: '1px solid #F2F0EA', mb: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Clock size={18} color="#CC7A5C" />
-            <Typography variant="subtitle1" sx={{ fontFamily: 'serif', fontWeight: 700, fontSize: '1rem', color: '#2D2D20' }}>
+         {/* Main Hub */}
+         <Paper sx={{ p: 3, borderRadius: 3, border: '1px solid #EBE9E2', backgroundColor: '#FFFFFF', flex: 1, display: 'flex', flexDirection: 'column' }}>
+         {/* Header with buttons */}
+         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1.5, borderBottom: '1px solid #F2F0EA', mb: 2 }}>
+           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+             <Clock size={18} color="#CC7A5C" />
+             <Typography variant="subtitle1" sx={{ fontFamily: 'serif', fontWeight: 700, fontSize: '1rem', color: '#2D2D20' }}>
               Commitments & Planning
-            </Typography>
-          </Box>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-               {/* Plan Event button — clears edit state via onPlanEvent then opens a fresh create form */}
-               <Button
+             </Typography>
+           </Box>
+             <Box sx={{ display: 'flex', gap: 1 }}>
+                {/* Plan Event button — clears edit state via onPlanEvent then opens a fresh create form */}
+                <Button
               onClick={() => {
                 if (onPlanEvent) onPlanEvent();
-                 // Reset form fields for a fresh hangout creation
+                  // Reset form fields for a fresh hangout creation
                 setHangoutTitle('');
                 setSelectedGroupId('');
                 setCustomAttendeeIds([]);
@@ -1041,7 +1064,7 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
                 setIsCreatingGroup(false);
                 setEditingGroup(null);
                 setIsScheduling(true);
-                }}
+                 }}
               variant="outlined"
               size="small"
               startIcon={<Calendar size={14} />}
@@ -1053,12 +1076,12 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
                 borderColor: '#5A5A4030',
                 color: '#5A5A40',
                 backgroundColor: '#5A5A4010',
-                 '&:hover': { backgroundColor: '#5A5A4020', borderColor: '#5A5A4050' },
-                }}
-              >
+                  '&:hover': { backgroundColor: '#5A5A4020', borderColor: '#5A5A4050' },
+                 }}
+               >
               Plan Event
-              </Button>
-            <Button
+               </Button>
+             <Button
               onClick={() => { setIsCreatingGroup(true); setIsScheduling(false); setEditingGroup(null); }}
               variant="outlined"
               size="small"
@@ -1071,63 +1094,63 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
                 borderColor: '#9E9EA830',
                 color: '#5A5A40',
                 backgroundColor: '#9E9EA810',
-                '&:hover': { backgroundColor: '#9E9EA820', borderColor: '#9E9EA850' },
-              }}
-            >
+                 '&:hover': { backgroundColor: '#9E9EA820', borderColor: '#9E9EA850' },
+               }}
+             >
               Create Group
-            </Button>
-          </Box>
-        </Box>
+             </Button>
+           </Box>
+         </Box>
 
-          {/* Scrollable container for entire right column content */}
-          <Box sx={{ flex: 1, overflowY: 'auto', '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '3px' } }}>
-          {/* Groups Quick Overview */}
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 1.5 }}>
+           {/* Scrollable container for entire right column content */}
+           <Box sx={{ flex: 1, overflowY: 'auto', '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '3px' } }}>
+           {/* Groups Quick Overview */}
+           <Box sx={{ mb: 3 }}>
+             <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 1.5 }}>
              Preset Friend Groups
-            </Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
-              {(groups || []).map((group) => {
+             </Typography>
+             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
+               {(groups || []).map((group) => {
               const memberNames = (group.memberIds || [])
-                .map((id) => (friends || []).find((f) => f.id === id)?.name?.split(' ')[0])
-                .filter(Boolean)
-                .join(', ');
+                 .map((id) => (friends || []).find((f) => f.id === id)?.name?.split(' ')[0])
+                 .filter(Boolean)
+                 .join(', ');
 
               return (
-                <Paper key={group.id} variant="outlined" sx={{ p: 2, borderRadius: 2, backgroundColor: '#FBFBF9', position: 'relative' }}>
-                  {(onEditGroup || onAddGroup) && (
-                    <IconButton
+                 <Paper key={group.id} variant="outlined" sx={{ p: 2, borderRadius: 2, backgroundColor: '#FBFBF9', position: 'relative' }}>
+                   {(onEditGroup || onAddGroup) && (
+                     <IconButton
                       size="small"
                       onClick={(e) => {
                         e.stopPropagation();
                         if (onEditGroup) onEditGroup(group);
-                      }}
+                       }}
                       sx={{ position: 'absolute', top: 8, right: 32, color: '#9B988C', '&:hover': { color: '#5A5A40' } }}
                       title="Edit Group"
-                    >
-                      <Pencil size={12} />
-                    </IconButton>
-                  )}
-                  {(onDeleteGroup) && (
-                    <IconButton
+                     >
+                       <Pencil size={12} />
+                     </IconButton>
+                   )}
+                   {onDeleteGroup && (
+                     <IconButton
                       size="small"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onDeleteGroup(group.id);
-                      }}
+                        handleDeleteGroupDialog(group.id);
+                       }}
                       sx={{ position: 'absolute', top: 8, right: 8, color: '#9B988C', '&:hover': { color: '#CC7A5C' } }}
                       title="Delete Group"
-                    >
-                      <Trash2 size={12} />
-                    </IconButton>
-                  )}
-                  <Typography variant="subtitle2" sx={{ fontFamily: 'serif', fontWeight: 700, fontSize: '0.85rem', color: '#2D2D20' }}>
-                    {group.name}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: '#7D7B6D', display: 'block', mt: 0.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {group.notes || group.planning?.notes || 'No group notes'}
-                  </Typography>
-                  <Chip
+                     >
+                       <Trash2 size={12} />
+                     </IconButton>
+                   )}
+                   <Typography variant="subtitle2" sx={{ fontFamily: 'serif', fontWeight: 700, fontSize: '0.85rem', color: '#2D2D20' }}>
+                     {group.name}
+                   </Typography>
+                   <Typography variant="caption" sx={{ color: '#7D7B6D', display: 'block', mt: 0.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                     {group.notes || group.planning?.notes || 'No group notes'}
+                   </Typography>
+                   <Chip
                     label={`Members: ${memberNames || 'None'}`}
                     size="small"
                     sx={{
@@ -1137,47 +1160,47 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
                       fontFamily: 'monospace',
                       fontSize: '10px',
                       height: 22,
-                    }}
-                  />
-                </Paper>
-              );
-            })}
-          </Box>
-        </Box>
+                     }}
+                   />
+                 </Paper>
+               );
+             })}
+           </Box>
+         </Box>
 
-          {/* Upcoming Hangouts */}
-          <Box sx={{ mb: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-              <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D' }}>
+           {/* Upcoming Hangouts */}
+           <Box sx={{ mb: 3 }}>
+             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+               <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D' }}>
                Upcoming Hangouts
-              </Typography>
-            <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', fontStyle: 'italic', color: '#CC7A5C' }}>
+               </Typography>
+             <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', fontStyle: 'italic', color: '#CC7A5C' }}>
               Time-Leap simulates event completion
-            </Typography>
-          </Box>
+             </Typography>
+           </Box>
 
-          {plannedHangouts.length > 0 ? (
-            <Box sx={{ maxHeight: 280, overflowY: 'auto', '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '3px' } }}>
-              {plannedHangouts.map((hangout) => {
+           {plannedHangouts.length > 0 ? (
+             <Box sx={{ maxHeight: 280, overflowY: 'auto', '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '3px' } }}>
+               {plannedHangouts.map((hangout) => {
                 const groupObj = groups.find((g) => g.id === hangout.groupId);
                 const attendees = groupObj ? groupObj.memberIds : [];
                 const attendeeNames = attendees
-                  .map((id) => friends.find((f) => f.id === id)?.name?.split(' ')[0])
-                  .filter(Boolean)
-                  .join(', ');
+                   .map((id) => friends.find((f) => f.id === id)?.name?.split(' ')[0])
+                   .filter(Boolean)
+                   .join(', ');
 
                 return (
-                  <Paper key={hangout.id} variant="outlined" sx={{ p: 2, mb: 1.5, borderRadius: 2, backgroundColor: '#FFFFFF' }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                      <Box>
-                        <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', color: '#7D7B6D', display: 'block' }}>
-                          {groupObj ? groupObj.name : 'Custom Event'}
-                        </Typography>
-                        <Typography variant="subtitle2" sx={{ fontFamily: 'serif', fontWeight: 700, fontSize: '0.85rem', color: '#2D2D20' }}>
-                          {hangout.title}
-                        </Typography>
-                      </Box>
-                      <Chip
+                   <Paper key={hangout.id} variant="outlined" sx={{ p: 2, mb: 1.5, borderRadius: 2, backgroundColor: '#FFFFFF' }}>
+                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                       <Box>
+                         <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', color: '#7D7B6D', display: 'block' }}>
+                           {groupObj ? groupObj.name : 'Custom Event'}
+                         </Typography>
+                         <Typography variant="subtitle2" sx={{ fontFamily: 'serif', fontWeight: 700, fontSize: '0.85rem', color: '#2D2D20' }}>
+                           {hangout.title}
+                         </Typography>
+                       </Box>
+                       <Chip
                         label={hangout.type === 'physical' ? 'PHYSICAL' : 'VIRTUAL'}
                         size="small"
                         sx={{
@@ -1188,25 +1211,25 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
                           fontWeight: 700,
                           height: 20,
                           border: `1px solid ${hangout.type === 'physical' ? '#25D36630' : '#5865F230'}`,
-                        }}
-                      />
-                    </Box>
+                         }}
+                       />
+                     </Box>
 
-                    <Box sx={{ mt: 1.5 }}>
-                      {hangout.locationPoiId && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.75 }}>
-                          <MapPin size={14} color="#9B988C" />
-                          <Typography variant="body2" sx={{ fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {hangout.locationPoiId}
-                          </Typography>
-                        </Box>
-                      )}
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F2F0EA', pt: 1, mt: 0.5 }}>
-                        <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '10px', color: '#7D7B6D' }}>
-                          {formatDate(hangout.datetime)}
-                        </Typography>
-                         <Box sx={{ display: 'flex', gap: 0.5 }}>
-                           <Button
+                     <Box sx={{ mt: 1.5 }}>
+                       {hangout.locationPoiId && (
+                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.75 }}>
+                           <MapPin size={14} color="#9B988C" />
+                           <Typography variant="body2" sx={{ fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                             {hangout.locationPoiId}
+                           </Typography>
+                         </Box>
+                       )}
+                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F2F0EA', pt: 1, mt: 0.5 }}>
+                         <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '10px', color: '#7D7B6D' }}>
+                           {formatDate(hangout.datetime)}
+                         </Typography>
+                          <Box sx={{ display: 'flex', gap: 0.5 }}>
+                            <Button
                              onClick={() => handleCompleteLeap(hangout)}
                              size="small"
                              sx={{
@@ -1216,90 +1239,92 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
                                fontFamily: 'monospace',
                                backgroundColor: '#5A5A40',
                                color: '#FFFFFF',
-                                '&:hover': { backgroundColor: '#434330' },
-                               }}
+                                 '&:hover': { backgroundColor: '#434330' },
+                                }}
                              title="Mark this event as complete"
-                             >
+                              >
                              Mark Complete
-                             </Button>
-                           <IconButton
+                              </Button>
+                            <IconButton
                             onClick={() => onEditPlannedHangout(hangout)}
                             size="small"
                             sx={{ color: '#9B988C', '&:hover': { color: '#5A5A40', backgroundColor: '#FBFBF9' } }}
                             title="Edit Hangout"
-                           >
-                             <Pencil size={14} />
-                           </IconButton>
-                              <IconButton
+                            >
+                              <Pencil size={14} />
+                            </IconButton>
+                               <IconButton
                               onClick={() => {
                                 setHangoutDeleteTarget(hangout);
                                 setHangoutDeleteOpen(true);
-                               }}
+                                }}
                               size="small"
                               sx={{ color: '#9B988C', '&:hover': { color: '#CC7A5C', backgroundColor: '#FBFBF9' } }}
                               title="Delete Hangout"
-                              >
-                                <Trash2 size={14} />
-                              </IconButton>
-                         </Box>
-                      </Box>
-                    </Box>
+                               >
+                                 <Trash2 size={14} />
+                               </IconButton>
+                          </Box>
+                       </Box>
+                     </Box>
 
-                    {attendeeNames && (
-                      <Typography variant="caption" sx={{ display: 'block', mt: 1, p: 1, backgroundColor: '#FBFBF9', border: '1px solid #EBE9E2', borderRadius: 1, fontSize: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                     {attendeeNames && (
+                       <Typography variant="caption" sx={{ display: 'block', mt: 1, p: 1, backgroundColor: '#FBFBF9', border: '1px solid #EBE9E2', borderRadius: 1, fontSize: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         Attendees: <Typography component="span" sx={{ fontWeight: 700, color: '#2D2D20' }}>{attendeeNames}</Typography>
-                      </Typography>
-                    )}
-                  </Paper>
-                );
-              })}
-            </Box>
-            ) : (
-              <Box sx={{ textAlign: 'center', py: 4, px: 3, backgroundColor: '#FBFBF9', border: '1px dashed #E0DED7', borderRadius: 2 }}>
-                <Typography variant="body2" sx={{ color: '#9B988C', fontStyle: 'italic', fontSize: '12px' }}>
+                       </Typography>
+                     )}
+                   </Paper>
+                 );
+               })}
+             </Box>
+             ) : (
+               <Box sx={{ textAlign: 'center', py: 4, px: 3, backgroundColor: '#FBFBF9', border: '1px dashed #E0DED7', borderRadius: 2 }}>
+                 <Typography variant="body2" sx={{ color: '#9B988C', fontStyle: 'italic', fontSize: '12px' }}>
                  No active planned events. Click Plan Event to schedule.
-                </Typography>
-              </Box>
-            )}
-          </Box>
+                 </Typography>
+               </Box>
+             )}
+           </Box>
 
-            {/* Historical Logs */}
-            <Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <ClipboardList size={14} color="#7D7B6D" />
-                <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D' }}>
+             {/* Historical Logs */}
+             <Box>
+             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                 <ClipboardList size={14} color="#7D7B6D" />
+                 <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D' }}>
                Past Completed Logs ({history.length})
-              </Typography>
-              </Box>
-            </Box>
+               </Typography>
+               </Box>
+             </Box>
 
-              {history.length > 0 ? (
-                <Box sx={{ flex: 1, overflowY: 'auto', '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '3px' } }}>
-                 {history.map((h, idx) => {
-                 const attendeeNames = h.friendIds
-                     .map((fId) => friends.find((f) => f.id === fId)?.name?.split(' ')[0])
-                     .filter(Boolean)
-                     .join(', ');
+               {history.length > 0 ? (
+                 <Box sx={{ flex: 1, overflowY: 'auto', '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '3px' } }}>
+                  {history.map((h, idx) => {
+                 const attendeeNames = h.friendIds && Array.isArray(h.friendIds)
+                      ? h.friendIds
+                          .map((fId) => friends.find((f) => f.id === fId)?.name?.split(' ')[0])
+                          .filter(Boolean)
+                          .join(', ')
+                      : null;
 
-                 // Resolve POI data for the hangout location (same logic as HangoutList)
+                  // Resolve POI data for the hangout location (same logic as HangoutList)
                  const poi = (h.locationPoiId || h.poiId)
-                     ? (pois && pois.length > 0 ? pois : []).find((p) => p.id === (h.locationPoiId || h.poiId))
-                     : null;
+                      ? (pois && pois.length > 0 ? pois : []).find((p) => p.id === (h.locationPoiId || h.poiId))
+                      : null;
                  const address = poi?.location?.address || null;
 
                  return (
-                     <Paper key={h.id || idx} variant="outlined" sx={{ p: 1.5, mb: 1, borderRadius: 2, backgroundColor: '#FFFFFF' }}>
-                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
-                         <Box sx={{ flex: 1, minWidth: 0 }}>
-                           <Typography variant="subtitle2" sx={{ fontFamily: 'serif', fontWeight: 700, fontSize: '0.8rem', color: '#2D2D20', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                             {h.title}
-                           </Typography>
-                           <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', color: '#9B988C' }}>
-                             {formatDate(h.datetime)}
-                           </Typography>
-                         </Box>
-                         <Chip
+                      <Paper key={h.id || idx} variant="outlined" sx={{ p: 1.5, mb: 1, borderRadius: 2, backgroundColor: '#FFFFFF' }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography variant="subtitle2" sx={{ fontFamily: 'serif', fontWeight: 700, fontSize: '0.8rem', color: '#2D2D20', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {h.title}
+                            </Typography>
+                            <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', color: '#9B988C' }}>
+                              {formatDate(h.datetime)}
+                            </Typography>
+                          </Box>
+                          <Chip
                          label={h.type === 'physical' ? 'PHYSICAL' : 'VIRTUAL'}
                          size="small"
                          sx={{
@@ -1310,25 +1335,30 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
                            fontWeight: 700,
                            height: 18,
                            border: `1px solid ${h.type === 'physical' ? '#25D36630' : '#5865F230'}`,
-                           }}
-                         />
-                       </Box>
-                       {address && (
-                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                           📍 {address}
-                         </Typography>
-                       )}
-                       {h.details && !address && (
-                         <Typography variant="caption" sx={{ display: 'block', color: '#7D7B6D', fontStyle: 'italic', fontSize: '9px', mt: 0.5 }}>
-                           {h.details}
-                         </Typography>
-                       )}
-                         <Box sx={{ display: 'flex', gap: 0.5, mt: 1, justifyContent: 'flex-end' }}>
-                           <Button
+                            }}
+                          />
+                        </Box>
+                        {address && (
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                            📍 {address}
+                          </Typography>
+                        )}
+                        {h.details && !address && (
+                          <Typography variant="caption" sx={{ display: 'block', color: '#7D7B6D', fontStyle: 'italic', fontSize: '9px', mt: 0.5 }}>
+                            {h.details}
+                          </Typography>
+                        )}
+                        {attendeeNames && (
+                          <Typography variant="caption" sx={{ display: 'block', mt: 0.5, p: 0.5, backgroundColor: '#FBFBF9', border: '1px solid #EBE9E2', borderRadius: 1, fontSize: '9px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            With: <Typography component="span" sx={{ fontWeight: 700, color: '#2D2D20' }}>{attendeeNames}</Typography>
+                          </Typography>
+                        )}
+                          <Box sx={{ display: 'flex', gap: 0.5, mt: 1, justifyContent: 'flex-end' }}>
+                            <Button
                           onClick={() => {
                             setHangoutDeleteTarget({ ...h, isCompleteAction: true });
                             setHangoutDeleteOpen(true);
-                           }}
+                            }}
                           size="small"
                           sx={{
                             textTransform: 'none',
@@ -1337,111 +1367,179 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
                             fontFamily: 'monospace',
                             backgroundColor: '#5A5A40',
                             color: '#FFFFFF',
-                              '&:hover': { backgroundColor: '#434330' },
-                            }}
-                          >
+                               '&:hover': { backgroundColor: '#434330' },
+                             }}
+                           >
                           Mark Complete
-                          </Button>
-                          <IconButton
+                           </Button>
+                           <IconButton
                           onClick={() => {
                             setHangoutDeleteTarget({ ...h, isCompleteAction: false });
                             setHangoutDeleteOpen(true);
-                           }}
+                            }}
                           size="small"
                           sx={{ color: '#9B988C', '&:hover': { color: '#CC7A5C', backgroundColor: '#FBFBF9' } }}
                           title="Delete Hangout"
-                          >
-                            <Trash2 size={12} />
-                          </IconButton>
-                        </Box>
+                           >
+                             <Trash2 size={12} />
+                           </IconButton>
+                         </Box>
 
-                         {/* Hangout Delete Confirmation Dialog */}
-                         <Dialog
+                          {/* Hangout Delete Confirmation Dialog */}
+                          <Dialog
                           open={hangoutDeleteOpen}
-                          onClose={() => setHangoutDeleteOpen(false)}
+                          onClose={() => { setHangoutDeleteOpen(false); setHangoutDeleteTarget(null); }}
                           maxWidth="xs"
                           fullWidth
                           PaperProps={{ sx: { borderRadius: 2 } }}
-                         >
-                           {!hangoutDeleteTarget && (
-                             <DialogContent>
-                               <Typography variant="body2">Invalid hangout. Please try again.</Typography>
-                             </DialogContent>
-                           )}
-                           {hangoutDeleteTarget && (<>
-                           <DialogTitle sx={{ fontWeight: 700 }}>
-                            {hangoutDeleteTarget.isCompleteAction ? 'Complete Hangout' : 'Delete Hangout'}
-                           </DialogTitle>
-                           <DialogContent>
-                             <Typography variant="body2" sx={{ mb: 1 }}>
-                               {hangoutDeleteTarget.isCompleteAction
-                                 ? `Mark "${hangoutDeleteTarget.title || 'Untitled Hangout'}" as complete?`
-                                 : `Are you sure you want to delete "${hangoutDeleteTarget.title || 'Untitled Hangout'}"?`}
-                             </Typography>
-                             <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.5 }}>
-                               <strong>Date:</strong> {formatDate(hangoutDeleteTarget.datetime)}
-                             </Typography>
-                             {!hangoutDeleteTarget.isCompleteAction && (
-                               <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.5 }}>
-                                 <strong>With:</strong> {(() => {
+                          >
+                            {hangoutDeleteTarget && (<>
+                            <DialogTitle sx={{ fontWeight: 700 }}>
+                             {hangoutDeleteTarget.isCompleteAction ? 'Complete Hangout' : 'Delete Hangout'}
+                            </DialogTitle>
+                            <DialogContent>
+                              {/* Title */}
+                              <Typography variant="body2" sx={{ mb: 1, fontWeight: 700 }}>
+                                {hangoutDeleteTarget.title || 'Untitled Hangout'}
+                              </Typography>
+                              {/* Date */}
+                              <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.5 }}>
+                                <strong>Date:</strong> {formatDate(hangoutDeleteTarget.datetime)}
+                              </Typography>
+                              {/* Who it was with */}
+                              <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.5 }}>
+                                <strong>With:</strong> {(() => {
                                   const names = [];
                                   if (hangoutDeleteTarget.friendIds && Array.isArray(hangoutDeleteTarget.friendIds)) {
                                     hangoutDeleteTarget.friendIds.forEach((id) => {
                                       const f = friends.find((fr) => fr.id === id);
                                       if (f) names.push(f.name);
-                                     });
-                                   }
+                                    });
+                                  }
                                   if (hangoutDeleteTarget.groupId) {
                                     const g = groups.find((gr) => gr.id === hangoutDeleteTarget.groupId);
                                     if (g) names.push(`Group: ${g.name}`);
-                                   }
+                                  }
                                   return names.length > 0 ? names.join(', ') : 'No one listed';
-                                 })()}
-                               </Typography>
-                             )}
-                             {!hangoutDeleteTarget.isCompleteAction && (
-                               <Typography variant="caption" sx={{ display: 'block', mt: 1, color: 'error.main' }}>
-                                This action cannot be undone.
-                               </Typography>
-                             )}
-                           </DialogContent>
+                                })()}
+                              </Typography>
+                              {/* Action-specific message */}
+                              <Typography variant="body2" sx={{ mt: 1, p: 1, backgroundColor: '#FBFBF9', border: '1px solid #EBE9E2', borderRadius: 1 }}>
+                                {hangoutDeleteTarget.isCompleteAction
+                                  ? `Mark all people's last contact date as ${formatDate(hangoutDeleteTarget.datetime)}?`
+                                  : 'Are you sure you want to delete this hangout?'}
+                              </Typography>
+                              {!hangoutDeleteTarget.isCompleteAction && (
+                                <Typography variant="caption" sx={{ display: 'block', mt: 1, color: 'error.main' }}>
+                                  This action cannot be undone.
+                                </Typography>
+                              )}
+                            </DialogContent>
+                             <DialogActions sx={{ p: 2, gap: 1 }}>
+                               <Button onClick={() => { setHangoutDeleteOpen(false); setHangoutDeleteTarget(null); }} variant="outlined">Cancel</Button>
+                               <Button
+                                onClick={() => {
+                                  if (hangoutDeleteTarget?.isCompleteAction) {
+                                    handleCompleteHistoryHangout(hangoutDeleteTarget);
+                                  } else {
+                                    onDeletePlannedHangout(hangoutDeleteTarget.id);
+                                  }
+                                  setHangoutDeleteOpen(false);
+                                  setHangoutDeleteTarget(null);
+                                }}
+                                variant="contained"
+                                sx={{
+                                  backgroundColor: hangoutDeleteTarget?.isCompleteAction ? '#5A5A40' : '#c62828',
+                                  '&:hover': { backgroundColor: hangoutDeleteTarget?.isCompleteAction ? '#434330' : '#b71c1c' },
+                                }}
+                               >
+                                {hangoutDeleteTarget?.isCompleteAction ? 'Complete' : 'Delete'}
+                               </Button>
+                             </DialogActions>
                             </>) }
-                          <DialogActions sx={{ p: 2, gap: 1 }}>
-                            <Button onClick={() => setHangoutDeleteOpen(false)} variant="outlined">Cancel</Button>
-                            <Button
-                              onClick={() => {
-                                if (hangoutDeleteTarget?.isCompleteAction) {
-                                  handleCompleteHistoryHangout(hangoutDeleteTarget);
-                                } else {
-                                  onDeletePlannedHangout(hangoutDeleteTarget.id);
-                                }
-                                setHangoutDeleteOpen(false);
-                                setHangoutDeleteTarget(null);
-                              }}
-                              variant="contained"
-                              sx={{
-                                backgroundColor: hangoutDeleteTarget?.isCompleteAction ? '#5A5A40' : '#c62828',
-                                '&:hover': { backgroundColor: hangoutDeleteTarget?.isCompleteAction ? '#434330' : '#b71c1c' },
-                              }}
-                            >
-                              {hangoutDeleteTarget?.isCompleteAction ? 'Complete' : 'Delete'}
-                            </Button>
-                          </DialogActions>
-                        </Dialog>
-                    </Paper>
-                  );
-                })}
-              </Box>
-              ) : (
-                <Box sx={{ py: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Typography variant="body2" sx={{ color: '#9B988C', fontStyle: 'italic', fontSize: '12px' }}>
+                          </Dialog>
+                     </Paper>
+                   );
+                 })}
+               </Box>
+               ) : (
+                 <Box sx={{ py: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                   <Typography variant="body2" sx={{ color: '#9B988C', fontStyle: 'italic', fontSize: '12px' }}>
                  No past completed logs.
+                   </Typography>
+                 </Box>
+               )}
+             </Box>
+            </Box>
+        </Paper>
+
+        {/* Group Delete Confirmation Dialog */}
+        <Dialog
+         open={groupDeleteOpen}
+         onClose={() => { setGroupDeleteOpen(false); setGroupDeleteTarget(null); }}
+         maxWidth="sm"
+         fullWidth
+         PaperProps={{ sx: { borderRadius: 3 } }}
+        >
+          <DialogTitle sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+           <Trash2 size={18} color="#CC7A5C" />
+            Delete Group
+          </DialogTitle>
+          <DialogContent>
+            {groupDeleteTarget && (<>
+              {/* Group Name */}
+              <Typography variant="body1" sx={{ mb: 1.5, fontWeight: 600 }}>
+                {groupDeleteTarget.name}
+              </Typography>
+
+              {/* Notes */}
+              {groupDeleteTarget.notes || groupDeleteTarget.planning?.notes ? (
+                <Box sx={{ mb: 1.5 }}>
+                  <Typography variant="caption" sx={{ display: 'block', fontWeight: 700, color: 'text.secondary', mb: 0.5 }}>
+                    Notes:
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', backgroundColor: '#FBFBF9', p: 1, borderRadius: 1, border: '1px solid #EBE9E2' }}>
+                    {groupDeleteTarget.notes || groupDeleteTarget.planning?.notes}
                   </Typography>
                 </Box>
-              )}
-            </Box>
-           </Box>
-       </Paper>
-     </Box>
-   );
+              ) : null}
+
+              {/* Members */}
+              <Box sx={{ mb: 1 }}>
+                <Typography variant="caption" sx={{ display: 'block', fontWeight: 700, color: 'text.secondary', mb: 0.5 }}>
+                  Members ({groupDeleteTarget.memberIds?.length || 0}):
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  {resolveMemberNames(groupDeleteTarget.memberIds)}
+                </Typography>
+              </Box>
+
+              {/* Warning */}
+              <Typography variant="caption" sx={{ display: 'block', mt: 2, color: 'error.main', fontWeight: 600 }}>
+                This action cannot be undone. All hangout history linked to this group will be affected.
+              </Typography>
+            </>) }
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+            <Button onClick={() => { setGroupDeleteOpen(false); setGroupDeleteTarget(null); }}>Cancel</Button>
+            <Button
+             onClick={() => {
+               if (groupDeleteTarget?.id) {
+                 onDeleteGroup(groupDeleteTarget.id, groupDeleteTarget);
+               }
+               setGroupDeleteOpen(false);
+               setGroupDeleteTarget(null);
+             }}
+             variant="contained"
+             sx={{
+               backgroundColor: '#c62828',
+               '&:hover': { backgroundColor: '#b71c1c' },
+             }}
+            >
+             Delete Group
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Box>
+    );
 }

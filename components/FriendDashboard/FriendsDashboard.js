@@ -380,9 +380,8 @@ export default function FriendsDashboard({ onSignOut }) {
     setShowAddForm(false);
     }, []);
 
-  const handleDeleteGroup = useCallback(async (groupId) => {
-    if (!confirm('Are you sure you want to delete this group?')) return;
-    if (!user || !groupId) return;
+   // Note: Confirmation is now handled by HangoutScheduler's MUI dialog
+  const handleDeleteGroup = useCallback(async (groupId, groupData) => {
 
     try {
       await deleteGroup(user.uid, groupId);
@@ -416,10 +415,9 @@ export default function FriendsDashboard({ onSignOut }) {
         }
       }, [user]);
 
-     // Delete hangout from the hangout list (full delete from Firestore)
-  const handleDeleteHangout = useCallback(async (hangoutId) => {
-    if (!confirm('Are you sure you want to delete this hangout? This action cannot be undone.')) return;
-    if (!user || !hangoutId) return;
+      // Delete hangout from the hangout list (full delete from Firestore)
+      // Note: Confirmation is handled by HangoutList's MUI dialog, not here
+   const handleDeleteHangout = useCallback(async (hangoutId) => {
 
     try {
       await deleteHangoutApi(user.uid, hangoutId);
@@ -679,17 +677,17 @@ export default function FriendsDashboard({ onSignOut }) {
        }
       }, [user, friends, groups, loadData]);
 
-     // Legacy handler for completing individual hangouts from HangoutList (non-scheduled)
-     // Stores lastContactDate as YYYY-MM-DD using local timezone
-   const handleCompleteHangout = useCallback(async (hangoutId) => {
-    if (!confirm('Mark this hangout as complete? This will update all friends\' lastContactDate.')) return;
+       // Legacy handler for completing individual hangouts from HangoutList (non-scheduled)
+       // Stores lastContactDate as YYYY-MM-DD using local timezone
+       // Note: Confirmation is handled by HangoutList's MUI dialog, not here
+   const handleCompleteHangout = useCallback(async (hangoutId, hangoutDatetime) => {
     if (!user || !hangoutId) return;
 
     try {
       await completeHangout(user.uid, hangoutId);
 
-         // Derive local date key from current moment for consistent YYYY-MM-DD storage
-      const todayLocal = utcToLastContactDate(new Date().toISOString());
+          // Derive local date key from the hangout's datetime for consistent YYYY-MM-DD storage
+      const localDateKey = hangoutDatetime ? utcToLastContactDate(hangoutDatetime) : utcToLastContactDate(new Date().toISOString());
 
          // Update friend records with local date key
       for (const friend of friends) {
@@ -697,7 +695,7 @@ export default function FriendsDashboard({ onSignOut }) {
           await updateFriend(user.uid, friend.id, {
             contact: {
                  ...friend.contact,
-              lastContactDate: todayLocal,
+              lastContactDate: localDateKey,
                },
              });
            }
