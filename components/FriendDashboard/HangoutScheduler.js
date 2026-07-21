@@ -1117,13 +1117,13 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
    ]);
 
   return (
-    <Box>
-      {/* Plan Event / Create Group dialogs — stable component references */}
-      <SchedulingFormDialog {...schedulingFormProps} />
-      <GroupCreationForm {...groupFormProps} />
+     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {/* Plan Event / Create Group dialogs — stable component references */}
+        <SchedulingFormDialog {...schedulingFormProps} />
+        <GroupCreationForm {...groupFormProps} />
 
-      {/* Main Hub */}
-      <Paper sx={{ p: 3, borderRadius: 3, border: '1px solid #EBE9E2', backgroundColor: '#FFFFFF' }}>
+        {/* Main Hub */}
+        <Paper sx={{ p: 3, borderRadius: 3, border: '1px solid #EBE9E2', backgroundColor: '#FFFFFF', flex: 1, display: 'flex', flexDirection: 'column' }}>
         {/* Header with buttons */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1.5, borderBottom: '1px solid #F2F0EA', mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -1378,26 +1378,32 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
               </Box>
             </Box>
 
-            {history.length > 0 ? (
-              <Box sx={{ maxHeight: 250, overflowY: 'auto', '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '3px' } }}>
-                {history.map((h, idx) => {
+             {history.length > 0 ? (
+               <Box sx={{ maxHeight: 250, overflowY: 'auto', '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '3px' } }}>
+                 {history.map((h, idx) => {
                  const attendeeNames = h.friendIds
-                    .map((fId) => friends.find((f) => f.id === fId)?.name?.split(' ')[0])
-                    .filter(Boolean)
-                    .join(', ');
+                     .map((fId) => friends.find((f) => f.id === fId)?.name?.split(' ')[0])
+                     .filter(Boolean)
+                     .join(', ');
+
+                 // Resolve POI data for the hangout location (same logic as HangoutList)
+                 const poi = (h.locationPoiId || h.poiId)
+                     ? (pois && pois.length > 0 ? pois : []).find((p) => p.id === (h.locationPoiId || h.poiId))
+                     : null;
+                 const address = poi?.location?.address || null;
 
                  return (
-                    <Paper key={h.id || idx} variant="outlined" sx={{ p: 1.5, mb: 1, borderRadius: 2, backgroundColor: '#FFFFFF' }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
-                        <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Typography variant="subtitle2" sx={{ fontFamily: 'serif', fontWeight: 700, fontSize: '0.8rem', color: '#2D2D20', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {h.title}
-                          </Typography>
-                          <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', color: '#9B988C' }}>
-                            {formatDate(h.datetime)}
-                          </Typography>
-                        </Box>
-                        <Chip
+                     <Paper key={h.id || idx} variant="outlined" sx={{ p: 1.5, mb: 1, borderRadius: 2, backgroundColor: '#FFFFFF' }}>
+                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
+                         <Box sx={{ flex: 1, minWidth: 0 }}>
+                           <Typography variant="subtitle2" sx={{ fontFamily: 'serif', fontWeight: 700, fontSize: '0.8rem', color: '#2D2D20', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                             {h.title}
+                           </Typography>
+                           <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', color: '#9B988C' }}>
+                             {formatDate(h.datetime)}
+                           </Typography>
+                         </Box>
+                         <Chip
                          label={h.type === 'physical' ? 'PHYSICAL' : 'VIRTUAL'}
                          size="small"
                          sx={{
@@ -1408,14 +1414,19 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
                            fontWeight: 700,
                            height: 18,
                            border: `1px solid ${h.type === 'physical' ? '#25D36630' : '#5865F230'}`,
-                          }}
-                        />
-                      </Box>
-                      {h.details && (
-                        <Typography variant="caption" sx={{ display: 'block', color: '#7D7B6D', fontStyle: 'italic', fontSize: '9px', mt: 0.5 }}>
-                          {h.details}
-                        </Typography>
-                      )}
+                           }}
+                         />
+                       </Box>
+                       {address && (
+                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                           📍 {address}
+                         </Typography>
+                       )}
+                       {h.details && !address && (
+                         <Typography variant="caption" sx={{ display: 'block', color: '#7D7B6D', fontStyle: 'italic', fontSize: '9px', mt: 0.5 }}>
+                           {h.details}
+                         </Typography>
+                       )}
                          <Box sx={{ display: 'flex', gap: 0.5, mt: 1, justifyContent: 'flex-end' }}>
                            <Button
                           onClick={() => {

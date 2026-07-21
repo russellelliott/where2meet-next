@@ -788,7 +788,7 @@ export default function FriendsDashboard({ onSignOut }) {
    const selectedFriend = friends.find((f) => f.id === selectedFriendId);
 
   return (
-      <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: 'none', mx: 0, width: '100%' }}>
+       <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: 1400, mx: 'auto', width: '100%' }}>
          {/* Error Alerts */}
         {error && (
           <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError(null)}>
@@ -819,7 +819,7 @@ export default function FriendsDashboard({ onSignOut }) {
          {/* Two-Column Dashboard Layout */}
         <Grid container spacing={{ xs: 2, sm: 3 }}>
 {/* Left Column: Friend List */}
-<Grid item xs={12} md={6}>
+<Grid item xs={12} md={5}>
 <FriendList
 friends={friends}
 cityCache={cityCache}
@@ -923,7 +923,7 @@ isAddFormOpen={showAddForm}
           </Grid>
 
 {/* Right Column: Hangouts, Groups */}
-<Grid item xs={12} md={6}>
+<Grid item xs={12} md={7}>
                {/* Hangout Scheduler (commitments, groups, plan/create buttons) */}
               <HangoutScheduler
               friends={friends}
