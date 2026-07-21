@@ -43,29 +43,115 @@ function parseLastContactDateToLocal(dateStr) {
 }
 
 /**
- * Helper to resolve friend location display from POI data.
- */
-function resolveFriendLocation(friendLoc, pois, cityCache) {
-  if (!friendLoc) return 'No location set';
-  if (friendLoc.homePoiId) {
-    const poi = Array.isArray(pois) ? pois.find((p) => p.id === friendLoc.homePoiId) : null;
+   * Format a date string (YYYY-MM-DD or ISO) to mm/dd/yyyy.
+   */
+  function formatDate(dateStr) {
+    if (!dateStr) return '';
+    let d;
+    if (dateStr.length === 10) {
+      const [year, month, day] = dateStr.split('-');
+      d = new Date(year, parseInt(month, 10) - 1, parseInt(day, 10));
+    } else {
+      d = new Date(dateStr);
+    }
+    if (isNaN(d.getTime())) return '';
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${mm}/${dd}/${yyyy}`;
+  }
+
+  /**
+   * Format the temporary location date range as mm/dd/yyyy-mm/dd/yyyy.
+   */
+  function formatDateRange(startDate, endDate) {
+    const start = formatDate(startDate);
+    const end = formatDate(endDate);
+    if (start && end) return `(${start}-${end})`;
+    return '';
+  }
+
+  /**
+   * Check if today's date falls within the temporary location's date range.
+   */
+  function isTempLocationActive(tempLocation) {
+    if (!tempLocation || !tempLocation.startDate && !tempLocation.endDate) return false;
+    const today = new Date();
+    const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+    let startdate;
+    if (tempLocation.startDate) {
+      if (tempLocation.startDate.length === 10) {
+        const [year, month, day] = tempLocation.startDate.split('-');
+        startdate = new Date(year, parseInt(month, 10) - 1, parseInt(day, 10));
+      } else {
+        startdate = new Date(tempLocation.startDate);
+      }
+    }
+
+    let enddate;
+    if (tempLocation.endDate) {
+      if (tempLocation.endDate.length === 10) {
+        const [year, month, day] = tempLocation.endDate.split('-');
+        enddate = new Date(year, parseInt(month, 10) - 1, parseInt(day, 10));
+      } else {
+        enddate = new Date(tempLocation.endDate);
+      }
+    }
+
+    const inRange = [];
+    if (startdate && enddate) {
+      inRange.push(todayDate >= new Date(startdate.getFullYear(), startdate.getMonth(), startdate.getDate()) && todayDate <= new Date(enddate.getFullYear(), enddate.getMonth(), enddate.getDate()));
+    } else if (startdate) {
+      inRange.push(todayDate >= new Date(startdate.getFullYear(), startdate.getMonth(), startdate.getDate()));
+    } else if (enddate) {
+      inRange.push(todayDate <= new Date(enddate.getFullYear(), enddate.getMonth(), enddate.getDate()));
+    }
+
+    return inRange.some(Boolean);
+  }
+
+  /**
+   * Resolve a POI to its display address.
+   */
+  function resolvePoiAddress(poiId, pois, cityCache) {
+    if (!poiId) return null;
+    const poi = Array.isArray(pois) ? pois.find((p) => p.id === poiId) : null;
     if (poi) {
       if (poi.location?.address) return poi.location.address;
       if (poi.location?.lat && poi.location?.lng) return `${poi.location.lat.toFixed(4)}, ${poi.location.lng.toFixed(4)}`;
-      }
-    if (cityCache && cityCache[friendLoc.homePoiId]) return cityCache[friendLoc.homePoiId];
-    return 'Home set';
     }
-  if (friendLoc.temporaryLocation?.poiId) {
-    const tempPoi = Array.isArray(pois) ? pois.find((p) => p.id === friendLoc.temporaryLocation.poiId) : null;
-    if (tempPoi) {
-      if (tempPoi.location?.address) return `Temp: ${tempPoi.location.address}`;
-      if (tempPoi.location?.lat && tempPoi.location?.lng) return `Temp: ${tempPoi.location.lat.toFixed(4)}, ${tempPoi.location.lng.toFixed(4)}`;
-      }
-    return 'Temporary location';
+    if (cityCache && cityCache[poiId]) return cityCache[poiId];
+    return null;
+  }
+
+  /**
+   * Helper to resolve friend location display from POI data.
+   * Returns an object with homeAddress, tempAddress, tempDateRange, and isActive flags.
+   */
+  function resolveFriendLocation(friendLoc, pois, cityCache) {
+    const result = {
+      homeAddress: null,
+      tempAddress: null,
+      tempDateRange: '',
+      isTempActive: false,
+    };
+
+    if (friendLoc?.homePoiId) {
+      result.homeAddress = resolvePoiAddress(friendLoc.homePoiId, pois, cityCache);
+      if (!result.homeAddress) result.homeAddress = 'Home set';
     }
-  return 'No location set';
-}
+
+    if (friendLoc?.temporaryLocation) {
+      const tempLocation = friendLoc.temporaryLocation;
+      result.tempAddress = resolvePoiAddress(tempLocation.poiId, pois, cityCache);
+      if (!result.tempAddress) result.tempAddress = 'Temporary location';
+      result.isTempActive = isTempLocationActive(tempLocation);
+      result.tempDateRange = formatDateRange(tempLocation.startDate, tempLocation.endDate);
+    }
+
+    return result;
+  }
 
 export default function FriendList({
   friends,
@@ -407,6 +493,8 @@ export default function FriendList({
           const isSelected = selectedFriendId === friend.id;
           const cardStyles = getCardStyles(category, isSelected);
 
+          const locationData = resolveFriendLocation(friend.location, pois, cityCache);
+
           return (
               <Paper
               key={friend.id}
@@ -416,24 +504,59 @@ export default function FriendList({
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
                 borderRadius: 2,
-                  ...cardStyles,
-                }}
+                   ...cardStyles,
+                 }}
               id={`friend-row-${friend.id}`}
               >
-                {/* Top Row: Name + Days Ago */}
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  {/* Left: Name & City */}
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography variant="body2" sx={{ fontFamily: 'serif', fontWeight: 700, color: '#2D2D20', fontSize: '0.95rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {friend.name}
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
-                      <MapPin size={12} color="#9B988C" />
-                      <Typography variant="caption" sx={{ color: '#7D7B6D', fontSize: '11px' }}>
-                        {resolveFriendLocation(friend.location, pois, cityCache)}
-                      </Typography>
-                    </Box>
-                  </Box>
+                 {/* Top Row: Name + Days Ago */}
+                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                   {/* Left: Name & Location */}
+                   <Box sx={{ flex: 1, minWidth: 0 }}>
+                     <Typography variant="body2" sx={{ fontFamily: 'serif', fontWeight: 700, color: '#2D2D20', fontSize: '0.95rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                       {friend.name}
+                     </Typography>
+                     {/* Home POI Address */}
+                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25, flexWrap: 'wrap' }}>
+                       <MapPin size={12} color="#9B988C" />
+                       <Typography
+                         variant="caption"
+                         sx={{
+                           color: '#7D7B6D',
+                           fontSize: '11px',
+                           textDecoration: locationData.isTempActive ? 'line-through' : 'none',
+                         }}
+                       >
+                         {locationData.homeAddress}
+                       </Typography>
+                     </Box>
+                      {/* Temporary Location Address + Date Range */}
+                      {locationData.tempAddress && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25, flexWrap: 'wrap' }}>
+                          <Typography
+                           variant="caption"
+                           sx={{
+                             color: friend.logistics?.canDrive ? '#1e8544' : '#CC7A5C',
+                             fontSize: '11px',
+                             fontStyle: 'italic',
+                            }}
+                          >
+                            {locationData.tempAddress}
+                          </Typography>
+                          {locationData.tempDateRange && (
+                            <Typography
+                             variant="caption"
+                             sx={{
+                               color: friend.logistics?.canDrive ? '#1e8544' : '#CC7A5C',
+                               fontSize: '10px',
+                               fontFamily: 'monospace',
+                              }}
+                            >
+                              {locationData.tempDateRange}
+                            </Typography>
+                          )}
+                        </Box>
+                      )}
+                   </Box>
 
                   {/* Right: Days Ago + Contact Icon */}
                   <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
