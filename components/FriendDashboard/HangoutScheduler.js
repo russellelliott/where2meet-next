@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import dayjs from 'dayjs';
-import { GoogleMap, Marker, MapAutocomplete } from '@react-google-maps/api';
+import { GoogleMap, Marker, Autocomplete as GoogleAutocomplete } from '@react-google-maps/api';
 import {
   Box,
   Typography,
@@ -65,7 +65,7 @@ function SimpleMapPOIPicker({ onClose, onPoiCreated }) {
         <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
          Search for a place below. Selecting a suggestion will create a private location visible on all your maps.
         </Typography>
-        <MapAutocomplete
+        <GoogleAutocomplete
          onLoad={(ac) => { autocompleteRef.current = ac; }}
          onPlaceChanged={handlePlaceChanged}
          renderInput={(params) => (

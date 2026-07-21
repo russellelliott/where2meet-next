@@ -21,7 +21,7 @@ import {
   InputAdornment,
   Autocomplete as MuiAutocomplete,
 } from '@mui/material';
-import { MapAutocomplete } from '@react-google-maps/api';
+import { Autocomplete as GoogleAutocomplete } from '@react-google-maps/api';
 import { createPoiFromCoordinates } from '../../lib/poiService';
 import { saveFriend, updateFriend, getFriends } from '../../lib/friendService';
 import { auth, db } from '../../firebaseConfig';
@@ -1012,7 +1012,7 @@ function SimpleMapPOIPicker({ mode, onClose, onPoiCreated }) {
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
              Search for a place below. Selecting a suggestion will create a private location visible on all your maps.
               </Typography>
-              <MapAutocomplete
+               <GoogleAutocomplete
                 onLoad={(ac) => { autocompleteRef.current = ac; }}
                 onPlaceChanged={handlePlaceChanged}
                 renderInput={(params) => (
