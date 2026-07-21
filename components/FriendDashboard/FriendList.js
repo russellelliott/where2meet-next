@@ -261,46 +261,73 @@ export default function FriendList({
 
   const renderContactIcon = (friend) => {
     const primary = friend.contact?.primary || 'phone';
-    const handle = friend.contact?.handle || '';
     const iconStyle = { cursor: 'default', display: 'flex', alignItems: 'center', gap: 0.5 };
+    const stackedStyle = { cursor: 'default', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.25, width: '100%', textAlign: 'right' };
+
+    // Get the username/handle from the correct contact field
+    // Note: discord and instagram fields can be string | boolean (true) in the database
+    let username = '';
+    if (primary === 'discord') {
+      const val = friend.contact?.discord;
+      username = (typeof val === 'string' && val) ? val : '';
+    } else if (primary === 'instagram') {
+      const val = friend.contact?.instagram;
+      username = (typeof val === 'string' && val) ? val : '';
+    } else if (primary === 'whatsapp') {
+      const val = friend.contact?.whatsapp;
+      username = (typeof val === 'string' && val) ? val : '';
+     } else {
+      const val = friend.contact?.phone;
+      username = (typeof val === 'string' && val) ? val : '';
+     }
 
     if (primary === 'discord') {
       return (
-          <Box sx={iconStyle}>
-            <FaDiscord size={18} color="#5865F2" />
-            {handle && (
-              <Typography variant="caption" sx={{ fontSize: '10px', color: '#5865F2', fontWeight: 600 }}>
-                {handle}
-              </Typography>
-            )}
-          </Box>
-        );
-      }
+               <Box sx={stackedStyle}>
+                 <FaDiscord size={18} color="#5865F2" />
+                 {username && (
+                   <Typography variant="caption" sx={{ fontSize: '9px', color: '#5865F2', fontWeight: 600, lineHeight: 1, display: 'block' }}>
+                     {username}
+                   </Typography>
+                 )}
+               </Box>
+             );
+           }
     if (primary === 'whatsapp') {
       return (
-          <Box sx={iconStyle}>
-            <IoLogoWhatsapp size={18} color="#25D366" />
-          </Box>
-        );
-      }
+               <Box sx={stackedStyle}>
+                 <IoLogoWhatsapp size={18} color="#25D366" />
+                 {username && (
+                   <Typography variant="caption" sx={{ fontSize: '9px', color: '#25D366', fontWeight: 600, lineHeight: 1, display: 'block' }}>
+                     {username}
+                   </Typography>
+                 )}
+               </Box>
+             );
+           }
     if (primary === 'instagram') {
       return (
-          <Box sx={iconStyle}>
-            <FaInstagram size={18} color="#8a49a1" />
-            {handle && (
-              <Typography variant="caption" sx={{ fontSize: '10px', color: '#8a49a1', fontWeight: 600 }}>
-                {handle}
-              </Typography>
-            )}
-          </Box>
-        );
-      }
+               <Box sx={stackedStyle}>
+                 <FaInstagram size={18} color="#8a49a1" />
+                 {username && (
+                   <Typography variant="caption" sx={{ fontSize: '9px', color: '#8a49a1', fontWeight: 600, lineHeight: 1, display: 'block' }}>
+                     {username}
+                   </Typography>
+                 )}
+               </Box>
+             );
+           }
     return (
-        <Box sx={iconStyle}>
-          <FaPhone size={14} color="#666666" />
-        </Box>
-      );
-    };
+             <Box sx={stackedStyle}>
+               <FaPhone size={14} color="#666666" />
+               {username && (
+                 <Typography variant="caption" sx={{ fontSize: '9px', color: '#666666', fontWeight: 600, lineHeight: 1, display: 'block' }}>
+                   {username}
+                 </Typography>
+               )}
+             </Box>
+           );
+         };
 
   const getStalenessColor = (category) => {
     switch (category) {
