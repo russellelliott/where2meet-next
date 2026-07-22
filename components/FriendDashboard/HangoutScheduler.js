@@ -1185,22 +1185,28 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
                 const groupObj = groups.find((g) => g.id === hangout.groupId);
                 const attendees = groupObj ? groupObj.memberIds : [];
                 const attendeeNames = attendees
-                   .map((id) => friends.find((f) => f.id === id)?.name?.split(' ')[0])
-                   .filter(Boolean)
-                   .join(', ');
+                    .map((id) => friends.find((f) => f.id === id)?.name?.split(' ')[0])
+                    .filter(Boolean)
+                    .join(', ');
+
+                // Resolve POI data for the hangout location (same logic as past hangouts and HangoutList)
+                const poi = (hangout.locationPoiId || hangout.poiId)
+                      ? (pois && pois.length > 0 ? pois : []).find((p) => p.id === (hangout.locationPoiId || hangout.poiId))
+                      : null;
+                const address = poi?.location?.address || null;
 
                 return (
-                   <Paper key={hangout.id} variant="outlined" sx={{ p: 2, mb: 1.5, borderRadius: 2, backgroundColor: '#FFFFFF' }}>
-                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                       <Box>
-                         <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', color: '#7D7B6D', display: 'block' }}>
-                           {groupObj ? groupObj.name : 'Custom Event'}
-                         </Typography>
-                         <Typography variant="subtitle2" sx={{ fontFamily: 'serif', fontWeight: 700, fontSize: '0.85rem', color: '#2D2D20' }}>
-                           {hangout.title}
-                         </Typography>
-                       </Box>
-                       <Chip
+                    <Paper key={hangout.id} variant="outlined" sx={{ p: 2, mb: 1.5, borderRadius: 2, backgroundColor: '#FFFFFF' }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                        <Box>
+                          <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', color: '#7D7B6D', display: 'block' }}>
+                            {groupObj ? groupObj.name : 'Custom Event'}
+                          </Typography>
+                          <Typography variant="subtitle2" sx={{ fontFamily: 'serif', fontWeight: 700, fontSize: '0.85rem', color: '#2D2D20' }}>
+                            {hangout.title}
+                          </Typography>
+                        </Box>
+                        <Chip
                         label={hangout.type === 'physical' ? 'PHYSICAL' : 'VIRTUAL'}
                         size="small"
                         sx={{
@@ -1211,19 +1217,16 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
                           fontWeight: 700,
                           height: 20,
                           border: `1px solid ${hangout.type === 'physical' ? '#25D36630' : '#5865F230'}`,
-                         }}
-                       />
-                     </Box>
+                          }}
+                        />
+                      </Box>
 
-                     <Box sx={{ mt: 1.5 }}>
-                       {hangout.locationPoiId && (
-                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.75 }}>
-                           <MapPin size={14} color="#9B988C" />
-                           <Typography variant="body2" sx={{ fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                             {hangout.locationPoiId}
-                           </Typography>
-                         </Box>
-                       )}
+                      <Box sx={{ mt: 1.5 }}>
+                        {address && (
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, mb: 0.75 }}>
+                            📍 {address}
+                          </Typography>
+                        )}
                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F2F0EA', pt: 1, mt: 0.5 }}>
                          <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '10px', color: '#7D7B6D' }}>
                            {formatDate(hangout.datetime)}
@@ -1354,36 +1357,46 @@ function resolvePoiInfo(poiId, userPois, localPoisArray) {
                           </Typography>
                         )}
                           <Box sx={{ display: 'flex', gap: 0.5, mt: 1, justifyContent: 'flex-end' }}>
+                            {onEditPlannedHangout && (
+                              <IconButton
+                               onClick={() => onEditPlannedHangout(h)}
+                               size="small"
+                               sx={{ color: '#9B988C', mr: 0.5, '&:hover': { color: '#5A5A40', backgroundColor: '#FBFBF9' } }}
+                               title="Edit Hangout"
+                              >
+                                <Pencil size={12} />
+                              </IconButton>
+                            )}
                             <Button
-                          onClick={() => {
-                            setHangoutDeleteTarget({ ...h, isCompleteAction: true });
-                            setHangoutDeleteOpen(true);
+                         onClick={() => {
+                           setHangoutDeleteTarget({ ...h, isCompleteAction: true });
+                           setHangoutDeleteOpen(true);
                             }}
-                          size="small"
-                          sx={{
-                            textTransform: 'none',
-                            fontSize: '9px',
-                            fontWeight: 700,
-                            fontFamily: 'monospace',
-                            backgroundColor: '#5A5A40',
-                            color: '#FFFFFF',
-                               '&:hover': { backgroundColor: '#434330' },
+                         size="small"
+                         sx={{
+                           textTransform: 'none',
+                           fontSize: '9px',
+                           fontWeight: 700,
+                           fontFamily: 'monospace',
+                           backgroundColor: '#5A5A40',
+                           color: '#FFFFFF',
+                              '&:hover': { backgroundColor: '#434330' },
                              }}
-                           >
+                            >
                           Mark Complete
-                           </Button>
-                           <IconButton
-                          onClick={() => {
-                            setHangoutDeleteTarget({ ...h, isCompleteAction: false });
-                            setHangoutDeleteOpen(true);
+                            </Button>
+                            <IconButton
+                         onClick={() => {
+                           setHangoutDeleteTarget({ ...h, isCompleteAction: false });
+                           setHangoutDeleteOpen(true);
                             }}
-                          size="small"
-                          sx={{ color: '#9B988C', '&:hover': { color: '#CC7A5C', backgroundColor: '#FBFBF9' } }}
-                          title="Delete Hangout"
-                           >
-                             <Trash2 size={12} />
-                           </IconButton>
-                         </Box>
+                         size="small"
+                         sx={{ color: '#9B988C', '&:hover': { color: '#CC7A5C', backgroundColor: '#FBFBF9' } }}
+                         title="Delete Hangout"
+                          >
+                           <Trash2 size={12} />
+                          </IconButton>
+                        </Box>
 
                           {/* Hangout Delete Confirmation Dialog */}
                           <Dialog
