@@ -1352,47 +1352,47 @@ export default function HangoutScheduler({
                           <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '10px', color: '#7D7B6D' }}>
                             {formatDate(h.datetime)}
                           </Typography>
-                          <Box sx={{ display: 'flex', gap: 0.5 }}>
-                            {onEditPlannedHangout && (
-                              <IconButton
-                                onClick={() => onEditPlannedHangout(h)}
-                                size="small"
-                                sx={{ color: '#9B988C', '&:hover': { color: '#5A5A40', backgroundColor: '#FBFBF9' } }}
-                                title="Edit Hangout"
+                            <Box sx={{ display: 'flex', gap: 0.5 }}>
+                              <Button
+                               onClick={() => {
+                                 setHangoutDeleteTarget({ ...h, isCompleteAction: true });
+                                 setHangoutDeleteOpen(true);
+                                }}
+                               size="small"
+                               sx={{
+                                 textTransform: 'none',
+                                 fontSize: '9px',
+                                 fontWeight: 700,
+                                 fontFamily: 'monospace',
+                                 backgroundColor: '#5A5A40',
+                                 color: '#FFFFFF',
+                                  '&:hover': { backgroundColor: '#434330' },
+                                }}
                               >
-                                <Pencil size={14} />
+                               Mark Complete
+                              </Button>
+                              {onEditPlannedHangout && (
+                                <IconButton
+                                 onClick={() => onEditPlannedHangout(h)}
+                                 size="small"
+                                 sx={{ color: '#9B988C', '&:hover': { color: '#5A5A40', backgroundColor: '#FBFBF9' } }}
+                                 title="Edit Hangout"
+                                >
+                                  <Pencil size={14} />
+                                </IconButton>
+                              )}
+                              <IconButton
+                               onClick={() => {
+                                 setHangoutDeleteTarget({ ...h, isCompleteAction: false });
+                                 setHangoutDeleteOpen(true);
+                                }}
+                               size="small"
+                               sx={{ color: '#9B988C', '&:hover': { color: '#CC7A5C', backgroundColor: '#FBFBF9' } }}
+                               title="Delete Hangout"
+                              >
+                                <Trash2 size={14} />
                               </IconButton>
-                            )}
-                            <Button
-                              onClick={() => {
-                                setHangoutDeleteTarget({ ...h, isCompleteAction: true });
-                                setHangoutDeleteOpen(true);
-                              }}
-                              size="small"
-                              sx={{
-                                textTransform: 'none',
-                                fontSize: '9px',
-                                fontWeight: 700,
-                                fontFamily: 'monospace',
-                                backgroundColor: '#5A5A40',
-                                color: '#FFFFFF',
-                                '&:hover': { backgroundColor: '#434330' },
-                              }}
-                            >
-                              Mark Complete
-                            </Button>
-                            <IconButton
-                              onClick={() => {
-                                setHangoutDeleteTarget({ ...h, isCompleteAction: false });
-                                setHangoutDeleteOpen(true);
-                              }}
-                              size="small"
-                              sx={{ color: '#9B988C', '&:hover': { color: '#CC7A5C', backgroundColor: '#FBFBF9' } }}
-                              title="Delete Hangout"
-                            >
-                              <Trash2 size={14} />
-                            </IconButton>
-                          </Box>
+                            </Box>
                         </Box>
                       </Box>
 
