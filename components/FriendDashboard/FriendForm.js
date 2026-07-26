@@ -26,7 +26,8 @@ import { auth, db } from '../../firebaseConfig';
 import { collection, getDocs } from 'firebase/firestore';
 import { toast } from 'react-toastify';
 import { FaPhone, FaDiscord, FaInstagram } from 'react-icons/fa6';
-import { IoLogoWhatsapp } from 'react-icons/io';
+import { FaLinkedin } from 'react-icons/fa';
+import { IoLogoWhatsapp, IoIosLink } from 'react-icons/io';
 
 /**
  * FriendForm Component
@@ -41,6 +42,8 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
         whatsapp: editFriend?.contact?.whatsapp || false,
         discord: typeof editFriend?.contact?.discord === 'string' ? editFriend.contact.discord : (editFriend?.contact?.discord || ''),
         instagram: typeof editFriend?.contact?.instagram === 'string' ? editFriend.contact.instagram : (editFriend?.contact?.instagram || ''),
+        linkedin: typeof editFriend?.contact?.linkedin === 'string' ? editFriend.contact.linkedin : (editFriend?.contact?.linkedin || ''),
+        website: typeof editFriend?.contact?.website === 'string' ? editFriend.contact.website : (editFriend?.contact?.website || ''),
         primary: editFriend?.contact?.primary || 'phone',
         },
      location: {
@@ -66,6 +69,8 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
    const [contactToggles, setContactToggles] = useState({
      discord: editFriend?.contact?.discord === true || (typeof editFriend?.contact?.discord === 'string' && editFriend?.contact?.discord.length > 0),
      instagram: editFriend?.contact?.instagram === true || (typeof editFriend?.contact?.instagram === 'string' && editFriend?.contact?.instagram.length > 0),
+     linkedin: editFriend?.contact?.linkedin === true || (typeof editFriend?.contact?.linkedin === 'string' && editFriend?.contact?.linkedin.length > 0),
+     website: editFriend?.contact?.website === true || (typeof editFriend?.contact?.website === 'string' && editFriend?.contact?.website.length > 0),
      });
 
      // State for last contact date calendar (separate from temp location calendars)
@@ -286,6 +291,8 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
       whatsapp: formData.contact.whatsapp || false,
       discord: formData.contact.discord || false,
       instagram: formData.contact.instagram || false,
+      linkedin: formData.contact.linkedin || false,
+      website: formData.contact.website || false,
         primary: formData.contact.primary || 'phone',
       lastContactDate: resolvedLastContactDate,
          };
@@ -344,14 +351,14 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
     const persistedChecked = formData.contact[channel] === true ||
          (typeof formData.contact[channel] === 'string' && formData.contact[channel].length > 0);
 
-         // For Discord/Instagram, use local toggle state for immediate feedback
-    const isToggled = (channel === 'discord' || channel === 'instagram')
-         ? contactToggles[channel] ?? persistedChecked
-         : persistedChecked;
+           // For Discord/Instagram/LinkedIn/Website, use local toggle state for immediate feedback
+    const isToggled = (channel === 'discord' || channel === 'instagram' || channel === 'linkedin' || channel === 'website')
+           ? contactToggles[channel] ?? persistedChecked
+          : persistedChecked;
 
     const handleToggleClick = () => {
-       // Update local toggle immediately for visual feedback
-      if (channel === 'discord' || channel === 'instagram') {
+        // Update local toggle immediately for visual feedback
+      if (channel === 'discord' || channel === 'instagram' || channel === 'linkedin' || channel === 'website') {
         setContactToggles((prev) => {
           const newVal = !prev[channel];
            // When toggling on, don't overwrite the string value - just show the field
@@ -369,10 +376,10 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
        }
      };
 
-    // For Discord/Instagram, use the channel-specific value directly
-    const socialValue = (channel === 'discord' || channel === 'instagram') && isToggled
-          ? formData.contact[channel] || ''
-          : '';
+      // For Discord/Instagram/LinkedIn/Website, use the channel-specific value directly
+    const socialValue = (channel === 'discord' || channel === 'instagram' || channel === 'linkedin' || channel === 'website') && isToggled
+           ? formData.contact[channel] || ''
+           : '';
 
     return (
           <Box key={channel} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1.5, borderRadius: 2, backgroundColor: '#FBFBF9' }}>
@@ -387,7 +394,7 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
             onChange={handleToggleClick}
             style={{ cursor: 'pointer' }}
                />
-                {(channel === 'discord' || channel === 'instagram') && isToggled && (
+                  {(channel === 'discord' || channel === 'instagram' || channel === 'linkedin' || channel === 'website') && isToggled && (
                   <TextField
               size="small"
               fullWidth
@@ -490,7 +497,7 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
                       sx={{ mb: 2 }}
                         />
 
-                  <TextField
+                   <TextField
                   fullWidth
                   select
                   label="Primary Channel"
@@ -498,14 +505,16 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
                   onChange={(e) => handleContactChange('primary', e.target.value)}
                   margin="normal"
                   size="small"
-                  >
-                    <MenuItem value="phone">Phone Call</MenuItem>
-                    <MenuItem value="discord">Discord</MenuItem>
-                    <MenuItem value="whatsapp">WhatsApp</MenuItem>
-                    <MenuItem value="instagram">Instagram</MenuItem>
-                  </TextField>
+                   >
+                     <MenuItem value="phone">Phone Call</MenuItem>
+                     <MenuItem value="discord">Discord</MenuItem>
+                     <MenuItem value="whatsapp">WhatsApp</MenuItem>
+                     <MenuItem value="instagram">Instagram</MenuItem>
+                     <MenuItem value="linkedin">LinkedIn</MenuItem>
+                     <MenuItem value="website">Website</MenuItem>
+                   </TextField>
 
-                  {/* Contact Channels - New approach per schema */}
+                   {/* Contact Channels - New approach per schema */}
                   <Box sx={{ mt: 2, mb: 1.5 }}>
                     <Typography variant="subtitle2" gutterBottom>
                     Contact Channels Available
@@ -542,15 +551,33 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
                     'username#1234'
                   )}
 
-                  {/* Instagram - toggle + handle text field */}
-                  {renderContactChannel(
-                    'instagram',
-                    'Instagram',
+                    {/* Instagram - toggle + handle text field */}
+                    {renderContactChannel(
+                      'instagram',
+                      'Instagram',
                   FaInstagram,
-                    '#8a49a1',
-                    '@insta_handle'
-                  )}
-                </Box>
+                      '#8a49a1',
+                      '@insta_handle'
+                    )}
+
+                    {/* LinkedIn - toggle + handle text field */}
+                    {renderContactChannel(
+                      'linkedin',
+                      'LinkedIn',
+                  FaLinkedin,
+                      '#0072b1',
+                      'https://linkedin.com/in/username'
+                    )}
+
+                    {/* Website - toggle + handle text field */}
+                    {renderContactChannel(
+                      'website',
+                      'Website',
+                  IoIosLink,
+                      '#e85d3a',
+                      'https://example.com'
+                    )}
+                  </Box>
               )}
 
               {/* Tab 2: Location */}
