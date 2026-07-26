@@ -89,24 +89,21 @@ function computePoiCountsByMap(allPOIs, userMaps) {
 }
 
 // Get display name for a user ID (falls back to truncated ID)
-// Priority: collaborator metadata from map > displayNameMap > truncated UID
+// Priority: collaborator name > displayNameMap > truncated UID
 function getUserDisplayName(userId, displayNameMap, collaborators) {
-   // First check if this user is a collaborator with stored name/email
+    // First check if this user is a collaborator with stored name
   if (collaborators && collaborators[userId]) {
     const collab = collaborators[userId];
     const name = collab.displayName || collab.name || '';
-    const email = collab.email || '';
-    if (name && email) return `${name} (${email})`;
     if (name) return name;
-    if (email) return email;
-  }
+   }
   
-  // Then check displayNameMap (loaded from user profiles)
+   // Then check displayNameMap (loaded from user profiles)
   if (displayNameMap && displayNameMap[userId]) {
     return displayNameMap[userId];
-  }
+   }
   
-   // Fall back to truncated UID
+    // Fall back to truncated UID
   return `${userId.slice(0, 5)}... (${userId.slice(-4)})`;
 }
 
