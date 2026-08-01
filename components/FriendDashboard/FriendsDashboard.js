@@ -402,7 +402,6 @@ export default function FriendsDashboard({ onSignOut }) {
      }, [user, loadData]);
 
   const handleDeletePlannedHangout = useCallback(async (hangoutId) => {
-    if (!confirm('Are you sure you want to cancel this hangout?')) return;
     if (!user || !hangoutId) return;
 
     try {
