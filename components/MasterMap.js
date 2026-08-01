@@ -3,6 +3,7 @@ import { GoogleMap, Marker, InfoWindow, Autocomplete } from "@react-google-maps/
 import { auth, db } from "../firebaseConfig";
 import { collection, doc, deleteDoc, updateDoc, getDocs } from 'firebase/firestore';
 import { toast } from 'react-toastify';
+import { deletePoiWithCascades } from '../lib/deletionService';
 import {
   Dialog,
   DialogTitle,
@@ -297,21 +298,21 @@ function MasterMap() {
       }
     };
 
-    // Handle POI delete confirmation
-  const handleDeletePoi = async (poi) => {
+      // Handle POI delete confirmation - uses cascade deletion
+    const handleDeletePoi = async (poi) => {
     try {
-      await deleteDoc(doc(db, 'users', user.uid, 'poi', poi.id));
+      await deletePoiWithCascades(user.uid, poi.id);
       setAllUserPOIs(prev => prev.filter(p => p.id !== poi.id));
       if (selectedMarker?.id === poi.id) {
         setSelectedMarker(null);
-        }
+         }
       setDeleteConfirm(null);
       toast.success("POI deleted successfully!");
-      } catch (err) {
+         } catch (err) {
       console.error("Error deleting POI:", err);
       toast.error("Error deleting POI. Please try again.");
-      }
-    };
+         }
+       };
 
     // Start editing POI info
   const startEditingPoiInfo = (poi) => {

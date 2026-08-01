@@ -22,9 +22,14 @@ import PoiIdeasDialog from './PoiIdeasDialog';
 import PoiIdeasPicker from './PoiIdeasPicker';
 import CreateHangoutDialog from './CreateHangoutDialog';
 import HangoutList from './HangoutList';
-import { getFriends as getFriendsService, getUserPoIs, recordContact as recordContactApi, setLastContactDate as setLastContactDateApi, deleteFriend, updateFriend, togglePlaceIdeaTopLevel as toggleFriendPlaceIdeaTopLevel } from '../../lib/friendService';
-import { getGroups, addGroup as addGroupApi, updateGroup, deleteGroup, togglePlaceIdeaTopLevel as toggleGroupPlaceIdeaTopLevel } from '../../lib/groupService';
-import { getHangouts, createHangout as createHangoutApi, completeHangout, deleteHangout as deleteHangoutApi, updateHangout as updateHangoutApi } from '../../lib/hangoutService';
+import { getFriends as getFriendsService, getUserPoIs, recordContact as recordContactApi, setLastContactDate as setLastContactDateApi, updateFriend, togglePlaceIdeaTopLevel as toggleFriendPlaceIdeaTopLevel } from '../../lib/friendService';
+import { getGroups, addGroup as addGroupApi, updateGroup, togglePlaceIdeaTopLevel as toggleGroupPlaceIdeaTopLevel } from '../../lib/groupService';
+import { getHangouts, createHangout as createHangoutApi, completeHangout, updateHangout as updateHangoutApi, deleteHangout as deleteHangoutApi } from '../../lib/hangoutService';
+import {
+  deleteFriendWithCascades,
+  deleteHangoutWithCascades,
+  deleteGroupWithCascades,
+} from '../../lib/deletionService';
 import FriendForm from './FriendForm';
 import { MapPin } from 'lucide-react';
 
@@ -218,26 +223,26 @@ export default function FriendsDashboard({ onSignOut }) {
     }
   }, [friends]);
 
-  // Handle delete confirmation
+   // Handle delete confirmation - uses cascade deletion
   const handleConfirmDeleteFriend = useCallback(async () => {
     if (!deleteTargetFriend) return;
     
     try {
-      await deleteFriend(user.uid, deleteTargetFriend.id);
+      await deleteFriendWithCascades(user.uid, deleteTargetFriend.id);
       await loadData(user);
       if (selectedFriendId === deleteTargetFriend.id) setSelectedFriendId(null);
-    } catch (err) {
+     } catch (err) {
       console.error('Error deleting friend:', err);
       if (isAuthError(err)) {
         setAuthError('Session expired. Please sign in again.');
-      } else {
+       } else {
         setError('Failed to delete friend.');
-      }
-    } finally {
+       }
+     } finally {
       setDeleteConfirmOpen(false);
       setDeleteTargetFriend(null);
-    }
-  }, [deleteTargetFriend, user, loadData, selectedFriendId]);
+     }
+   }, [deleteTargetFriend, user, loadData, selectedFriendId]);
 
   const handleCloseDeleteConfirm = useCallback(() => {
     setDeleteConfirmOpen(false);
@@ -326,16 +331,15 @@ export default function FriendsDashboard({ onSignOut }) {
        }
       }, [user, loadData]);
 
-  const handleDeleteFriend = useCallback(async (friendId) => {
-    // This is kept as fallback for direct calls from FriendList
-    // The primary flow now goes through handleOpenDeleteConfirm
+       // Legacy handler kept as fallback — now uses cascade deletion instead of old deleteFriend
+    const handleDeleteFriend = useCallback(async (friendId) => {
     if (!user || !friendId) return;
 
     try {
-      await deleteFriend(user.uid, friendId);
+      await deleteFriendWithCascades(user.uid, friendId);
       await loadData(user);
       if (selectedFriendId === friendId) setSelectedFriendId(null);
-       } catch (err) {
+        } catch (err) {
       console.error('Error deleting friend:', err);
       if (isAuthError(err)) {
         setAuthError('Session expired. Please sign in again.');
@@ -343,7 +347,7 @@ export default function FriendsDashboard({ onSignOut }) {
         setError('Failed to delete friend.');
         }
        }
-     }, [user, loadData, selectedFriendId, friends]);
+      }, [user, loadData, selectedFriendId, friends, deleteFriendWithCascades]);
 
   const handleEditFriend = useCallback((friend) => {
     setEditingFriend(friend);
@@ -380,21 +384,22 @@ export default function FriendsDashboard({ onSignOut }) {
     setShowAddForm(false);
     }, []);
 
-   // Note: Confirmation is now handled by HangoutScheduler's MUI dialog
+    // Note: Confirmation is now handled by HangoutScheduler's MUI dialog
+  // Uses cascade deletion to clear groupId from hangouts
   const handleDeleteGroup = useCallback(async (groupId, groupData) => {
 
     try {
-      await deleteGroup(user.uid, groupId);
+      await deleteGroupWithCascades(user.uid, groupId);
       await loadData(user);
-      } catch (err) {
+       } catch (err) {
       console.error('Error deleting group:', err);
       if (isAuthError(err)) {
         setAuthError('Session expired. Please sign in again.');
-        } else {
+         } else {
         setError('Failed to delete group.');
-        }
-      }
-    }, [user, loadData]);
+         }
+       }
+     }, [user, loadData]);
 
   const handleDeletePlannedHangout = useCallback(async (hangoutId) => {
     if (!confirm('Are you sure you want to cancel this hangout?')) return;
@@ -415,26 +420,27 @@ export default function FriendsDashboard({ onSignOut }) {
         }
       }, [user]);
 
-      // Delete hangout from the hangout list (full delete from Firestore)
-      // Note: Confirmation is handled by HangoutList's MUI dialog, not here
+       // Delete hangout from the hangout list (full delete from Firestore)
+       // Note: Confirmation is handled by HangoutList's MUI dialog, not here
+       // Uses cascade deletion to clear hangoutId from friends'/groups' planning.hangoutIds
    const handleDeleteHangout = useCallback(async (hangoutId) => {
 
     try {
-      await deleteHangoutApi(user.uid, hangoutId);
+      await deleteHangoutWithCascades(user.uid, hangoutId);
       setHangouts((prev) => prev.filter((h) => h.id !== hangoutId));
-         // Also remove from planned/history views
+          // Also remove from planned/history views
       setPlannedHangouts((prev) => prev.filter((h) => h.id !== hangoutId));
       setHistory((prev) => prev.filter((h) => h.id !== hangoutId));
       await loadData(user);
-       } catch (err) {
+        } catch (err) {
       console.error('Error deleting hangout:', err);
       if (isAuthError(err)) {
         setAuthError('Session expired. Please sign in again.');
-         } else {
+          } else {
         setError('Failed to delete hangout.');
-         }
-       }
-     }, [user, loadData]);
+          }
+        }
+      }, [user, loadData]);
 
       // Edit hangout - open the scheduler in edit mode (from HangoutList or HangoutScheduler)
   const handleEditHangout = useCallback((hangout) => {
