@@ -715,15 +715,25 @@ function parseLastContactDateToLocal(dateStr) {
                     ))}
                   </Box>
 
-                  {/* Bottom Row: Logistics + Actions */}
-                  <Box sx={{ borderTop: '1px solid #F2F0EA', pt: 1, mt: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      {friend.logistics?.canDrive ? (
-                        <Car size={14} color="#1e8544" />
-                      ) : friend.logistics?.pickupRequired ? (
-                        <AlertTriangle size={14} color="#CC7A5C" />
-                      ) : null}
-                    </Box>
+                    {/* Bottom Row: Logistics + Actions */}
+                    <Box sx={{ borderTop: '1px solid #F2F0EA', pt: 1, mt: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        {friend.logistics?.canDrive ? (
+                          <>
+                            <Car size={14} color="#1e8544" />
+                            <Typography variant="caption" sx={{ fontSize: '9px', color: '#1e8544', fontWeight: 600 }}>
+                              Self-Ride
+                            </Typography>
+                          </>
+                        ) : friend.logistics?.pickupRequired ? (
+                          <>
+                            <AlertTriangle size={14} color="#CC7A5C" />
+                            <Typography variant="caption" sx={{ fontSize: '9px', color: '#CC7A5C', fontWeight: 600 }}>
+                              Needs Ride
+                            </Typography>
+                          </>
+                        ) : null}
+                      </Box>
 
         <Box sx={{ display: 'flex', gap: 0.25, alignItems: 'center' }}>
                           {/* Calendar Icon Button */}
