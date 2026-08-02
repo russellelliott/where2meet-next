@@ -224,11 +224,51 @@ export default function HangoutList({
     setSelectedPoiForInfo(null);
     };
 
+  /**
+   * Check if Mark Complete button should be shown for a hangout.
+   * Hidden if any attendee already has lastContactDate >= hangout datetime.
+   */
+  const canMarkComplete = (hangout) => {
+    if (!onCompleteHangout) return false;
+    const hangoutDate = safeToTimestamp(hangout.datetime);
+    if (!hangoutDate || isNaN(hangoutDate.getTime())) return true;
+    const hangoutStr = dayjs(hangoutDate).format('YYYY-MM-DD');
+
+    // Check friend attendees
+    if (hangout.friendIds && Array.isArray(hangout.friendIds)) {
+      for (const friendId of hangout.friendIds) {
+        const friend = friends.find((f) => f.id === friendId);
+        if (friend?.contact?.lastContactDate) {
+          if (friend.contact.lastContactDate >= hangoutStr) {
+            return false; // Already at or past the event date
+          }
+        }
+      }
+    }
+
+    // Check group attendees
+    if (hangout.groupId) {
+      const group = groups?.find((g) => g.id === hangout.groupId);
+      if (group?.memberIds) {
+        for (const memberId of group.memberIds) {
+          const friend = friends.find((f) => f.id === memberId);
+          if (friend?.contact?.lastContactDate) {
+            if (friend.contact.lastContactDate >= hangoutStr) {
+              return false;
+            }
+          }
+        }
+      }
+    }
+
+    return true;
+  };
+
   return (
-      <Box sx={{ width: '100%' }}>
-        <Typography variant="subtitle2" gutterBottom>
+       <Box sx={{ width: '100%' }}>
+         <Typography variant="subtitle2" gutterBottom>
         All Hangouts
-        </Typography>
+         </Typography>
         <List dense sx={{ width: '100%', maxWidth: '100%' }}>
           {hangouts.map((hangout) => {
          const passed = isHangoutPassed(hangout.datetime);
@@ -365,27 +405,27 @@ export default function HangoutList({
                           <Trash2 size={14} />
                         </IconButton>
                       )}
-                   {/* Mark Complete button - with structured confirmation dialog */}
-                     {onCompleteHangout && (
-                        <IconButton
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const hangoutDate = formatHangoutDate(hangout.datetime);
-                        const friendsList = getFriendNamesForHangout(hangout);
-                        const actionLabel = `Mark all people's last contact date as ${hangoutDate}`;
-                        openConfirmDialog(
-                             'Mark Complete',
-                             `Title: ${hangout.title || 'Untitled Hangout'}\nDate: ${hangoutDate}\nWith: ${friendsList}\n\nAction: ${actionLabel}`,
-                            () => onCompleteHangout(hangout.id, hangout.datetime)
-                           );
-                          }}
-                      size="small"
-                      sx={{ color: '#9B988C', mr: 0.5, '&:hover': { color: '#1e8544', backgroundColor: '#FBFBF9' } }}
-                      title="Mark Complete"
-                        >
-                          <Check size={14} strokeWidth={3} />
-                        </IconButton>
-                      )}
+                    {/* Mark Complete button - hidden if any attendee's lastContactDate >= hangout datetime */}
+                      {canMarkComplete(hangout) && (
+                         <IconButton
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         const hangoutDate = formatHangoutDate(hangout.datetime);
+                         const friendsList = getFriendNamesForHangout(hangout);
+                         const actionLabel = `Mark all people's last contact date as ${hangoutDate}`;
+                         openConfirmDialog(
+                               'Mark Complete',
+                               `Title: ${hangout.title || 'Untitled Hangout'}\nDate: ${hangoutDate}\nWith: ${friendsList}\n\nAction: ${actionLabel}`,
+                              () => onCompleteHangout(hangout.id, hangout.datetime)
+                             );
+                            }}
+                       size="small"
+                       sx={{ color: '#9B988C', mr: 0.5, '&:hover': { color: '#1e8544', backgroundColor: '#FBFBF9' } }}
+                       title="Mark Complete"
+                         >
+                            <Check size={14} strokeWidth={3} />
+                          </IconButton>
+                        )}
                 </ListItemSecondaryAction>
 
                 {/* Confirmation Dialog */}

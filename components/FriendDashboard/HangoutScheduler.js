@@ -37,6 +37,17 @@ import {
 import { auth, db } from '../../firebaseConfig';
 import { collection, getDocs } from 'firebase/firestore';
 
+/**
+ * Helper: convert a Firestore Timestamp or ISO string to JS Date.
+ */
+function safeToTimestamp(val) {
+  if (!val) return null;
+  if (val?.toDate && typeof val.toDate === 'function') {
+    return val.toDate();
+  }
+  return new Date(val);
+}
+
 /* ========================================================================
  * SchedulingFormDialog - Extracted to top-level so React keeps a stable
  * component reference across parent re-renders.  All state / callbacks are
@@ -1033,21 +1044,99 @@ export default function HangoutScheduler({
     friends, groups, handleGroupSubmit, toggleGroupMember, editingGroup,
   ]);
 
-  return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Plan Event / Create Group dialogs - stable component references */}
-      <SchedulingFormDialog {...schedulingFormProps} />
-      <GroupCreationForm {...groupFormProps} />
+   /**
+    * Check if Mark Complete should be shown for a planned hangout.
+    * Hidden if any attendee already has lastContactDate >= hangout datetime's date.
+    */
+   const canMarkCompleteHangout = useCallback((hangout) => {
+     const hangoutDate = safeToTimestamp(hangout.datetime);
+     if (!hangoutDate || isNaN(hangoutDate.getTime())) return true;
+     const hangoutStr = dayjs(hangoutDate).format('YYYY-MM-DD');
 
-      {/* Main Hub */}
-      <Paper sx={{ p: 3, borderRadius: 3, border: '1px solid #EBE9E2', backgroundColor: '#FFFFFF', flex: 1, display: 'flex', flexDirection: 'column' }}>
-        {/* Header with buttons */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1.5, borderBottom: '1px solid #F2F0EA', mb: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Clock size={18} color="#CC7A5C" />
-            <Typography variant="subtitle1" sx={{ fontFamily: 'serif', fontWeight: 700, fontSize: '1rem', color: '#2D2D20' }}>
-              Commitments & Planning
-            </Typography>
+     // Check friendIds attendees directly
+     if (hangout.friendIds && Array.isArray(hangout.friendIds)) {
+       for (const friendId of hangout.friendIds) {
+         const friend = friends.find((f) => f.id === friendId);
+         if (friend?.contact?.lastContactDate) {
+           if (friend.contact.lastContactDate >= hangoutStr) {
+             return false;
+           }
+         }
+       }
+     }
+
+     // Check group members if no friendIds set
+     if ((!hangout.friendIds || hangout.friendIds.length === 0) && hangout.groupId) {
+       const group = groups.find((g) => g.id === hangout.groupId);
+       if (group?.memberIds) {
+         for (const memberId of group.memberIds) {
+           const friend = friends.find((f) => f.id === memberId);
+           if (friend?.contact?.lastContactDate) {
+             if (friend.contact.lastContactDate >= hangoutStr) {
+               return false;
+             }
+           }
+         }
+       }
+     }
+
+     return true;
+   }, [friends, groups]);
+
+   /**
+    * Check if Mark Complete should be shown for a history hangout.
+    * Hidden if any attendee already has lastContactDate >= hangout datetime's date.
+    */
+   const canMarkCompleteHistory = useCallback((h) => {
+     const hangoutDate = safeToTimestamp(h.datetime);
+     if (!hangoutDate || isNaN(hangoutDate.getTime())) return true;
+     const hangoutStr = dayjs(hangoutDate).format('YYYY-MM-DD');
+
+     // Check friendIds attendees
+     if (h.friendIds && Array.isArray(h.friendIds)) {
+       for (const friendId of h.friendIds) {
+         const friend = friends.find((f) => f.id === friendId);
+         if (friend?.contact?.lastContactDate) {
+           if (friend.contact.lastContactDate >= hangoutStr) {
+             return false;
+           }
+         }
+       }
+     }
+
+     // Check group members if no friendIds set
+     if ((!h.friendIds || h.friendIds.length === 0) && h.groupId) {
+       const group = groups.find((g) => g.id === h.groupId);
+       if (group?.memberIds) {
+         for (const memberId of group.memberIds) {
+           const friend = friends.find((f) => f.id === memberId);
+           if (friend?.contact?.lastContactDate) {
+             if (friend.contact.lastContactDate >= hangoutStr) {
+               return false;
+             }
+           }
+         }
+       }
+     }
+
+     return true;
+   }, [friends, groups]);
+
+   return (
+      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {/* Plan Event / Create Group dialogs - stable component references */}
+        <SchedulingFormDialog {...schedulingFormProps} />
+        <GroupCreationForm {...groupFormProps} />
+
+        {/* Main Hub */}
+        <Paper sx={{ p: 3, borderRadius: 3, border: '1px solid #EBE9E2', backgroundColor: '#FFFFFF', flex: 1, display: 'flex', flexDirection: 'column' }}>
+          {/* Header with buttons */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1.5, borderBottom: '1px solid #F2F0EA', mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Clock size={18} color="#CC7A5C" />
+              <Typography variant="subtitle1" sx={{ fontFamily: 'serif', fontWeight: 700, fontSize: '1rem', color: '#2D2D20' }}>
+               Hangouts
+              </Typography>
           </Box>
           <Box sx={{ display: 'flex', gap: 1 }}>
             {/* Plan Event button - clears edit state via onPlanEvent then opens a fresh create form */}
@@ -1104,11 +1193,11 @@ export default function HangoutScheduler({
 
         {/* Scrollable container for entire right column content */}
         <Box sx={{ flex: 1, overflowY: 'auto', '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '3px' } }}>
-          {/* Groups Quick Overview */}
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 1.5 }}>
-              Preset Friend Groups
-            </Typography>
+           {/* Groups Quick Overview */}
+           <Box sx={{ mb: 3 }}>
+             <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D', mb: 1.5 }}>
+              Groups
+             </Typography>
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
               {(groups || []).map((group) => {
                 const memberNames = (group.memberIds || [])
@@ -1168,12 +1257,12 @@ export default function HangoutScheduler({
             </Box>
           </Box>
 
-          {/* Upcoming Hangouts */}
-          <Box sx={{ mb: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-              <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D' }}>
-                Upcoming Hangouts
-              </Typography>
+            {/* Planned Hangouts */}
+            <Box sx={{ mb: 3 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D' }}>
+                 Planned Hangouts
+                </Typography>
               <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', fontStyle: 'italic', color: '#CC7A5C' }}>
                 Time-Leap simulates event completion
               </Typography>
@@ -1231,23 +1320,25 @@ export default function HangoutScheduler({
                           <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '10px', color: '#7D7B6D' }}>
                             {formatDate(hangout.datetime)}
                           </Typography>
-                          <Box sx={{ display: 'flex', gap: 0.5 }}>
-                            <Button
-                              onClick={() => handleCompleteLeap(hangout)}
-                              size="small"
-                              sx={{
-                                textTransform: 'none',
-                                fontSize: '9px',
-                                fontWeight: 700,
-                                fontFamily: 'monospace',
-                                backgroundColor: '#5A5A40',
-                                color: '#FFFFFF',
-                                '&:hover': { backgroundColor: '#434330' },
-                              }}
-                              title="Mark this event as complete"
-                            >
-                              Mark Complete
-                            </Button>
+                            <Box sx={{ display: 'flex', gap: 0.5 }}>
+                              {canMarkCompleteHangout(hangout) && (
+                                <Button
+                                 onClick={() => handleCompleteLeap(hangout)}
+                                 size="small"
+                                 sx={{
+                                   textTransform: 'none',
+                                   fontSize: '9px',
+                                   fontWeight: 700,
+                                   fontFamily: 'monospace',
+                                   backgroundColor: '#5A5A40',
+                                   color: '#FFFFFF',
+                                    '&:hover': { backgroundColor: '#434330' },
+                                  }}
+                                 title="Mark this event as complete"
+                                >
+                                 Mark Complete
+                                </Button>
+                              )}
                             <IconButton
                               onClick={() => onEditPlannedHangout(hangout)}
                               size="small"
@@ -1291,14 +1382,14 @@ export default function HangoutScheduler({
 
           {/* Historical Logs */}
           <Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <ClipboardList size={14} color="#7D7B6D" />
-                <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D' }}>
-                  Past Completed Logs ({history.length})
-                </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <ClipboardList size={14} color="#7D7B6D" />
+                  <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: '#7D7B6D' }}>
+                   Hangout History ({history.length})
+                  </Typography>
+                </Box>
               </Box>
-            </Box>
 
             {history.length > 0 ? (
               <Box sx={{ flex: 1, overflowY: 'auto', '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '3px' } }}>
@@ -1348,29 +1439,31 @@ export default function HangoutScheduler({
                             📍 {address}
                           </Typography>
                         )}
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F2F0EA', pt: 1, mt: 0.5 }}>
-                          <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '10px', color: '#7D7B6D' }}>
-                            {formatDate(h.datetime)}
-                          </Typography>
-                            <Box sx={{ display: 'flex', gap: 0.5 }}>
-                              <Button
-                               onClick={() => {
-                                 setHangoutDeleteTarget({ ...h, isCompleteAction: true });
-                                 setHangoutDeleteOpen(true);
-                                }}
-                               size="small"
-                               sx={{
-                                 textTransform: 'none',
-                                 fontSize: '9px',
-                                 fontWeight: 700,
-                                 fontFamily: 'monospace',
-                                 backgroundColor: '#5A5A40',
-                                 color: '#FFFFFF',
-                                  '&:hover': { backgroundColor: '#434330' },
-                                }}
-                              >
-                               Mark Complete
-                              </Button>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F2F0EA', pt: 1, mt: 0.5 }}>
+                            <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '10px', color: '#7D7B6D' }}>
+                              {formatDate(h.datetime)}
+                            </Typography>
+                              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                {canMarkCompleteHistory(h) && (
+                                  <Button
+                                   onClick={() => {
+                                     setHangoutDeleteTarget({ ...h, isCompleteAction: true });
+                                     setHangoutDeleteOpen(true);
+                                     }}
+                                   size="small"
+                                   sx={{
+                                     textTransform: 'none',
+                                     fontSize: '9px',
+                                     fontWeight: 700,
+                                     fontFamily: 'monospace',
+                                     backgroundColor: '#5A5A40',
+                                     color: '#FFFFFF',
+                                       '&:hover': { backgroundColor: '#434330' },
+                                     }}
+                                   >
+                                   Mark Complete
+                                   </Button>
+                                )}
                               {onEditPlannedHangout && (
                                 <IconButton
                                  onClick={() => onEditPlannedHangout(h)}
