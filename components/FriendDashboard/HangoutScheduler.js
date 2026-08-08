@@ -1270,10 +1270,10 @@ export default function HangoutScheduler({
 
             {plannedHangouts.length > 0 ? (
               <Box sx={{ maxHeight: 280, overflowY: 'auto', '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '3px' } }}>
-                {plannedHangouts.map((hangout) => {
-                  const groupObj = groups.find((g) => g.id === hangout.groupId);
-                  const attendees = groupObj ? groupObj.memberIds : [];
-                  const attendeeNames = attendees
+                 {plannedHangouts.map((hangout) => {
+                   const groupObj = groups.find((g) => g.id === hangout.groupId);
+                   const attendees = groupObj ? groupObj.memberIds : (hangout.friendIds || []);
+                   const attendeeNames = attendees
                     .map((id) => friends.find((f) => f.id === id)?.name?.split(' ')[0])
                     .filter(Boolean)
                     .join(', ');
