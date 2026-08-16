@@ -31,16 +31,18 @@ const DEFAULT_CENTER = { lat: 37.7749, lng: -122.4194 };
 
 // Google Maps icon URLs based on access and scope
 const POI_ICONS = {
-    'private-selective': 'https://maps.google.com/mapfiles/ms/icons/orange-dot.png',
-    'private-all': 'https://maps.google.com/mapfiles/ms/icons/purple-dot.png',
-    'public-selective': 'https://maps.google.com/mapfiles/ms/icons/pink-dot.png',
-    'public-all': 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
+  'private-selective': 'https://maps.google.com/mapfiles/ms/icons/orange-dot.png',
+  'private-all': 'https://maps.google.com/mapfiles/ms/icons/purple-dot.png',
+  'public-selective': 'https://maps.google.com/mapfiles/ms/icons/pink-dot.png',
+  'public-all': 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
 };
 
 const DEFAULT_POI_ICON = 'https://maps.google.com/mapfiles/ms/icons/red-dot.png';
 
+// Friend POI icon (yellow home/property icon)
+const FRIEND_POI_ICON = 'https://maps.google.com/mapfiles/ms/micons/homegardenbusiness.png';
+
 // Helper: check if a POI is visible on a given map based on its visibility settings
-// poiOwnerId: the user ID who owns this POI (derived from collection path: users/{userId}/poi)
 function isPoiVisibleOnMap(poi, currentMapId, currentUserId, poiOwnerId) {
   const visibility = poi.visibility || {};
   const access = visibility.access || 'private';
@@ -90,29 +92,21 @@ function computePoiCountsByMap(allPOIs, userMaps) {
 }
 
 // Get display name for a user ID (falls back to truncated ID)
-// Priority: collaborator name > displayNameMap > truncated UID
 function getUserDisplayName(userId, displayNameMap, collaborators) {
-    // First check if this user is a collaborator with stored name
+  // First check if this user is a collaborator with stored name
   if (collaborators && collaborators[userId]) {
     const collab = collaborators[userId];
     const name = collab.displayName || collab.name || '';
     if (name) return name;
-   }
+  }
   
-   // Then check displayNameMap (loaded from user profiles)
+  // Then check displayNameMap (loaded from user profiles)
   if (displayNameMap && displayNameMap[userId]) {
     return displayNameMap[userId];
-   }
+  }
   
-    // Fall back to truncated UID
+  // Fall back to truncated UID
   return `${userId.slice(0, 5)}... (${userId.slice(-4)})`;
-}
-
-// Get the formatted POI section header label for a user ID
-function getPoiSectionLabel(userId, displayNameMap, collaborators) {
-   const isOwner = userId === null ? false : false; // handled separately in component
-  const name = getUserDisplayName(userId, displayNameMap, collaborators);
-   return `${name}'s POIs`;
 }
 
 function Map({ mapId }) {
@@ -135,6 +129,8 @@ function Map({ mapId }) {
   const [editingPoi, setEditingPoi] = useState(null);
   const [editingPoiName, setEditingPoiName] = useState("");
   const [editingPoiNotes, setEditingPoiNotes] = useState("");
+  const [editingPoiLinks, setEditingPoiLinks] = useState([]);
+  const [editingPoiDate, setEditingPoiDate] = useState("");
   const [privacyEditor, setPrivacyEditor] = useState(null);
   const [privacyForm, setPrivacyForm] = useState({ access: 'private', scope: 'selective', allowedMapIds: [] });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -152,6 +148,18 @@ function Map({ mapId }) {
   // Friends & groups data for place ideas picker
   const [friends, setFriends] = useState([]);
   const [groups, setGroups] = useState([]);
+
+  // Friend POI association map: poiId -> [{ friendId, friendName, type, startDate?, endDate? }]
+  const [friendPoiMap, setFriendPoiMap] = useState({});
+
+  // Helper to check if a POI is friend-associated and get its associations
+  const getFriendAssociationsForPoi = (poiId) => {
+    const arr = friendPoiMap[poiId];
+    return Array.isArray(arr) ? arr : [];
+  };
+  const isFriendPoi = (poiId) => {
+    return friendPoiMap[poiId] && friendPoiMap[poiId].length > 0;
+  };
 
   // Place Ideas Picker state
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -183,13 +191,42 @@ function Map({ mapId }) {
     console.log("Map.js - API Key:", apiKey ? "Found" : "Missing");
   }, []);
 
-  // Load friends & groups data
+  // Load friends & groups data + build friend POI map
   useEffect(() => {
     if (!user) return;
     const loadData = async () => {
       try {
         const friendsSnap = await getDocs(collection(db, 'users', user.uid, 'friend'));
-        setFriends(friendsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+        const friendsData = friendsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setFriends(friendsData);
+
+        // Build friend -> POI association map from current user's friends
+        const fMapObj = {};
+        friendsData.forEach(friend => {
+          if (!friend.location) return;
+          // Home POI
+          if (friend.location.homePoiId) {
+            if (!fMapObj[friend.location.homePoiId]) fMapObj[friend.location.homePoiId] = [];
+            fMapObj[friend.location.homePoiId].push({ friendId: friend.id, friendName: friend.name, type: 'home' });
+          }
+          // Temporary Location POI
+          if (friend.location.temporaryLocation?.poiId) {
+            const poiId = friend.location.temporaryLocation.poiId;
+            if (!fMapObj[poiId]) fMapObj[poiId] = [];
+            fMapObj[poiId].push({
+              friendId: friend.id, friendName: friend.name, type: 'temporary',
+              startDate: friend.location.temporaryLocation.startDate || null,
+              endDate: friend.location.temporaryLocation.endDate || null,
+            });
+          }
+          // Pickup POI
+          if (friend.logistics?.pickupPoiId) {
+            if (!fMapObj[friend.logistics.pickupPoiId]) fMapObj[friend.logistics.pickupPoiId] = [];
+            fMapObj[friend.logistics.pickupPoiId].push({ friendId: friend.id, friendName: friend.name, type: 'pickup' });
+          }
+        });
+        setFriendPoiMap(fMapObj);
+
         const groupsSnap = await getDocs(collection(db, 'users', user.uid, 'group'));
         setGroups(groupsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
       } catch (err) {
@@ -303,7 +340,7 @@ function Map({ mapId }) {
 
     const loadPOIs = async () => {
       try {
-         // Determine which user IDs to fetch POIs from
+        // Determine which user IDs to fetch POIs from
         const userUidsToFetch = new Set([user.uid]); // Always fetch current user's POIs
         
         // If we have a mapOwnerUid, also fetch from owner (if not already current user) and all collaborators
@@ -311,8 +348,8 @@ function Map({ mapId }) {
           userUidsToFetch.add(mapOwnerUid);
           for (const collabUid of Object.keys(collaborators)) {
             userUidsToFetch.add(collabUid);
-           }
-         }
+          }
+        }
 
         const allPOIs = [];
         
@@ -501,40 +538,60 @@ function Map({ mapId }) {
     }
   };
 
-   // Handle POI delete confirmation - uses cascade deletion
+  // Handle POI delete confirmation - uses cascade deletion
   const handleDeletePoi = async (poi) => {
     try {
       await deletePoiWithCascades(user.uid, poi.id);
 
-       // Update local state
+      // Update local state
       setAllUserPOIs(prev => prev.filter(p => p.id !== poi.id));
       setVisiblePOIs(prev => prev.filter(p => p.id !== poi.id));
 
-       // Update grouped state
+      // Update grouped state
       const ownerId = poi.poiOwnerId || user.uid;
       setGroupedVisiblePOIs(prev => ({
-         ...prev,
-         [ownerId]: (prev[ownerId] || []).filter(p => p.id !== poi.id)
-       }));
+        ...prev,
+        [ownerId]: (prev[ownerId] || []).filter(p => p.id !== poi.id)
+      }));
 
-       // Clear selected marker if it's the deleted POI
+      // Clear selected marker if it's the deleted POI
       if (selectedMarker?.id === poi.id) {
         setSelectedMarker(null);
-       }
+      }
 
       setDeleteConfirm(null);
       toast.success("POI deleted successfully!");
-      } catch (err) {
+    } catch (err) {
       console.error("Error deleting POI:", err);
       toast.error("Error deleting POI. Please try again.");
-      }
-    };
+    }
+  };
 
   // Start editing POI info
   const startEditingPoiInfo = (poi) => {
     setEditingPoi(poi);
     setEditingPoiName(poi.name || "");
     setEditingPoiNotes(poi.notes || "");
+    // Initialize links as array or empty
+    const links = poi.links;
+    setEditingPoiLinks(Array.isArray(links) ? [...links] : []);
+    // Initialize date
+    setEditingPoiDate(poi.date || "");
+  };
+
+  // Add a link to the editing links array
+  const addLinkToEditing = () => {
+    setEditingPoiLinks(prev => [...prev, ""]);
+  };
+
+  // Remove a link from the editing links array by index
+  const removeLinkFromEditing = (index) => {
+    setEditingPoiLinks(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Update a link value in the editing links array by index
+  const updateLinkInEditing = (index, value) => {
+    setEditingPoiLinks(prev => prev.map((link, i) => i === index ? value : link));
   };
 
   // Save POI info edit
@@ -543,13 +600,27 @@ function Map({ mapId }) {
 
     try {
       const poiRef = doc(db, 'users', user.uid, 'poi', editingPoi.id);
+      
+      // Build the data to save: links as array (or null if empty), date as string
+      const linkData = editingPoiLinks.filter(l => l.trim()).length > 0 
+        ? editingPoiLinks.map(l => l.trim()) 
+        : null;
+
       await updateDoc(poiRef, {
         name: editingPoiName,
-        notes: editingPoiNotes
+        notes: editingPoiNotes,
+        links: linkData,
+        date: editingPoiDate || null,
       });
 
       // Update local state
-      const updatedPoi = { ...editingPoi, name: editingPoiName, notes: editingPoiNotes };
+      const updatedPoi = { 
+        ...editingPoi, 
+        name: editingPoiName, 
+        notes: editingPoiNotes,
+        links: linkData,
+        date: editingPoiDate || null,
+      };
       setAllUserPOIs(prev => prev.map(p => p.id === editingPoi.id ? updatedPoi : p));
       setVisiblePOIs(prev => prev.map(p => p.id === editingPoi.id ? updatedPoi : p));
 
@@ -568,6 +639,8 @@ function Map({ mapId }) {
       setEditingPoi(null);
       setEditingPoiName("");
       setEditingPoiNotes("");
+      setEditingPoiLinks([]);
+      setEditingPoiDate("");
       toast.success("POI updated successfully!");
     } catch (err) {
       console.error("Error updating POI:", err);
@@ -579,6 +652,8 @@ function Map({ mapId }) {
     setEditingPoi(null);
     setEditingPoiName("");
     setEditingPoiNotes("");
+    setEditingPoiLinks([]);
+    setEditingPoiDate("");
   };
 
   // Start editing POI privacy settings
@@ -792,8 +867,12 @@ function Map({ mapId }) {
     }
   };
 
-  // Get the Google Maps icon URL for a POI based on its visibility settings
+  // Get the Google Maps icon URL for a POI based on its visibility settings and friend association
   const getPoiIcon = (poi) => {
+    // Friend-associated POIs get the yellow home icon
+    if (isFriendPoi(poi.id)) {
+      return FRIEND_POI_ICON;
+    }
     const visibility = poi.visibility || {};
     const access = visibility.access || 'private';
     const scope = visibility.scope || 'selective';
@@ -814,6 +893,10 @@ function Map({ mapId }) {
 
   // Color for the visibility badge
   const getPoiBadgeColor = (poi) => {
+    // Friend POIs get yellow badge
+    if (isFriendPoi(poi.id)) {
+      return '#fbc02d'; // Yellow
+    }
     const visibility = poi.visibility || {};
     const access = visibility.access || 'private';
     const scope = visibility.scope || 'selective';
@@ -824,6 +907,113 @@ function Map({ mapId }) {
       'public-all': '#4caf50', // green
     };
     return colors[`${access}-${scope}`] || '#757575';
+  };
+
+  // Format friend association label for a POI
+  const formatFriendAssociationLabel = (poiId) => {
+    const associations = getFriendAssociationsForPoi(poiId);
+    if (!associations || associations.length === 0) return null;
+
+    // Group by friendId
+    const friendGroups = new Map();
+    for (const assoc of associations) {
+      if (!friendGroups.has(assoc.friendId)) {
+        friendGroups.set(assoc.friendId, { name: assoc.friendName, types: [] });
+      }
+      friendGroups.get(assoc.friendId).types.push(assoc);
+    }
+
+    // Build labels
+    const labels = [];
+    for (const [, { name, types }] of friendGroups) {
+      const typeLabels = types.map((t) => {
+        if (t.type === 'home') return 'home';
+        if (t.type === 'pickup') return 'pickup';
+        if (t.type === 'temporary') {
+          const start = t.startDate ? new Date(t.startDate).toLocaleDateString() : '';
+          const end = t.endDate ? new Date(t.endDate).toLocaleDateString() : '';
+          if (start && end) return `temporary (${start} - ${end})`;
+          if (start) return `temporary (starts ${start})`;
+          if (end) return `temporary (ends ${end})`;
+          return 'temporary';
+        }
+        return t.type;
+      });
+
+      labels.push(`${name} (${typeLabels.join(', ')})`);
+    }
+
+    return labels.join(' | ');
+  };
+
+  // Get place idea contributor names for a POI
+  const getPlaceIdeaContributors = (poiId) => {
+    const contributorNames = [];
+    
+    // Check friends
+    friends.forEach(friend => {
+      if (Array.isArray(friend.placeIdeas) && friend.placeIdeas.includes(poiId)) {
+        contributorNames.push(`Friend: ${friend.name}`);
+      }
+    });
+
+    // Check groups
+    groups.forEach(group => {
+      if (Array.isArray(group.placeIdeas) && group.placeIdeas.includes(poiId)) {
+        contributorNames.push(`Group: ${group.name}`);
+      }
+    });
+
+    return contributorNames.length > 0 ? contributorNames : null;
+  };
+
+  // Helper: check if a POI's friend temporary location is still active
+  const getActiveFriendTempLabels = (poiId) => {
+    const associations = getFriendAssociationsForPoi(poiId);
+    if (!associations || associations.length === 0) return null;
+    
+    // Filter to only active temporary locations
+    const activeTems = associations.filter(a => 
+      a.type === 'temporary' && (!a.endDate || new Date(a.endDate) >= new Date())
+    );
+    
+    if (activeTems.length === 0) return null;
+    return formatFriendAssociationLabelsForActive(activeTems);
+  };
+
+  // Format labels for active friend temporary locations only
+  const formatFriendAssociationLabelsForActive = (associations) => {
+    const friendGroups = new Map();
+    for (const assoc of associations) {
+      if (!friendGroups.has(assoc.friendId)) {
+        friendGroups.set(assoc.friendId, { name: assoc.friendName, types: [] });
+      }
+      friendGroups.get(assoc.friendId).types.push(assoc);
+    }
+
+    const labels = [];
+    for (const [, { name, types }] of friendGroups) {
+      const typeLabels = types.map((t) => {
+        const start = t.startDate ? new Date(t.startDate).toLocaleDateString() : '';
+        const end = t.endDate ? new Date(t.endDate).toLocaleDateString() : '';
+        if (start && end) return `temporary (${start} - ${end})`;
+        if (start) return `temporary (starts ${start})`;
+        if (end) return `temporary (ends ${end})`;
+        return 'temporary';
+      });
+      labels.push(`${name} (${typeLabels.join(', ')})`);
+    }
+
+    return labels.join(' | ');
+  };
+
+  // Helper: check if a POI is friend-associated with an active temporary location
+  const hasActiveTempLocation = (poiId) => {
+    const associations = getFriendAssociationsForPoi(poiId);
+    if (!associations || associations.length === 0) return false;
+    return associations.some(a => 
+      a.type === 'temporary' && (!a.endDate || new Date(a.endDate) >= new Date())
+    );
   };
 
   if (!user) return <div>Please sign in to view and edit maps.</div>;
@@ -837,8 +1027,8 @@ function Map({ mapId }) {
   const currentUserId = user.uid;
   const allCollaboratorUids = Object.keys(collaborators);
 
-    // Build all UIDs whose POIs should be displayed on this map:
-    // always include the map owner + all collaborators (collaborators can also have public POIs)
+  // Build all UIDs whose POIs should be displayed on this map:
+  // always include the map owner + all collaborators (collaborators can also have public POIs)
   const allRelevantUids = new Set([mapOwnerUid, ...allCollaboratorUids]);
   const poiOwnerUidsForMap = [...allRelevantUids];
 
@@ -863,17 +1053,17 @@ function Map({ mapId }) {
           <h2 style={{ margin: 0, fontSize: '20px' }}>{mapInfo?.name || 'Untitled Map'}</h2>
         </div>
 
-          {/* Invite section */}
-          <div style={{
+        {/* Invite section */}
+        <div style={{
           marginBottom: '20px',
           padding: '15px',
           border: '1px solid #ddd',
           borderRadius: '8px',
           backgroundColor: 'white'
-          }}>
-            <h3 style={{ margin: '0 0 10px 0', fontSize: '16px' }}>Invite Someone</h3>
-           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-             <input
+        }}>
+          <h3 style={{ margin: '0 0 10px 0', fontSize: '16px' }}>Invite Someone</h3>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <input
               type="email"
               value={shareEmail}
               onChange={(e) => setShareEmail(e.target.value)}
@@ -884,9 +1074,9 @@ function Map({ mapId }) {
                 fontSize: '14px',
                 border: '1px solid #ccc',
                 borderRadius: '4px'
-               }}
-             />
-             <button
+              }}
+            />
+            <button
               onClick={handleInvite}
               disabled={shareLoading}
               style={{
@@ -897,32 +1087,32 @@ function Map({ mapId }) {
                 borderRadius: '4px',
                 cursor: shareLoading ? 'not-allowed' : 'pointer',
                 fontSize: '14px'
-               }}
-             >
-               {shareLoading ? 'Sending...' : 'Send'}
-             </button>
-           </div>
+              }}
+            >
+              {shareLoading ? 'Sending...' : 'Send'}
+            </button>
+          </div>
 
-           {/* Shared with collaborators (inline, below the input/button) */}
-           {(mapOwnerUid && Object.keys(collaborators).length > 0) && isCurrentUserOwner && (
-             <div style={{ marginTop: '12px', fontSize: '13px', color: '#555' }}>
-               <span style={{ fontWeight: 'bold', marginRight: '6px' }}>Shared with:</span>
-               {Object.entries(collaborators).map(([collabUid, collabData], idx, arr) => {
-                 const name = collabData.displayName || collabData.name || '';
-                 const email = collabData.email || '';
-                 const label = name && email
+          {/* Shared with collaborators (inline, below the input/button) */}
+          {(mapOwnerUid && Object.keys(collaborators).length > 0) && isCurrentUserOwner && (
+            <div style={{ marginTop: '12px', fontSize: '13px', color: '#555' }}>
+              <span style={{ fontWeight: 'bold', marginRight: '6px' }}>Shared with:</span>
+              {Object.entries(collaborators).map(([collabUid, collabData], idx, arr) => {
+                const name = collabData.displayName || collabData.name || '';
+                const email = collabData.email || '';
+                const label = name && email
                     ? `${name} (${email})`
                     : name || email || collabUid;
-                 return (
-                   <span key={collabUid}>
-                     {label}
-                     {idx < arr.length - 1 && ', '}
-                   </span>
-                 );
-               })}
-             </div>
-           )}
-         </div>
+                return (
+                  <span key={collabUid}>
+                    {label}
+                    {idx < arr.length - 1 && ', '}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
         {/* Search input */}
         <div style={{ marginBottom: '20px' }}>
@@ -948,7 +1138,7 @@ function Map({ mapId }) {
           </p>
         </div>
 
-        {/* POIs List - grouped by owner */}
+        {/* POIs List - separated into Friend POIs and Other POIs */}
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <h3 style={{ margin: 0, fontSize: '16px' }}>
@@ -956,210 +1146,381 @@ function Map({ mapId }) {
             </h3>
           </div>
 
-          {/* Scrollable POI list container - grouped by user */}
+          {/* Scrollable POI list container */}
           <div style={{ maxHeight: 'calc(100vh - 420px)', overflowY: 'auto', paddingRight: '5px' }}>
             {loadingPOIs && <span style={{ fontSize: '12px', color: '#666' }}>Loading...</span>}
 
-            {!loadingPOIs && Object.keys(groupedVisiblePOIs).length === 0 && visiblePOIs.length === 0 && (
+            {!loadingPOIs && visiblePOIs.length === 0 && (
               <p style={{ textAlign: 'center', color: '#666', fontStyle: 'italic', fontSize: '12px' }}>
                 No locations yet. Search for a place or click on the map to add one.
               </p>
             )}
 
-            {/* Render grouped POI sections */}
-            {Object.entries(groupedVisiblePOIs).map(([ownerId, pois]) => {
-              if (pois.length === 0) return null;
-              
-               // Only show POI sections for users whose POIs are visible on this map
-              const isRelevantOwner = poiOwnerUidsForMap.includes(ownerId);
-              if (!isRelevantOwner) return null;
+            {/* Separate friend POIs from regular POIs */}
+            {visiblePOIs.length > 0 && (() => {
+              const friendPois = [];
+              const otherPois = [];
+              visiblePOIs.forEach(poi => {
+                if (isFriendPoi(poi.id)) {
+                  friendPois.push(poi);
+                } else {
+                  otherPois.push(poi);
+                }
+              });
 
-              const isOwner = ownerId === currentUserId;
-              const sectionLabel = isOwner
-                ? 'Your'
-                : `${getUserDisplayName(ownerId, displayNameMap, collaborators)}'s`;
-              
               return (
-                <div key={`poi-group-${ownerId}`} style={{ marginBottom: '16px' }}>
-                  {/* Section header */}
-                  <div style={{
-                    fontSize: '12px',
-                    fontWeight: 'bold',
-                    color: '#666',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    marginBottom: '6px',
-                    paddingTop: '8px',
-                    borderBottom: '1px solid #eee',
-                  }}>
-                    {sectionLabel} POIs ({pois.length})
-                  </div>
-                  
-                  {/* POIs in this section */}
-                  {pois.map(poi => {
-                    const privacyColor = getPoiBadgeColor(poi);
-                    return (
-                      <div
-                        key={poi.id}
-                        style={{
-                          padding: '10px',
-                          margin: '5px 0',
-                          border: '1px solid #ccc',
-                          borderRadius: '4px',
-                          backgroundColor: 'white',
-                          cursor: 'pointer',
-                          position: 'relative',
-                        }}
-                        onClick={() => {
-                          const poiMarker = { ...poi, position: poi.location?.location || poi.location };
-                          setSelectedMarker(poiMarker);
-                          setMapCenter(poiMarker.position);
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                            <img
-                              src={getPoiIcon(poi)}
-                              alt=""
-                              style={{ width: 20, height: 20, flexShrink: 0 }}
-                            />
-                            <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{poi.name}</span>
-                          </div>
-                          {/* Visibility badge in upper right */}
-                          <div style={{
-                            backgroundColor: privacyColor,
-                            color: 'white',
-                            fontSize: '9px',
-                            padding: '2px 6px',
-                            borderRadius: '3px',
-                            marginLeft: '8px',
-                          }}>
-                            {getPoiBadgeLabel(poi)}
-                          </div>
-                        </div>
-                        {poi.location?.address && (
-                          <div style={{ fontSize: '12px', color: '#666', margin: '4px 0 0 28px' }}>
-                            {poi.location.address}
-                          </div>
-                        )}
-                        {/* Action buttons for POI */}
-                        <div style={{ display: 'flex', gap: '5px', marginTop: '8px', flexWrap: 'wrap' }}>
-                          {isOwner ? (
-                            <>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  startEditingPoiInfo(poi);
-                                }}
-                                style={{
-                                  padding: '3px 6px',
-                                  fontSize: '10px',
-                                  border: '1px solid #4285f4',
-                                  borderRadius: '3px',
-                                  backgroundColor: 'white',
-                                  color: '#4285f4',
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                Edit Info
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  startEditingPoiPrivacy(poi);
-                                }}
-                                style={{
-                                  padding: '3px 6px',
-                                  fontSize: '10px',
-                                  border: `1px solid ${privacyColor}`,
-                                  borderRadius: '3px',
-                                  backgroundColor: privacyColor,
-                                  color: 'white',
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                Privacy Settings
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setDeleteConfirm(poi);
-                                }}
-                                style={{
-                                  padding: '3px 6px',
-                                  fontSize: '10px',
-                                  border: '1px solid #ff4444',
-                                  borderRadius: '3px',
-                                  backgroundColor: 'white',
-                                  color: '#ff4444',
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                Delete
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  startEditingPoiInfo(poi);
-                                }}
-                                style={{
-                                  padding: '3px 6px',
-                                  fontSize: '10px',
-                                  border: '1px solid #4285f4',
-                                  borderRadius: '3px',
-                                  backgroundColor: 'white',
-                                  color: '#4285f4',
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                Edit Info
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  startEditingPoiPrivacy(poi);
-                                }}
-                                style={{
-                                  padding: '3px 6px',
-                                  fontSize: '10px',
-                                  border: `1px solid ${privacyColor}`,
-                                  borderRadius: '3px',
-                                  backgroundColor: privacyColor,
-                                  color: 'white',
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                Privacy Settings
-                              </button>
-                            </>
-                          )}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openPlaceIdeasPicker(poi);
-                            }}
+                <>
+                  {/* Friend POIs section */}
+                  {friendPois.length > 0 && (
+                    <div style={{ marginBottom: '16px' }}>
+                      <div style={{
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        color: '#666',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        marginBottom: '6px',
+                        paddingTop: '8px',
+                        borderBottom: '1px solid #eee',
+                      }}>
+                        Friend POIs ({friendPois.length})
+                      </div>
+                      {friendPois.map(poi => {
+                        const privacyColor = getPoiBadgeColor(poi);
+                        const friendLabel = formatFriendAssociationLabel(poi.id);
+                        const placeIdeaContributors = getPlaceIdeaContributors(poi.id);
+                        
+                        return (
+                          <div
+                            key={poi.id}
                             style={{
-                              padding: '3px 6px',
-                              fontSize: '10px',
-                              border: '1px solid #2196f3',
-                              borderRadius: '3px',
-                              backgroundColor: '#e3f2fd',
-                              color: '#1565c0',
-                              cursor: 'pointer'
+                              padding: '10px',
+                              margin: '5px 0',
+                              border: '1px solid #ccc',
+                              borderRadius: '4px',
+                              backgroundColor: 'white',
+                              cursor: 'pointer',
+                              position: 'relative',
+                            }}
+                            onClick={() => {
+                              const poiMarker = { ...poi, position: poi.location?.location || poi.location };
+                              setSelectedMarker(poiMarker);
+                              setMapCenter(poiMarker.position);
                             }}
                           >
-                            + Place Ideas
-                          </button>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                                <img
+                                  src={getPoiIcon(poi)}
+                                  alt=""
+                                  style={{ width: 20, height: 20, flexShrink: 0 }}
+                                />
+                                <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{poi.name}</span>
+                              </div>
+                              {/* Visibility badge in upper right */}
+                              <div style={{
+                                backgroundColor: privacyColor,
+                                color: 'white',
+                                fontSize: '9px',
+                                padding: '2px 6px',
+                                borderRadius: '3px',
+                                marginLeft: '8px',
+                              }}>
+                                {getPoiBadgeLabel(poi)}
+                              </div>
+                            </div>
+                            {poi.location?.address && (
+                              <div style={{ fontSize: '12px', color: '#666', margin: '4px 0 0 28px' }}>
+                                {poi.location.address}
+                              </div>
+                            )}
+                            {friendLabel && (
+                              <div style={{ fontSize: '11px', color: '#fbc02d', margin: '4px 0 0 28px' }}>
+                                {friendLabel}
+                              </div>
+                            )}
+                            {placeIdeaContributors && placeIdeaContributors.length > 0 && (
+                              <div style={{ fontSize: '11px', color: '#666', margin: '2px 0 0 28px' }}>
+                                {placeIdeaContributors.join(', ')}
+                              </div>
+                            )}
+                            {/* Action buttons for POI */}
+                            <div style={{ display: 'flex', gap: '5px', marginTop: '8px', flexWrap: 'wrap' }}>
+                              {isCurrentUserOwner && (
+                                <>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      startEditingPoiInfo(poi);
+                                    }}
+                                    style={{
+                                      padding: '3px 6px',
+                                      fontSize: '10px',
+                                      border: '1px solid #4285f4',
+                                      borderRadius: '3px',
+                                      backgroundColor: 'white',
+                                      color: '#4285f4',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    Edit Info
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      startEditingPoiPrivacy(poi);
+                                    }}
+                                    style={{
+                                      padding: '3px 6px',
+                                      fontSize: '10px',
+                                      border: `1px solid ${privacyColor}`,
+                                      borderRadius: '3px',
+                                      backgroundColor: privacyColor,
+                                      color: 'white',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    Privacy Settings
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setDeleteConfirm(poi);
+                                    }}
+                                    style={{
+                                      padding: '3px 6px',
+                                      fontSize: '10px',
+                                      border: '1px solid #ff4444',
+                                      borderRadius: '3px',
+                                      backgroundColor: 'white',
+                                      color: '#ff4444',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    Delete
+                                  </button>
+                                </>
+                              )}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openPlaceIdeasPicker(poi);
+                                }}
+                                style={{
+                                  padding: '3px 6px',
+                                  fontSize: '10px',
+                                  border: '1px solid #2196f3',
+                                  borderRadius: '3px',
+                                  backgroundColor: '#e3f2fd',
+                                  color: '#1565c0',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                + Place Ideas
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Regular POIs grouped by owner */}
+                  {Object.entries(groupedVisiblePOIs).map(([ownerId, pois]) => {
+                    if (pois.length === 0) return null;
+                    const isRelevantOwner = poiOwnerUidsForMap.includes(ownerId);
+                    if (!isRelevantOwner) return null;
+                    // Skip friend POIs in this section - they're shown above
+                    const ownerRegularPois = pois.filter(p => !isFriendPoi(p.id));
+                    if (ownerRegularPois.length === 0) return null;
+
+                    const isOwner = ownerId === currentUserId;
+                    const sectionLabel = isOwner
+                        ? 'Your'
+                        : `${getUserDisplayName(ownerId, displayNameMap, collaborators)}'s`;
+                    
+                    return (
+                      <div key={`poi-group-${ownerId}`} style={{ marginBottom: '16px' }}>
+                        <div style={{
+                          fontSize: '12px',
+                          fontWeight: 'bold',
+                          color: '#666',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px',
+                          marginBottom: '6px',
+                          paddingTop: '8px',
+                          borderBottom: '1px solid #eee',
+                        }}>
+                          {sectionLabel} POIs ({ownerRegularPois.length})
                         </div>
+                        {ownerRegularPois.map(poi => {
+                          const privacyColor = getPoiBadgeColor(poi);
+                          
+                          return (
+                            <div
+                              key={poi.id}
+                              style={{
+                                padding: '10px',
+                                margin: '5px 0',
+                                border: '1px solid #ccc',
+                                borderRadius: '4px',
+                                backgroundColor: 'white',
+                                cursor: 'pointer',
+                                position: 'relative',
+                              }}
+                              onClick={() => {
+                                const poiMarker = { ...poi, position: poi.location?.location || poi.location };
+                                setSelectedMarker(poiMarker);
+                                setMapCenter(poiMarker.position);
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                                  <img
+                                    src={getPoiIcon(poi)}
+                                    alt=""
+                                    style={{ width: 20, height: 20, flexShrink: 0 }}
+                                  />
+                                  <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{poi.name}</span>
+                                </div>
+                                {/* Visibility badge in upper right */}
+                                <div style={{
+                                  backgroundColor: privacyColor,
+                                  color: 'white',
+                                  fontSize: '9px',
+                                  padding: '2px 6px',
+                                  borderRadius: '3px',
+                                  marginLeft: '8px',
+                                }}>
+                                  {getPoiBadgeLabel(poi)}
+                                </div>
+                              </div>
+                              {poi.location?.address && (
+                                <div style={{ fontSize: '12px', color: '#666', margin: '4px 0 0 28px' }}>
+                                  {poi.location.address}
+                                </div>
+                              )}
+                              {/* Action buttons for POI */}
+                              <div style={{ display: 'flex', gap: '5px', marginTop: '8px', flexWrap: 'wrap' }}>
+                                {isOwner ? (
+                                  <>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        startEditingPoiInfo(poi);
+                                      }}
+                                      style={{
+                                        padding: '3px 6px',
+                                        fontSize: '10px',
+                                        border: '1px solid #4285f4',
+                                        borderRadius: '3px',
+                                        backgroundColor: 'white',
+                                        color: '#4285f4',
+                                        cursor: 'pointer'
+                                      }}
+                                    >
+                                      Edit Info
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        startEditingPoiPrivacy(poi);
+                                      }}
+                                      style={{
+                                        padding: '3px 6px',
+                                        fontSize: '10px',
+                                        border: `1px solid ${privacyColor}`,
+                                        borderRadius: '3px',
+                                        backgroundColor: privacyColor,
+                                        color: 'white',
+                                        cursor: 'pointer'
+                                      }}
+                                    >
+                                      Privacy Settings
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDeleteConfirm(poi);
+                                      }}
+                                      style={{
+                                        padding: '3px 6px',
+                                        fontSize: '10px',
+                                        border: '1px solid #ff4444',
+                                        borderRadius: '3px',
+                                        backgroundColor: 'white',
+                                        color: '#ff4444',
+                                        cursor: 'pointer'
+                                      }}
+                                    >
+                                      Delete
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        startEditingPoiInfo(poi);
+                                      }}
+                                      style={{
+                                        padding: '3px 6px',
+                                        fontSize: '10px',
+                                        border: '1px solid #4285f4',
+                                        borderRadius: '3px',
+                                        backgroundColor: 'white',
+                                        color: '#4285f4',
+                                        cursor: 'pointer'
+                                      }}
+                                    >
+                                      Edit Info
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        startEditingPoiPrivacy(poi);
+                                      }}
+                                      style={{
+                                        padding: '3px 6px',
+                                        fontSize: '10px',
+                                        border: `1px solid ${privacyColor}`,
+                                        borderRadius: '3px',
+                                        backgroundColor: privacyColor,
+                                        color: 'white',
+                                        cursor: 'pointer'
+                                      }}
+                                    >
+                                      Privacy Settings
+                                    </button>
+                                  </>
+                                )}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openPlaceIdeasPicker(poi);
+                                  }}
+                                  style={{
+                                    padding: '3px 6px',
+                                    fontSize: '10px',
+                                    border: '1px solid #2196f3',
+                                    borderRadius: '3px',
+                                    backgroundColor: '#e3f2fd',
+                                    color: '#1565c0',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  + Place Ideas
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     );
                   })}
-                </div>
+                </>
               );
-            })}
+            })()}
           </div>
         </div>
       </div>
@@ -1191,20 +1552,52 @@ function Map({ mapId }) {
             >
               <div style={{ maxWidth: 300 }}>
                 <h4 style={{ margin: '0 0 8px 0', fontSize: '16px' }}>{selectedMarker.name}</h4>
-                {selectedMarker.address && (
+                {selectedMarker.location?.address && (
                   <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#666' }}>
-                    &shy; {selectedMarker.address}
+                    &shy; {selectedMarker.location.address}
                   </p>
                 )}
+                {/* Show friend associations below address for friend POIs */}
+                {selectedMarker.poiOwnerId && isFriendPoi(selectedMarker.poiOwnerId || selectedMarker.id) && (
+                  <div style={{ fontSize: '11px', color: '#fbc02d', margin: '4px 0 0 0' }}>
+                    {formatFriendAssociationLabel(selectedMarker.id)}
+                  </div>
+                )}
+                {/* Show place idea contributors */}
+                {selectedMarker && selectedMarker.id && (() => {
+                  const contributors = getPlaceIdeaContributors(selectedMarker.id);
+                  return contributors && contributors.length > 0 ? (
+                    <div style={{ fontSize: '11px', color: '#666', margin: '4px 0 0 0' }}>
+                      Suggested by: {contributors.join(', ')}
+                    </div>
+                  ) : null;
+                })()}
                 {selectedMarker.notes && (
                   <p style={{ margin: '0 0 8px 0', fontSize: '14px' }}>
                     &bull; {selectedMarker.notes}
                   </p>
                 )}
-                {selectedMarker.location?.address && (
+                {selectedMarker.date && (
                   <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#666' }}>
-                    &shy; {selectedMarker.location.address}
+                    📅 {new Date(selectedMarker.date).toLocaleDateString()}
                   </p>
+                )}
+                {/* Show links as clickable */}
+                {selectedMarker.links && Array.isArray(selectedMarker.links) && selectedMarker.links.length > 0 && (
+                  <div style={{ margin: '4px 0 0 0' }}>
+                    {selectedMarker.links.map((link, idx) => (
+                      <a
+                        key={idx}
+                        href={link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ fontSize: '12px', color: '#1a73e8', textDecoration: 'underline', display: 'block' }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {link}
+                      </a>
+                    ))}
+                  </div>
                 )}
                 {/* Show visibility badge for POI markers */}
                 {selectedMarker.visibility && (
@@ -1300,7 +1693,7 @@ function Map({ mapId }) {
             borderRadius: '8px',
             boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
             zIndex: 1000,
-            minWidth: '300px'
+            minWidth: '350px'
           }}>
             <h3 style={{ margin: '0 0 15px 0', fontSize: '18px' }}>Edit POI Info</h3>
             <div style={{ marginBottom: '15px' }}>
@@ -1338,6 +1731,79 @@ function Map({ mapId }) {
                 }}
                 placeholder="Add any notes about this location..."
               />
+            </div>
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', fontWeight: 'bold' }}>
+                Date:
+              </label>
+              <input
+                type="date"
+                value={editingPoiDate}
+                onChange={(e) => setEditingPoiDate(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  fontSize: '14px',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px'
+                }}
+              />
+            </div>
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', fontWeight: 'bold' }}>
+                Links:
+              </label>
+              {(editingPoiLinks || []).length === 0 ? (
+                <p style={{ fontSize: '12px', color: '#999', fontStyle: 'italic', margin: '0 0 8px 0' }}>No links added</p>
+              ) : (
+                <div style={{ marginBottom: '8px' }}>
+                  {editingPoiLinks.map((link, index) => (
+                    <div key={index} style={{ display: 'flex', gap: '5px', marginBottom: '5px', alignItems: 'center' }}>
+                      <input
+                        type="url"
+                        value={link}
+                        onChange={(e) => updateLinkInEditing(index, e.target.value)}
+                        placeholder="https://example.com"
+                        style={{
+                          flex: 1,
+                          padding: '6px',
+                          fontSize: '12px',
+                          border: '1px solid #ccc',
+                          borderRadius: '4px'
+                        }}
+                      />
+                      <button
+                        onClick={() => removeLinkFromEditing(index)}
+                        style={{
+                          padding: '4px 8px',
+                          fontSize: '12px',
+                          border: '1px solid #ff4444',
+                          borderRadius: '3px',
+                          backgroundColor: '#ffebee',
+                          color: '#ff4444',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <button
+                onClick={addLinkToEditing}
+                style={{
+                  padding: '6px 12px',
+                  fontSize: '12px',
+                  border: '1px solid #4285f4',
+                  borderRadius: '3px',
+                  backgroundColor: '#e3f2fd',
+                  color: '#1565c0',
+                  cursor: 'pointer'
+                }}
+              >
+                + Add Link
+              </button>
             </div>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
               <button
