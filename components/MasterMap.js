@@ -771,24 +771,30 @@ function MasterMap() {
               <div style={{ maxHeight: 'calc(100vh - 320px)', overflowY: 'auto', paddingRight: '5px' }}>
              {loadingPOIs && <span style={{ fontSize: '12px', color: '#666' }}>Loading...</span>}
 
-             {/* Friend POIs section */}
-             {friendPois.length > 0 && (
-               <div style={{ marginBottom: '16px' }}>
-                 <div style={{
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                  color: '#666',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  marginBottom: '6px',
-                  paddingTop: '8px',
-                  borderBottom: '1px solid #eee',
-                 }}>
-                  Friend Locations ({friendPois.length})
-                 </div>
-                 {friendPois.map(poi => renderPoiItem(poi))}
-               </div>
-             )}
+{/* Friend POIs section - collapsible */}
+{friendPois.length > 0 && (
+<div style={{ marginBottom: '12px' }}>
+<div 
+style={{
+fontSize: '12px',
+fontWeight: 'bold',
+color: '#666',
+textTransform: 'uppercase',
+letterSpacing: '0.5px',
+padding: '4px 0',
+display: 'flex',
+alignItems: 'center',
+gap: '4px',
+cursor: 'pointer',
+}}
+onClick={() => toggleMapCollapse('Friend Locations')}
+>
+<span style={{ fontSize: '10px' }}>{collapsedMaps['Friend Locations'] ? '▶' : '▼'}</span>
+Friend Locations ({friendPois.length})
+</div>
+{!collapsedMaps['Friend Locations'] && friendPois.map(poi => renderPoiItem(poi))}
+</div>
+)}
 
              {/* Regular POIs grouped by map - using mapOrder for consistent display */}
              {mapOrder.filter(name => name !== 'All Maps').map(mapName => {

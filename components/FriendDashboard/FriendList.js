@@ -128,33 +128,37 @@ function parseLastContactDateToLocal(dateStr) {
      return null;
     }
 
-    /**
-     * Helper to resolve friend location display from POI data.
-     * Returns an object with homeAddress, tempAddress, tempDateRange, and isActive flags.
-     */
-   function resolveFriendLocation(friendLoc, pois, cityCache) {
-     const result = {
-       homeAddress: null,
-       tempAddress: null,
-       tempDateRange: '',
-       isTempActive: false,
-      };
+/**
+* Helper to resolve friend location display from POI data.
+* Returns an object with homeAddress, tempAddress, tempDateRange, and isActive flags.
+* Only shows temporary location if it is still active (not expired).
+*/
+function resolveFriendLocation(friendLoc, pois, cityCache) {
+  const result = {
+    homeAddress: null,
+    tempAddress: null,
+    tempDateRange: '',
+    isTempActive: false,
+  };
 
-     if (friendLoc?.homePoiId) {
-       result.homeAddress = resolvePoiAddress(friendLoc.homePoiId, pois, cityCache);
-       if (!result.homeAddress) result.homeAddress = 'Home set';
-      }
+  if (friendLoc?.homePoiId) {
+    result.homeAddress = resolvePoiAddress(friendLoc.homePoiId, pois, cityCache);
+    if (!result.homeAddress) result.homeAddress = 'Home set';
+  }
 
-     if (friendLoc?.temporaryLocation) {
-       const tempLocation = friendLoc.temporaryLocation;
-       result.tempAddress = resolvePoiAddress(tempLocation.poiId, pois, cityCache);
-       if (!result.tempAddress) result.tempAddress = 'Temporary location';
-       result.isTempActive = isTempLocationActive(tempLocation);
-       result.tempDateRange = formatDateRange(tempLocation.startDate, tempLocation.endDate);
-      }
-
-     return result;
+  if (friendLoc?.temporaryLocation) {
+    const tempLocation = friendLoc.temporaryLocation;
+    // Only show temporary location if it is still active (not expired)
+    if (isTempLocationActive(tempLocation)) {
+      result.tempAddress = resolvePoiAddress(tempLocation.poiId, pois, cityCache);
+      if (!result.tempAddress) result.tempAddress = 'Temporary location';
+      result.isTempActive = true;
+      result.tempDateRange = formatDateRange(tempLocation.startDate, tempLocation.endDate);
     }
+  }
+
+  return result;
+}
 
  export default function FriendList({
    friends,
