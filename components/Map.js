@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { GoogleMap, Marker, InfoWindow, Autocomplete } from "@react-google-maps/api";
 import { auth, db } from "../firebaseConfig";
+
 import { collection, doc, setDoc, updateDoc, deleteDoc, getDocs, getDoc } from 'firebase/firestore';
 import { toast } from 'react-toastify';
 import { deletePoiWithCascades } from '../lib/deletionService';
@@ -109,7 +110,7 @@ function getUserDisplayName(userId, displayNameMap, collaborators) {
   return `${userId.slice(0, 5)}... (${userId.slice(-4)})`;
 }
 
-function Map({ mapId }) {
+function InteractiveMap({ mapId }) {
   const [shareEmail, setShareEmail] = useState("");
   const [shareLoading, setShareLoading] = useState(false);
   const [selectedMarker, setSelectedMarker] = useState(null);
@@ -914,18 +915,18 @@ function Map({ mapId }) {
     const associations = getFriendAssociationsForPoi(poiId);
     if (!associations || associations.length === 0) return null;
 
-    // Group by friendId
-    const friendGroups = new Map();
-    for (const assoc of associations) {
-      if (!friendGroups.has(assoc.friendId)) {
-        friendGroups.set(assoc.friendId, { name: assoc.friendName, types: [] });
+     // Group by friendId using plain object to avoid naming conflict with Map component
+      const friendGroups = {};
+      for (const assoc of associations) {
+        if (!friendGroups[assoc.friendId]) {
+          friendGroups[assoc.friendId] = { name: assoc.friendName, types: [] };
+        }
+       friendGroups[assoc.friendId].types.push(assoc);
       }
-      friendGroups.get(assoc.friendId).types.push(assoc);
-    }
 
-    // Build labels
-    const labels = [];
-    for (const [, { name, types }] of friendGroups) {
+      // Build labels from grouped object
+     const labels = [];
+     Object.values(friendGroups).forEach(({ name, types }) => {
       const typeLabels = types.map((t) => {
         if (t.type === 'home') return 'home';
         if (t.type === 'pickup') return 'pickup';
@@ -940,10 +941,10 @@ function Map({ mapId }) {
         return t.type;
       });
 
-      labels.push(`${name} (${typeLabels.join(', ')})`);
-    }
+       labels.push(`${name} (${typeLabels.join(', ')})`);
+      });
 
-    return labels.join(' | ');
+     return labels.join(' | ');
   };
 
   // Get place idea contributor names for a POI
@@ -981,18 +982,19 @@ function Map({ mapId }) {
     return formatFriendAssociationLabelsForActive(activeTems);
   };
 
-  // Format labels for active friend temporary locations only
-  const formatFriendAssociationLabelsForActive = (associations) => {
-    const friendGroups = new Map();
-    for (const assoc of associations) {
-      if (!friendGroups.has(assoc.friendId)) {
-        friendGroups.set(assoc.friendId, { name: assoc.friendName, types: [] });
-      }
-      friendGroups.get(assoc.friendId).types.push(assoc);
-    }
+    // Format labels for active friend temporary locations only
+   const formatFriendAssociationLabelsForActive = (associations) => {
+     // Use plain object to avoid naming conflict with Map component
+     const friendGroups = {};
+     for (const assoc of associations) {
+       if (!friendGroups[assoc.friendId]) {
+         friendGroups[assoc.friendId] = { name: assoc.friendName, types: [] };
+       }
+      friendGroups[assoc.friendId].types.push(assoc);
+     }
 
     const labels = [];
-    for (const [, { name, types }] of friendGroups) {
+    Object.values(friendGroups).forEach(({ name, types }) => {
       const typeLabels = types.map((t) => {
         const start = t.startDate ? new Date(t.startDate).toLocaleDateString() : '';
         const end = t.endDate ? new Date(t.endDate).toLocaleDateString() : '';
@@ -1001,11 +1003,11 @@ function Map({ mapId }) {
         if (end) return `temporary (ends ${end})`;
         return 'temporary';
       });
-      labels.push(`${name} (${typeLabels.join(', ')})`);
-    }
+       labels.push(`${name} (${typeLabels.join(', ')})`);
+      });
 
     return labels.join(' | ');
-  };
+   };
 
   // Helper: check if a POI is friend-associated with an active temporary location
   const hasActiveTempLocation = (poiId) => {
@@ -1013,8 +1015,29 @@ function Map({ mapId }) {
     if (!associations || associations.length === 0) return false;
     return associations.some(a => 
       a.type === 'temporary' && (!a.endDate || new Date(a.endDate) >= new Date())
-    );
+     );
   };
+
+   // Normalize URL: prepend https:// if missing and no protocol found
+  const _normalizeUrl = (url) => {
+    if (!url) return '';
+    const trimmed = url.trim();
+    if (!trimmed) return '';
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return 'https://' + trimmed;
+   };
+
+   // Format link display text: strip protocol and www. prefix
+  const _formatLinkDisplay = (url) => {
+    if (!url) return '';
+    let cleaned = url.trim();
+    if (!cleaned) return '';
+     // Remove protocol
+    cleaned = cleaned.replace(/^https?:\/\//, '');
+     // Remove www. prefix
+    cleaned = cleaned.replace(/^www\./, '');
+    return cleaned || url;
+   };
 
   if (!user) return <div>Please sign in to view and edit maps.</div>;
   if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '18px', color: '#666' }}>Loading map...</div>;
@@ -1577,43 +1600,29 @@ function Map({ mapId }) {
                     &bull; {selectedMarker.notes}
                   </p>
                 )}
-                {selectedMarker.date && (
-                  <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#666' }}>
+                  {selectedMarker.date && (
+                   <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#666' }}>
                     📅 {new Date(selectedMarker.date).toLocaleDateString()}
-                  </p>
-                )}
-                {/* Show links as clickable */}
-                {selectedMarker.links && Array.isArray(selectedMarker.links) && selectedMarker.links.length > 0 && (
-                  <div style={{ margin: '4px 0 0 0' }}>
+                    </p>
+                   )}
+                  {/* Show links as clickable */}
+                  {selectedMarker.links && Array.isArray(selectedMarker.links) && selectedMarker.links.length > 0 && (
+                   <div style={{ margin: '4px 0 0 0' }}>
                     {selectedMarker.links.map((link, idx) => (
-                      <a
-                        key={idx}
-                        href={link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ fontSize: '12px', color: '#1a73e8', textDecoration: 'underline', display: 'block' }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {link}
-                      </a>
+                     <a
+                      key={idx}
+                      href={_normalizeUrl(link)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ fontSize: '12px', color: '#1a73e8', textDecoration: 'underline', display: 'block' }}
+                      onClick={(e) => e.stopPropagation()}
+                     >
+                      {_formatLinkDisplay(link)}
+                     </a>
                     ))}
-                  </div>
-                )}
-                {/* Show visibility badge for POI markers */}
-                {selectedMarker.visibility && (
-                  <div style={{
-                    backgroundColor: getPoiBadgeColor(selectedMarker),
-                    color: 'white',
-                    fontSize: '10px',
-                    padding: '2px 8px',
-                    borderRadius: '3px',
-                    display: 'inline-block',
-                    marginTop: '4px'
-                  }}>
-                    {getPoiBadgeLabel(selectedMarker)}
-                  </div>
-                )}
-                {/* Action buttons for POI in info window */}
+                   </div>
+                  )}
+                  {/* Action buttons for POI in info window */}
                 {selectedMarker.visibility && (
                   <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
                     <button
@@ -2276,4 +2285,4 @@ function Map({ mapId }) {
   );
 }
 
-export default Map;
+export default InteractiveMap;

@@ -9,26 +9,31 @@ export default function MapPage() {
   const router = useRouter();
   const { mapId } = router.query;
   const [mapInfo, setMapInfo] = useState(null);
+  const [isLoaded, setIsLoaded] = useState(false);
 
-   // Load map info for the title
-  useEffect(() => {
-    const loadMapInfo = async () => {
-      if (!mapId) return;
-      try {
-        const { doc, getDoc } = await import("firebase/firestore");
-        const { db } = await import("../../firebaseConfig");
-        const snapshot = await getDoc(doc(db, 'maps', mapId));
-        if (snapshot.exists()) {
-          setMapInfo(snapshot.data());
+     // Only render the Map component when mapId is defined (prevents crash on route transition)
+   useEffect(() => {
+     if (mapId) {
+       setIsLoaded(true);
+        // Load map info for the title
+         const loadMapInfo = async () => {
+           try {
+             const { doc, getDoc } = await import("firebase/firestore");
+             const { db } = await import("../../firebaseConfig");
+             const snapshot = await getDoc(doc(db, 'maps', mapId));
+             if (snapshot.exists()) {
+               setMapInfo(snapshot.data());
+             }
+              } catch (error) {
+             console.error("Error loading map info:", error);
+             }
+             };
+         loadMapInfo();
         }
-         } catch (error) {
-        console.error("Error loading map info:", error);
-        }
-       };
-    loadMapInfo();
-   }, [mapId]);
+       }, [mapId]);
 
-  if (!mapId) return null;
+      // Don't render anything until router is ready AND we have a mapId
+   if (!isLoaded || !mapId) return null;
 
    return (
           <div>
