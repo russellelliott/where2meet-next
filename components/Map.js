@@ -22,6 +22,7 @@ import {
 import { createPoiFromPlaceResult, createPoiFromCoordinates } from "../lib/poiService";
 import { togglePlaceIdeaTopLevel as toggleFriendPlaceIdeaTopLevel } from '../lib/friendService';
 import { togglePlaceIdeaTopLevel as toggleGroupPlaceIdeaTopLevel } from '../lib/groupService';
+import { Pencil, X } from 'lucide-react';
 
 const containerStyle = {
   width: "100%",
@@ -178,6 +179,11 @@ function InteractiveMap({ mapId }) {
   const [hangoutDescription, setHangoutDescription] = useState('');
   const [selectedFriendIds, setSelectedFriendIds] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState('');
+
+   // Rename dialog state
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [renameInputName, setRenameInputName] = useState('');
+  const [isRenamingMap, setIsRenamingMap] = useState(false);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((loggedInUser) => {
@@ -817,6 +823,43 @@ function InteractiveMap({ mapId }) {
     setHangoutDescription('');
   };
 
+  // Rename dialog handlers
+  const openRenameDialog = () => {
+    setRenameInputName(mapInfo?.name || '');
+    setRenameDialogOpen(true);
+   };
+
+  const handleRenameMap = async () => {
+    if (!mapId || !renameInputName.trim()) {
+      toast.error('Map name cannot be empty.');
+      return;
+       }
+    try {
+      setIsRenamingMap(true);
+        // Check ownership before allowing rename
+      if (!isCurrentUserOwner) {
+        toast.error('Only the map owner can rename this map.');
+        setRenameDialogOpen(false);
+        return;
+          }
+      await updateDoc(doc(db, 'maps', mapId), { name: renameInputName.trim() });
+        // Update local state
+      setMapInfo(prev => ({ ...prev, name: renameInputName.trim() }));
+      setRenameDialogOpen(false);
+      toast.success('Map renamed successfully!');
+       } catch (err) {
+      console.error('Error renaming map:', err);
+      toast.error('Failed to rename map. Please try again.');
+       } finally {
+      setIsRenamingMap(false);
+          }
+         };
+
+  const closeRenameDialog = () => {
+    setRenameDialogOpen(false);
+    setRenameInputName('');
+         };
+
   const toggleFriendSelection = (friendId) => {
     if (selectedFriendIds.includes(friendId)) {
       setSelectedFriendIds(selectedFriendIds.filter(id => id !== friendId));
@@ -1063,18 +1106,49 @@ function InteractiveMap({ mapId }) {
         padding: '20px',
         borderRight: '1px solid #ddd',
         backgroundColor: '#f9f9f9'
-      }}>
-        {/* Map Title */}
-        <div style={{
-          marginBottom: '20px',
-          padding: '15px',
-          border: '1px solid #ddd',
-          borderRadius: '8px',
-          backgroundColor: 'white',
-          textAlign: 'center'
-        }}>
-          <h2 style={{ margin: 0, fontSize: '20px' }}>{mapInfo?.name || 'Untitled Map'}</h2>
-        </div>
+                }}>
+                 {/* Map Title */}
+          <div style={{
+            marginBottom: '20px',
+            padding: '15px',
+            border: '1px solid #ddd',
+            borderRadius: '8px',
+            backgroundColor: 'white',
+            textAlign: 'center',
+            position: 'relative'
+          }}>
+            <h2 style={{ margin: 0, fontSize: '20px' }}>{mapInfo?.name || 'Untitled Map'}</h2>
+            {isCurrentUserOwner && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  openRenameDialog();
+                }}
+                style={{
+                  position: 'absolute',
+                  top: '10px',
+                  right: '12px',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#666',
+                  transition: 'color 0.2s'
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = '#1a73e8'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = '#666'; }}
+                title="Rename map"
+              >
+                <Pencil size={16} />
+              </button>
+            )}
+          </div>
+
 
         {/* Invite section */}
         <div style={{
