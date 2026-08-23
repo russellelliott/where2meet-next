@@ -216,16 +216,19 @@ function InteractiveMap({ mapId }) {
             if (!fMapObj[friend.location.homePoiId]) fMapObj[friend.location.homePoiId] = [];
             fMapObj[friend.location.homePoiId].push({ friendId: friend.id, friendName: friend.name, type: 'home' });
           }
-          // Temporary Location POI
+            // Temporary Location POI - only count if active (no passed end date)
           if (friend.location.temporaryLocation?.poiId) {
-            const poiId = friend.location.temporaryLocation.poiId;
+            const tempLoc = friend.location.temporaryLocation;
+            // Skip expired temporary locations
+            if (tempLoc.endDate && new Date(tempLoc.endDate) < new Date()) return;
+            const poiId = tempLoc.poiId;
             if (!fMapObj[poiId]) fMapObj[poiId] = [];
             fMapObj[poiId].push({
               friendId: friend.id, friendName: friend.name, type: 'temporary',
-              startDate: friend.location.temporaryLocation.startDate || null,
-              endDate: friend.location.temporaryLocation.endDate || null,
-            });
-          }
+              startDate: tempLoc.startDate || null,
+              endDate: tempLoc.endDate || null,
+             });
+            }
           // Pickup POI
           if (friend.logistics?.pickupPoiId) {
             if (!fMapObj[friend.logistics.pickupPoiId]) fMapObj[friend.logistics.pickupPoiId] = [];
