@@ -2353,6 +2353,92 @@ function InteractiveMap({ mapId }) {
             </Button>
           </DialogActions>
         </Dialog>
+           {/* Rename Map Dialog */}
+           {renameDialogOpen && (
+             <div
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 10000,
+               }}
+              onClick={closeRenameDialog}
+             >
+               <div
+                style={{
+                  backgroundColor: 'white',
+                  borderRadius: '12px',
+                  padding: '24px',
+                  minWidth: '360px',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+                 }}
+                onClick={(e) => e.stopPropagation()}
+               >
+                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                   <h3 style={{ margin: 0, fontSize: '18px' }}>Rename Map</h3>
+                   <button
+                    onClick={closeRenameDialog}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#666' }}
+                   >
+                     <X size={20} />
+                   </button>
+                 </div>
+                 <input
+                  type="text"
+                  value={renameInputName}
+                  onChange={(e) => setRenameInputName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleRenameMap(); }}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    fontSize: '14px',
+                    border: '1px solid #ccc',
+                    borderRadius: '6px',
+                    boxSizing: 'border-box',
+                    marginBottom: '16px',
+                   }}
+                  autoFocus
+                 />
+                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                   <button
+                    onClick={closeRenameDialog}
+                    style={{
+                      padding: '8px 16px',
+                      fontSize: '14px',
+                      borderRadius: '6px',
+                      border: '1px solid #ddd',
+                      backgroundColor: '#fff',
+                      cursor: 'pointer',
+                     }}
+                   >
+                    Cancel
+                   </button>
+                   <button
+                    onClick={handleRenameMap}
+                    disabled={isRenamingMap || !renameInputName.trim()}
+                    style={{
+                      padding: '8px 16px',
+                      fontSize: '14px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      backgroundColor: isRenamingMap || !renameInputName.trim() ? '#ccc' : '#1a73e8',
+                      color: 'white',
+                      cursor: isRenamingMap || !renameInputName.trim() ? 'not-allowed' : 'pointer',
+                     }}
+                   >
+                     {isRenamingMap ? 'Saving...' : 'Save'}
+                   </button>
+                 </div>
+               </div>
+             </div>
+           )}
+
 
       </div>
     </div>
