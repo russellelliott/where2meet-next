@@ -480,7 +480,7 @@ function MasterMap() {
       setAllUserPOIs(prev => prev.map(p => p.id === privacyEditor.id ? updatedPoi : p));
 
       if (selectedMarker?.id === privacyEditor.id) {
-        setSelectedMarker(updatedPoi);
+        setSelectedMarker({ ...updatedPoi, position: updatedPoi.location?.location || updatedPoi.location });
          }
 
       setPrivacyEditor(null);

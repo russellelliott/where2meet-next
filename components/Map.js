@@ -702,8 +702,11 @@ function InteractiveMap({ mapId }) {
 
       setAllUserPOIs(prev => prev.map(p => p.id === privacyEditor.id ? updatedPoi : p));
 
-      // Re-evaluate visibility for all POIs
-      const newVisible = allUserPOIs.filter(p =>
+       // Re-evaluate visibility for all POIs (use updated POI inline to avoid stale state)
+       const allPOIsAfterUpdate = allUserPOIs.map(p =>
+        p.id === privacyEditor.id ? updatedPoi : p
+         );
+      const newVisible = allPOIsAfterUpdate.filter(p =>
         isPoiVisibleOnMap(p, mapId, user.uid, p.poiOwnerId)
       );
       setVisiblePOIs(newVisible);
@@ -721,7 +724,7 @@ function InteractiveMap({ mapId }) {
 
       // Update selected marker if it's the one being edited
       if (selectedMarker?.id === privacyEditor.id) {
-        setSelectedMarker(updatedPoi);
+        setSelectedMarker({ ...updatedPoi, position: updatedPoi.location?.location || updatedPoi.location });
       }
 
       setPrivacyEditor(null);
