@@ -101,12 +101,12 @@ function getUserDisplayName(userId, displayNameMap, collaborators) {
     const name = collab.displayName || collab.name || '';
     if (name) return name;
   }
-  
+
   // Then check displayNameMap (loaded from user profiles)
   if (displayNameMap && displayNameMap[userId]) {
     return displayNameMap[userId];
   }
-  
+
   // Fall back to truncated UID
   return `${userId.slice(0, 5)}... (${userId.slice(-4)})`;
 }
@@ -119,14 +119,14 @@ function InteractiveMap({ mapId }) {
   const [loading, setLoading] = useState(true);
   const [mapInfo, setMapInfo] = useState(null);
   const [userLocationLoaded, setUserLocationLoaded] = useState(false);
-  
+
   // Multi-user POI state
   const [allUserPOIs, setAllUserPOIs] = useState([]); // all POIs from all relevant users (source of truth)
   const [visiblePOIs, setVisiblePOIs] = useState([]); // filtered by privacy for current mapId
-  
+
   // Grouped POIs for display (grouped by owner)
   const [groupedVisiblePOIs, setGroupedVisiblePOIs] = useState({}); // { ownerId: [pois] }
-  
+
   const [loadingPOIs, setLoadingPOIs] = useState(false);
   const [editingPoi, setEditingPoi] = useState(null);
   const [editingPoiName, setEditingPoiName] = useState("");
@@ -180,7 +180,7 @@ function InteractiveMap({ mapId }) {
   const [selectedFriendIds, setSelectedFriendIds] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState('');
 
-   // Rename dialog state
+  // Rename dialog state
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [renameInputName, setRenameInputName] = useState('');
   const [isRenamingMap, setIsRenamingMap] = useState(false);
@@ -292,7 +292,7 @@ function InteractiveMap({ mapId }) {
     const loadDisplayNames = async () => {
       try {
         const names = {};
-        
+
         // Load map owner name
         if (mapOwnerUid) {
           const ownerProfileRef = doc(db, 'users', mapOwnerUid, 'profile', 'info');
@@ -301,7 +301,7 @@ function InteractiveMap({ mapId }) {
             names[mapOwnerUid] = ownerSnap.data().displayName || mapOwnerUid;
           }
         }
-        
+
         // Load collaborator names
         for (const collabUid of Object.keys(collaborators)) {
           if (!names[collabUid]) {
@@ -312,7 +312,7 @@ function InteractiveMap({ mapId }) {
             }
           }
         }
-        
+
         setDisplayNameMap(names);
       } catch (err) {
         console.error("Failed to load display names:", err);
@@ -349,7 +349,7 @@ function InteractiveMap({ mapId }) {
       try {
         // Determine which user IDs to fetch POIs from
         const userUidsToFetch = new Set([user.uid]); // Always fetch current user's POIs
-        
+
         // If we have a mapOwnerUid, also fetch from owner (if not already current user) and all collaborators
         if (mapOwnerUid) {
           userUidsToFetch.add(mapOwnerUid);
@@ -359,7 +359,7 @@ function InteractiveMap({ mapId }) {
         }
 
         const allPOIs = [];
-        
+
         // Fetch POIs from each relevant user
         for (const uid of userUidsToFetch) {
           try {
@@ -380,7 +380,7 @@ function InteractiveMap({ mapId }) {
         setAllUserPOIs(allPOIs);
 
         // Filter POIs based on visibility rules for current mapId
-        const visible = allPOIs.filter(poi => 
+        const visible = allPOIs.filter(poi =>
           isPoiVisibleOnMap(poi, mapId, user.uid, poi.poiOwnerId)
         );
         setVisiblePOIs(visible);
@@ -437,13 +437,13 @@ function InteractiveMap({ mapId }) {
         const poiWithOwner = { ...newPoi, id: newPoi.id, poiOwnerId: user.uid };
         setAllUserPOIs(prev => [...prev, poiWithOwner]);
         setVisiblePOIs(prev => [...prev, poiWithOwner]);
-        
+
         // Update grouped state
         setGroupedVisiblePOIs(prev => ({
           ...prev,
           [user.uid]: [...(prev[user.uid] || []), poiWithOwner]
         }));
-        
+
         setSelectedMarker({ ...newPoi, position: newPoi.location?.location || newPoi.location });
         setMapCenter(newPoi.location);
       }
@@ -526,13 +526,13 @@ function InteractiveMap({ mapId }) {
         const poiWithOwner = { ...newPoi, id: newPoi.id, poiOwnerId: user.uid };
         setAllUserPOIs(prev => [...prev, poiWithOwner]);
         setVisiblePOIs(prev => [...prev, poiWithOwner]);
-        
+
         // Update grouped state
         setGroupedVisiblePOIs(prev => ({
           ...prev,
           [user.uid]: [...(prev[user.uid] || []), poiWithOwner]
         }));
-        
+
         setSelectedMarker({ ...newPoi, position: newPoi.location?.location || newPoi.location });
         setMapCenter(newPoi.location);
       }
@@ -607,10 +607,10 @@ function InteractiveMap({ mapId }) {
 
     try {
       const poiRef = doc(db, 'users', user.uid, 'poi', editingPoi.id);
-      
+
       // Build the data to save: links as array (or null if empty), date as string
-      const linkData = editingPoiLinks.filter(l => l.trim()).length > 0 
-        ? editingPoiLinks.map(l => l.trim()) 
+      const linkData = editingPoiLinks.filter(l => l.trim()).length > 0
+        ? editingPoiLinks.map(l => l.trim())
         : null;
 
       await updateDoc(poiRef, {
@@ -621,9 +621,9 @@ function InteractiveMap({ mapId }) {
       });
 
       // Update local state
-      const updatedPoi = { 
-        ...editingPoi, 
-        name: editingPoiName, 
+      const updatedPoi = {
+        ...editingPoi,
+        name: editingPoiName,
         notes: editingPoiNotes,
         links: linkData,
         date: editingPoiDate || null,
@@ -698,9 +698,9 @@ function InteractiveMap({ mapId }) {
       };
 
       setAllUserPOIs(prev => prev.map(p => p.id === privacyEditor.id ? updatedPoi : p));
-      
+
       // Re-evaluate visibility for all POIs
-      const newVisible = allUserPOIs.filter(p => 
+      const newVisible = allUserPOIs.filter(p =>
         isPoiVisibleOnMap(p, mapId, user.uid, p.poiOwnerId)
       );
       setVisiblePOIs(newVisible);
@@ -827,38 +827,38 @@ function InteractiveMap({ mapId }) {
   const openRenameDialog = () => {
     setRenameInputName(mapInfo?.name || '');
     setRenameDialogOpen(true);
-   };
+  };
 
   const handleRenameMap = async () => {
     if (!mapId || !renameInputName.trim()) {
       toast.error('Map name cannot be empty.');
       return;
-       }
+    }
     try {
       setIsRenamingMap(true);
-        // Check ownership before allowing rename
+      // Check ownership before allowing rename
       if (!isCurrentUserOwner) {
         toast.error('Only the map owner can rename this map.');
         setRenameDialogOpen(false);
         return;
-          }
+      }
       await updateDoc(doc(db, 'maps', mapId), { name: renameInputName.trim() });
-        // Update local state
+      // Update local state
       setMapInfo(prev => ({ ...prev, name: renameInputName.trim() }));
       setRenameDialogOpen(false);
       toast.success('Map renamed successfully!');
-       } catch (err) {
+    } catch (err) {
       console.error('Error renaming map:', err);
       toast.error('Failed to rename map. Please try again.');
-       } finally {
+    } finally {
       setIsRenamingMap(false);
-          }
-         };
+    }
+  };
 
   const closeRenameDialog = () => {
     setRenameDialogOpen(false);
     setRenameInputName('');
-         };
+  };
 
   const toggleFriendSelection = (friendId) => {
     if (selectedFriendIds.includes(friendId)) {
@@ -958,18 +958,18 @@ function InteractiveMap({ mapId }) {
     const associations = getFriendAssociationsForPoi(poiId);
     if (!associations || associations.length === 0) return null;
 
-     // Group by friendId using plain object to avoid naming conflict with Map component
-      const friendGroups = {};
-      for (const assoc of associations) {
-        if (!friendGroups[assoc.friendId]) {
-          friendGroups[assoc.friendId] = { name: assoc.friendName, types: [] };
-        }
-       friendGroups[assoc.friendId].types.push(assoc);
+    // Group by friendId using plain object to avoid naming conflict with Map component
+    const friendGroups = {};
+    for (const assoc of associations) {
+      if (!friendGroups[assoc.friendId]) {
+        friendGroups[assoc.friendId] = { name: assoc.friendName, types: [] };
       }
+      friendGroups[assoc.friendId].types.push(assoc);
+    }
 
-      // Build labels from grouped object
-     const labels = [];
-     Object.values(friendGroups).forEach(({ name, types }) => {
+    // Build labels from grouped object
+    const labels = [];
+    Object.values(friendGroups).forEach(({ name, types }) => {
       const typeLabels = types.map((t) => {
         if (t.type === 'home') return 'home';
         if (t.type === 'pickup') return 'pickup';
@@ -984,16 +984,16 @@ function InteractiveMap({ mapId }) {
         return t.type;
       });
 
-       labels.push(`${name} (${typeLabels.join(', ')})`);
-      });
+      labels.push(`${name} (${typeLabels.join(', ')})`);
+    });
 
-     return labels.join(' | ');
+    return labels.join(' | ');
   };
 
   // Get place idea contributor names for a POI
   const getPlaceIdeaContributors = (poiId) => {
     const contributorNames = [];
-    
+
     // Check friends
     friends.forEach(friend => {
       if (Array.isArray(friend.placeIdeas) && friend.placeIdeas.includes(poiId)) {
@@ -1015,26 +1015,26 @@ function InteractiveMap({ mapId }) {
   const getActiveFriendTempLabels = (poiId) => {
     const associations = getFriendAssociationsForPoi(poiId);
     if (!associations || associations.length === 0) return null;
-    
+
     // Filter to only active temporary locations
-    const activeTems = associations.filter(a => 
+    const activeTems = associations.filter(a =>
       a.type === 'temporary' && (!a.endDate || new Date(a.endDate) >= new Date())
     );
-    
+
     if (activeTems.length === 0) return null;
     return formatFriendAssociationLabelsForActive(activeTems);
   };
 
-    // Format labels for active friend temporary locations only
-   const formatFriendAssociationLabelsForActive = (associations) => {
-     // Use plain object to avoid naming conflict with Map component
-     const friendGroups = {};
-     for (const assoc of associations) {
-       if (!friendGroups[assoc.friendId]) {
-         friendGroups[assoc.friendId] = { name: assoc.friendName, types: [] };
-       }
+  // Format labels for active friend temporary locations only
+  const formatFriendAssociationLabelsForActive = (associations) => {
+    // Use plain object to avoid naming conflict with Map component
+    const friendGroups = {};
+    for (const assoc of associations) {
+      if (!friendGroups[assoc.friendId]) {
+        friendGroups[assoc.friendId] = { name: assoc.friendName, types: [] };
+      }
       friendGroups[assoc.friendId].types.push(assoc);
-     }
+    }
 
     const labels = [];
     Object.values(friendGroups).forEach(({ name, types }) => {
@@ -1046,41 +1046,41 @@ function InteractiveMap({ mapId }) {
         if (end) return `temporary (ends ${end})`;
         return 'temporary';
       });
-       labels.push(`${name} (${typeLabels.join(', ')})`);
-      });
+      labels.push(`${name} (${typeLabels.join(', ')})`);
+    });
 
     return labels.join(' | ');
-   };
+  };
 
   // Helper: check if a POI is friend-associated with an active temporary location
   const hasActiveTempLocation = (poiId) => {
     const associations = getFriendAssociationsForPoi(poiId);
     if (!associations || associations.length === 0) return false;
-    return associations.some(a => 
+    return associations.some(a =>
       a.type === 'temporary' && (!a.endDate || new Date(a.endDate) >= new Date())
-     );
+    );
   };
 
-   // Normalize URL: prepend https:// if missing and no protocol found
+  // Normalize URL: prepend https:// if missing and no protocol found
   const _normalizeUrl = (url) => {
     if (!url) return '';
     const trimmed = url.trim();
     if (!trimmed) return '';
     if (/^https?:\/\//i.test(trimmed)) return trimmed;
     return 'https://' + trimmed;
-   };
+  };
 
-   // Format link display text: strip protocol and www. prefix
+  // Format link display text: strip protocol and www. prefix
   const _formatLinkDisplay = (url) => {
     if (!url) return '';
     let cleaned = url.trim();
     if (!cleaned) return '';
-     // Remove protocol
+    // Remove protocol
     cleaned = cleaned.replace(/^https?:\/\//, '');
-     // Remove www. prefix
+    // Remove www. prefix
     cleaned = cleaned.replace(/^www\./, '');
     return cleaned || url;
-   };
+  };
 
   if (!user) return <div>Please sign in to view and edit maps.</div>;
   if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '18px', color: '#666' }}>Loading map...</div>;
@@ -1106,48 +1106,48 @@ function InteractiveMap({ mapId }) {
         padding: '20px',
         borderRight: '1px solid #ddd',
         backgroundColor: '#f9f9f9'
-                }}>
-                 {/* Map Title */}
-          <div style={{
-            marginBottom: '20px',
-            padding: '15px',
-            border: '1px solid #ddd',
-            borderRadius: '8px',
-            backgroundColor: 'white',
-            textAlign: 'center',
-            position: 'relative'
-          }}>
-            <h2 style={{ margin: 0, fontSize: '20px' }}>{mapInfo?.name || 'Untitled Map'}</h2>
-            {isCurrentUserOwner && (
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  openRenameDialog();
-                }}
-                style={{
-                  position: 'absolute',
-                  top: '10px',
-                  right: '12px',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '4px',
-                  borderRadius: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#666',
-                  transition: 'color 0.2s'
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.color = '#1a73e8'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = '#666'; }}
-                title="Rename map"
-              >
-                <Pencil size={16} />
-              </button>
-            )}
-          </div>
+      }}>
+        {/* Map Title */}
+        <div style={{
+          marginBottom: '20px',
+          padding: '15px',
+          border: '1px solid #ddd',
+          borderRadius: '8px',
+          backgroundColor: 'white',
+          textAlign: 'center',
+          position: 'relative'
+        }}>
+          <h2 style={{ margin: 0, fontSize: '20px' }}>{mapInfo?.name || 'Untitled Map'}</h2>
+          {isCurrentUserOwner && (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openRenameDialog();
+              }}
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '12px',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px',
+                borderRadius: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#666',
+                transition: 'color 0.2s'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = '#1a73e8'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = '#666'; }}
+              title="Rename map"
+            >
+              <Pencil size={16} />
+            </button>
+          )}
+        </div>
 
 
         {/* Invite section */}
@@ -1198,8 +1198,8 @@ function InteractiveMap({ mapId }) {
                 const name = collabData.displayName || collabData.name || '';
                 const email = collabData.email || '';
                 const label = name && email
-                    ? `${name} (${email})`
-                    : name || email || collabUid;
+                  ? `${name} (${email})`
+                  : name || email || collabUid;
                 return (
                   <span key={collabUid}>
                     {label}
@@ -1286,7 +1286,7 @@ function InteractiveMap({ mapId }) {
                         const privacyColor = getPoiBadgeColor(poi);
                         const friendLabel = formatFriendAssociationLabel(poi.id);
                         const placeIdeaContributors = getPlaceIdeaContributors(poi.id);
-                        
+
                         return (
                           <div
                             key={poi.id}
@@ -1433,9 +1433,9 @@ function InteractiveMap({ mapId }) {
 
                     const isOwner = ownerId === currentUserId;
                     const sectionLabel = isOwner
-                        ? 'Your'
-                        : `${getUserDisplayName(ownerId, displayNameMap, collaborators)}'s`;
-                    
+                      ? 'Your'
+                      : `${getUserDisplayName(ownerId, displayNameMap, collaborators)}'s`;
+
                     return (
                       <div key={`poi-group-${ownerId}`} style={{ marginBottom: '16px' }}>
                         <div style={{
@@ -1452,7 +1452,7 @@ function InteractiveMap({ mapId }) {
                         </div>
                         {ownerRegularPois.map(poi => {
                           const privacyColor = getPoiBadgeColor(poi);
-                          
+
                           return (
                             <div
                               key={poi.id}
@@ -1674,29 +1674,29 @@ function InteractiveMap({ mapId }) {
                     &bull; {selectedMarker.notes}
                   </p>
                 )}
-                  {selectedMarker.date && (
-                   <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#666' }}>
+                {selectedMarker.date && (
+                  <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#666' }}>
                     📅 {new Date(selectedMarker.date).toLocaleDateString()}
-                    </p>
-                   )}
-                  {/* Show links as clickable */}
-                  {selectedMarker.links && Array.isArray(selectedMarker.links) && selectedMarker.links.length > 0 && (
-                   <div style={{ margin: '4px 0 0 0' }}>
+                  </p>
+                )}
+                {/* Show links as clickable */}
+                {selectedMarker.links && Array.isArray(selectedMarker.links) && selectedMarker.links.length > 0 && (
+                  <div style={{ margin: '4px 0 0 0' }}>
                     {selectedMarker.links.map((link, idx) => (
-                     <a
-                      key={idx}
-                      href={_normalizeUrl(link)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ fontSize: '12px', color: '#1a73e8', textDecoration: 'underline', display: 'block' }}
-                      onClick={(e) => e.stopPropagation()}
-                     >
-                      {_formatLinkDisplay(link)}
-                     </a>
+                      <a
+                        key={idx}
+                        href={_normalizeUrl(link)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ fontSize: '12px', color: '#1a73e8', textDecoration: 'underline', display: 'block' }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {_formatLinkDisplay(link)}
+                      </a>
                     ))}
-                   </div>
-                  )}
-                  {/* Action buttons for POI in info window */}
+                  </div>
+                )}
+                {/* Action buttons for POI in info window */}
                 {selectedMarker.visibility && (
                   <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
                     <button
@@ -2353,91 +2353,91 @@ function InteractiveMap({ mapId }) {
             </Button>
           </DialogActions>
         </Dialog>
-           {/* Rename Map Dialog */}
-           {renameDialogOpen && (
-             <div
+        {/* Rename Map Dialog */}
+        {renameDialogOpen && (
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0,0,0,0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 10000,
+            }}
+            onClick={closeRenameDialog}
+          >
+            <div
               style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: 'rgba(0,0,0,0.5)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 10000,
-               }}
-              onClick={closeRenameDialog}
-             >
-               <div
+                backgroundColor: 'white',
+                borderRadius: '12px',
+                padding: '24px',
+                minWidth: '360px',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ margin: 0, fontSize: '18px' }}>Rename Map</h3>
+                <button
+                  onClick={closeRenameDialog}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#666' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <input
+                type="text"
+                value={renameInputName}
+                onChange={(e) => setRenameInputName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleRenameMap(); }}
                 style={{
-                  backgroundColor: 'white',
-                  borderRadius: '12px',
-                  padding: '24px',
-                  minWidth: '360px',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-                 }}
-                onClick={(e) => e.stopPropagation()}
-               >
-                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                   <h3 style={{ margin: 0, fontSize: '18px' }}>Rename Map</h3>
-                   <button
-                    onClick={closeRenameDialog}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#666' }}
-                   >
-                     <X size={20} />
-                   </button>
-                 </div>
-                 <input
-                  type="text"
-                  value={renameInputName}
-                  onChange={(e) => setRenameInputName(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleRenameMap(); }}
+                  width: '100%',
+                  padding: '10px',
+                  fontSize: '14px',
+                  border: '1px solid #ccc',
+                  borderRadius: '6px',
+                  boxSizing: 'border-box',
+                  marginBottom: '16px',
+                }}
+                autoFocus
+              />
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                <button
+                  onClick={closeRenameDialog}
                   style={{
-                    width: '100%',
-                    padding: '10px',
+                    padding: '8px 16px',
                     fontSize: '14px',
-                    border: '1px solid #ccc',
                     borderRadius: '6px',
-                    boxSizing: 'border-box',
-                    marginBottom: '16px',
-                   }}
-                  autoFocus
-                 />
-                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                   <button
-                    onClick={closeRenameDialog}
-                    style={{
-                      padding: '8px 16px',
-                      fontSize: '14px',
-                      borderRadius: '6px',
-                      border: '1px solid #ddd',
-                      backgroundColor: '#fff',
-                      cursor: 'pointer',
-                     }}
-                   >
-                    Cancel
-                   </button>
-                   <button
-                    onClick={handleRenameMap}
-                    disabled={isRenamingMap || !renameInputName.trim()}
-                    style={{
-                      padding: '8px 16px',
-                      fontSize: '14px',
-                      borderRadius: '6px',
-                      border: 'none',
-                      backgroundColor: isRenamingMap || !renameInputName.trim() ? '#ccc' : '#1a73e8',
-                      color: 'white',
-                      cursor: isRenamingMap || !renameInputName.trim() ? 'not-allowed' : 'pointer',
-                     }}
-                   >
-                     {isRenamingMap ? 'Saving...' : 'Save'}
-                   </button>
-                 </div>
-               </div>
-             </div>
-           )}
+                    border: '1px solid #ddd',
+                    backgroundColor: '#fff',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleRenameMap}
+                  disabled={isRenamingMap || !renameInputName.trim()}
+                  style={{
+                    padding: '8px 16px',
+                    fontSize: '14px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    backgroundColor: isRenamingMap || !renameInputName.trim() ? '#ccc' : '#1a73e8',
+                    color: 'white',
+                    cursor: isRenamingMap || !renameInputName.trim() ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {isRenamingMap ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
 
       </div>
