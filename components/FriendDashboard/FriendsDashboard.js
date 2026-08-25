@@ -820,7 +820,7 @@ export default function FriendsDashboard({ onSignOut }) {
           {/* Two-Column Dashboard Layout - Wider, No StatsGrid */}
          <Grid container spacing={{ xs: 2, sm: 3 }}>
             {/* Left Column: Friend List (wider) */}
-           <Grid item xs={12} md={5}>
+           <Grid size={{ xs: 12, md: 8 }}>
            <FriendList
           friends={friends}
           cityCache={cityCache}
@@ -924,7 +924,7 @@ export default function FriendsDashboard({ onSignOut }) {
            </Grid>
 
             {/* Right Column: Hangouts, Groups (wider) */}
-           <Grid item xs={12} md={7}>
+           <Grid size={{ xs: 12, md: 4 }}>
                 {/* Hangout Scheduler (commitments, groups, plan/create buttons) */}
                <HangoutScheduler
               friends={friends}
