@@ -996,25 +996,42 @@ function InteractiveMap({ mapId }) {
     return labels.join(' | ');
   };
 
-  // Get place idea contributor names for a POI
+  // Get place idea contributor names grouped by entity type for a POI
   const getPlaceIdeaContributors = (poiId) => {
-    const contributorNames = [];
+    const contributors = {
+      friends: [],
+      groups: [],
+    };
 
     // Check friends
     friends.forEach(friend => {
       if (Array.isArray(friend.placeIdeas) && friend.placeIdeas.includes(poiId)) {
-        contributorNames.push(`Friend: ${friend.name}`);
+        contributors.friends.push(friend.name);
       }
     });
 
     // Check groups
     groups.forEach(group => {
       if (Array.isArray(group.placeIdeas) && group.placeIdeas.includes(poiId)) {
-        contributorNames.push(`Group: ${group.name}`);
+        contributors.groups.push(group.name);
       }
     });
 
-    return contributorNames.length > 0 ? contributorNames : null;
+    return (contributors.friends.length > 0 || contributors.groups.length > 0) ? contributors : null;
+  };
+
+  const formatPlaceIdeaContributors = (contributors) => {
+    if (!contributors) return '';
+
+    const labels = [];
+    if (contributors.friends.length > 0) {
+      labels.push(`Friends: ${contributors.friends.join(', ')}`);
+    }
+    if (contributors.groups.length > 0) {
+      labels.push(`Groups: ${contributors.groups.join(', ')}`);
+    }
+
+    return labels.join(' | ');
   };
 
   // Helper: check if a POI's friend temporary location is still active
@@ -1342,9 +1359,9 @@ function InteractiveMap({ mapId }) {
                                 {friendLabel}
                               </div>
                             )}
-                            {placeIdeaContributors && placeIdeaContributors.length > 0 && (
+                            {placeIdeaContributors && (
                               <div style={{ fontSize: '11px', color: '#666', margin: '2px 0 0 28px' }}>
-                                {placeIdeaContributors.join(', ')}
+                                Suggested by: {formatPlaceIdeaContributors(placeIdeaContributors)}
                               </div>
                             )}
                             {/* Action buttons for POI */}
@@ -1669,9 +1686,9 @@ function InteractiveMap({ mapId }) {
                 {/* Show place idea contributors */}
                 {selectedMarker && selectedMarker.id && (() => {
                   const contributors = getPlaceIdeaContributors(selectedMarker.id);
-                  return contributors && contributors.length > 0 ? (
+                  return contributors ? (
                     <div style={{ fontSize: '11px', color: '#666', margin: '4px 0 0 0' }}>
-                      Suggested by: {contributors.join(', ')}
+                      Suggested by: {formatPlaceIdeaContributors(contributors)}
                     </div>
                   ) : null;
                 })()}
