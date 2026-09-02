@@ -1046,20 +1046,22 @@ export default function HangoutScheduler({
 
    /**
     * Check if Mark Complete should be shown for a planned hangout.
-    * Hidden if any attendee already has lastContactDate >= hangout datetime's date.
+    * Show it when at least one attendee's last contact predates the hangout.
     */
    const canMarkCompleteHangout = useCallback((hangout) => {
      const hangoutDate = safeToTimestamp(hangout.datetime);
      if (!hangoutDate || isNaN(hangoutDate.getTime())) return true;
      const hangoutStr = dayjs(hangoutDate).format('YYYY-MM-DD');
+     let hasContactDate = false;
 
      // Check friendIds attendees directly
      if (hangout.friendIds && Array.isArray(hangout.friendIds)) {
        for (const friendId of hangout.friendIds) {
          const friend = friends.find((f) => f.id === friendId);
          if (friend?.contact?.lastContactDate) {
-           if (friend.contact.lastContactDate >= hangoutStr) {
-             return false;
+           hasContactDate = true;
+           if (friend.contact.lastContactDate < hangoutStr) {
+             return true;
            }
          }
        }
@@ -1072,33 +1074,36 @@ export default function HangoutScheduler({
          for (const memberId of group.memberIds) {
            const friend = friends.find((f) => f.id === memberId);
            if (friend?.contact?.lastContactDate) {
-             if (friend.contact.lastContactDate >= hangoutStr) {
-               return false;
+             hasContactDate = true;
+             if (friend.contact.lastContactDate < hangoutStr) {
+               return true;
              }
            }
          }
        }
      }
 
-     return true;
+     return !hasContactDate;
    }, [friends, groups]);
 
    /**
     * Check if Mark Complete should be shown for a history hangout.
-    * Hidden if any attendee already has lastContactDate >= hangout datetime's date.
+    * Show it when at least one attendee's last contact predates the hangout.
     */
    const canMarkCompleteHistory = useCallback((h) => {
      const hangoutDate = safeToTimestamp(h.datetime);
      if (!hangoutDate || isNaN(hangoutDate.getTime())) return true;
      const hangoutStr = dayjs(hangoutDate).format('YYYY-MM-DD');
+     let hasContactDate = false;
 
      // Check friendIds attendees
      if (h.friendIds && Array.isArray(h.friendIds)) {
        for (const friendId of h.friendIds) {
          const friend = friends.find((f) => f.id === friendId);
          if (friend?.contact?.lastContactDate) {
-           if (friend.contact.lastContactDate >= hangoutStr) {
-             return false;
+           hasContactDate = true;
+           if (friend.contact.lastContactDate < hangoutStr) {
+             return true;
            }
          }
        }
@@ -1111,15 +1116,16 @@ export default function HangoutScheduler({
          for (const memberId of group.memberIds) {
            const friend = friends.find((f) => f.id === memberId);
            if (friend?.contact?.lastContactDate) {
-             if (friend.contact.lastContactDate >= hangoutStr) {
-               return false;
+             hasContactDate = true;
+             if (friend.contact.lastContactDate < hangoutStr) {
+               return true;
              }
            }
          }
        }
      }
 
-     return true;
+     return !hasContactDate;
    }, [friends, groups]);
 
    return (

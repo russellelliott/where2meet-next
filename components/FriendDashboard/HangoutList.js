@@ -226,21 +226,23 @@ export default function HangoutList({
 
   /**
    * Check if Mark Complete button should be shown for a hangout.
-   * Hidden if any attendee already has lastContactDate >= hangout datetime.
+   * Show it when at least one attendee's last contact predates the hangout.
    */
   const canMarkComplete = (hangout) => {
     if (!onCompleteHangout) return false;
     const hangoutDate = safeToTimestamp(hangout.datetime);
     if (!hangoutDate || isNaN(hangoutDate.getTime())) return true;
     const hangoutStr = dayjs(hangoutDate).format('YYYY-MM-DD');
+    let hasContactDate = false;
 
     // Check friend attendees
     if (hangout.friendIds && Array.isArray(hangout.friendIds)) {
       for (const friendId of hangout.friendIds) {
         const friend = friends.find((f) => f.id === friendId);
         if (friend?.contact?.lastContactDate) {
-          if (friend.contact.lastContactDate >= hangoutStr) {
-            return false; // Already at or past the event date
+          hasContactDate = true;
+          if (friend.contact.lastContactDate < hangoutStr) {
+            return true;
           }
         }
       }
@@ -253,15 +255,16 @@ export default function HangoutList({
         for (const memberId of group.memberIds) {
           const friend = friends.find((f) => f.id === memberId);
           if (friend?.contact?.lastContactDate) {
-            if (friend.contact.lastContactDate >= hangoutStr) {
-              return false;
+            hasContactDate = true;
+            if (friend.contact.lastContactDate < hangoutStr) {
+              return true;
             }
           }
         }
       }
     }
 
-    return true;
+    return !hasContactDate;
   };
 
   return (
