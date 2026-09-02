@@ -1128,6 +1128,14 @@ export default function HangoutScheduler({
      return !hasContactDate;
    }, [friends, groups]);
 
+   const getNewestFirst = (hangoutsToSort) => [...hangoutsToSort].sort((a, b) => {
+     const dateA = safeToTimestamp(a.datetime);
+     const dateB = safeToTimestamp(b.datetime);
+     const timeA = dateA && !isNaN(dateA.getTime()) ? dateA.getTime() : -Infinity;
+     const timeB = dateB && !isNaN(dateB.getTime()) ? dateB.getTime() : -Infinity;
+     return timeB - timeA;
+   });
+
    return (
       <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
         {/* Plan Event / Create Group dialogs - stable component references */}
@@ -1276,7 +1284,7 @@ export default function HangoutScheduler({
 
             {plannedHangouts.length > 0 ? (
               <Box sx={{ maxHeight: 280, overflowY: 'auto', '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '3px' } }}>
-                 {plannedHangouts.map((hangout) => {
+                 {getNewestFirst(plannedHangouts).map((hangout) => {
                    const groupObj = groups.find((g) => g.id === hangout.groupId);
                    const attendees = groupObj ? groupObj.memberIds : (hangout.friendIds || []);
                    const attendeeNames = attendees
@@ -1399,7 +1407,7 @@ export default function HangoutScheduler({
 
             {history.length > 0 ? (
               <Box sx={{ flex: 1, overflowY: 'auto', '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#ccc', borderRadius: '3px' } }}>
-                {history.map((h) => {
+                {getNewestFirst(history).map((h) => {
                   const groupObj = groups.find((g) => g.id === h.groupId);
                   const attendeeIds = h.friendIds && Array.isArray(h.friendIds) ? h.friendIds : [];
                   const attendeeNames = attendeeIds
