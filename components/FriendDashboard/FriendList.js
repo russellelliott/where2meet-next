@@ -604,7 +604,7 @@ function resolveFriendLocation(friendLoc, pois, cityCache) {
           </Box>
 
            {/* Friends Grid - Wider Container, Multi-column Layout */}
-          <Box sx={{ flex: 1, overflowY: 'auto', display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 1.5, pr: 0.5 }}>
+          <Box sx={{ flex: 1, overflowY: 'auto', display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gridAutoRows: 'max-content', alignContent: 'start', gap: 1.5, pr: 0.5 }}>
             {filteredFriends.map((friend) => {
            const days = getDaysSinceContact(friend.contact?.lastContactDate);
            const category = getStalenessCategory(days);
