@@ -1693,9 +1693,9 @@ function InteractiveMap({ mapId }) {
                   ) : null;
                 })()}
                 {selectedMarker.notes && (
-                  <p style={{ margin: '0 0 8px 0', fontSize: '14px' }}>
-                    &bull; {selectedMarker.notes}
-                  </p>
+                  <div style={{ margin: '0 0 8px 0', fontSize: '14px', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+                    {selectedMarker.notes}
+                  </div>
                 )}
                 {selectedMarker.date && (
                   <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#666' }}>

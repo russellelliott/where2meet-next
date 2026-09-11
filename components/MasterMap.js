@@ -925,8 +925,8 @@ Friend Locations ({friendPois.length})
                    ) : null;
                 })()}
                 {selectedMarker.notes && (
-                  <p style={{ margin: '0 0 8px 0', fontSize: '14px' }}>
-                    &bull; {selectedMarker.notes}
+                  <p style={{ margin: '0 0 8px 0', fontSize: '14px', whiteSpace: 'pre-wrap' }}>
+                    {selectedMarker.notes}
                   </p>
                 )}
                 {selectedMarker.date && (
