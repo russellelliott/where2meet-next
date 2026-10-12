@@ -9,7 +9,8 @@
  * @property {boolean} [whatsapp]
  * @property {string|boolean} [discord]
  * @property {string|boolean} [instagram]
- * @property {'phone'|'whatsapp'|'discord'|'instagram'} [primary]
+ * @property {string|boolean} [youtube]
+ * @property {'phone'|'whatsapp'|'discord'|'instagram'|'linkedin'|'website'|'youtube'} [primary]
  * @property {string} [lastContactDate] ISO date-time string
  */
 

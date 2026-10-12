@@ -25,7 +25,7 @@ import { saveFriend, updateFriend, getFriends } from '../../lib/friendService';
 import { auth, db } from '../../firebaseConfig';
 import { collection, getDocs } from 'firebase/firestore';
 import { toast } from 'react-toastify';
-import { FaPhone, FaDiscord, FaInstagram } from 'react-icons/fa6';
+import { FaPhone, FaDiscord, FaInstagram, FaYoutube } from 'react-icons/fa6';
 import { FaLinkedin } from 'react-icons/fa';
 import { IoLogoWhatsapp, IoIosLink } from 'react-icons/io';
 
@@ -152,6 +152,7 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
         instagram: typeof editFriend?.contact?.instagram === 'string' ? editFriend.contact.instagram : (editFriend?.contact?.instagram || ''),
         linkedin: typeof editFriend?.contact?.linkedin === 'string' ? editFriend.contact.linkedin : (editFriend?.contact?.linkedin || ''),
         website: typeof editFriend?.contact?.website === 'string' ? editFriend.contact.website : (editFriend?.contact?.website || ''),
+        youtube: typeof editFriend?.contact?.youtube === 'string' ? editFriend.contact.youtube : (editFriend?.contact?.youtube || ''),
         primary: editFriend?.contact?.primary || 'phone',
          },
       location: {
@@ -179,6 +180,7 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
      instagram: editFriend?.contact?.instagram === true || (typeof editFriend?.contact?.instagram === 'string' && editFriend?.contact?.instagram.length > 0),
      linkedin: editFriend?.contact?.linkedin === true || (typeof editFriend?.contact?.linkedin === 'string' && editFriend?.contact?.linkedin.length > 0),
      website: editFriend?.contact?.website === true || (typeof editFriend?.contact?.website === 'string' && editFriend?.contact?.website.length > 0),
+    youtube: editFriend?.contact?.youtube === true || (typeof editFriend?.contact?.youtube === 'string' && editFriend?.contact?.youtube.length > 0),
       });
 
    // State for last contact date calendar (separate from temp location calendars)
@@ -421,6 +423,7 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
         instagram: formData.contact.instagram || false,
         linkedin: formData.contact.linkedin || false,
         website: formData.contact.website || false,
+        youtube: formData.contact.youtube || false,
           primary: formData.contact.primary || 'phone',
         lastContactDate: resolvedLastContactDate,
             };
@@ -512,14 +515,15 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
      const persistedChecked = formData.contact[channel] === true ||
            (typeof formData.contact[channel] === 'string' && formData.contact[channel].length > 0);
 
-             // For Discord/Instagram/LinkedIn/Website, use local toggle state for immediate feedback
-     const isToggled = (channel === 'discord' || channel === 'instagram' || channel === 'linkedin' || channel === 'website')
+                 // For text-based channels, use local toggle state for immediate feedback
+               const isTextChannel = channel === 'discord' || channel === 'instagram' || channel === 'linkedin' || channel === 'website' || channel === 'youtube';
+               const isToggled = isTextChannel
              ? contactToggles[channel] ?? persistedChecked
             : persistedChecked;
 
      const handleToggleClick = () => {
           // Update local toggle immediately for visual feedback
-        if (channel === 'discord' || channel === 'instagram' || channel === 'linkedin' || channel === 'website') {
+        if (isTextChannel) {
           setContactToggles((prev) => {
             const newVal = !prev[channel];
               // When toggling on, don't overwrite the string value - just show the field
@@ -537,8 +541,8 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
           }
         };
 
-         // For Discord/Instagram/LinkedIn/Website, use the channel-specific value directly
-     const socialValue = (channel === 'discord' || channel === 'instagram' || channel === 'linkedin' || channel === 'website') && isToggled
+         // For text-based channels, use the channel-specific value directly
+       const socialValue = isTextChannel && isToggled
              ? formData.contact[channel] || ''
              : '';
 
@@ -555,7 +559,7 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
              onChange={handleToggleClick}
              style={{ cursor: 'pointer' }}
                  />
-                    {(channel === 'discord' || channel === 'instagram' || channel === 'linkedin' || channel === 'website') && isToggled && (
+                    {isTextChannel && isToggled && (
                     <TextField
                size="small"
                fullWidth
@@ -675,6 +679,7 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
                        <MenuItem value="instagram">Instagram</MenuItem>
                        <MenuItem value="linkedin">LinkedIn</MenuItem>
                        <MenuItem value="website">Website</MenuItem>
+                       <MenuItem value="youtube">YouTube</MenuItem>
                      </TextField>
 
                      {/* Contact Channels - New approach per schema */}
@@ -683,7 +688,7 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
                      Contact Channels Available
                       </Typography>
                       <Typography variant="caption" color="text.secondary" display="block">
-                     Toggle channels on and off. Discord and Instagram require a handle when enabled.
+                     Toggle channels on and off. Text-based channels accept a handle or URL when enabled.
                       </Typography>
                     </Box>
 
@@ -739,6 +744,15 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
                    IoIosLink,
                         '#e85d3a',
                         'https://example.com'
+                      )}
+
+                      {/* YouTube - toggle + channel URL or handle text field */}
+                      {renderContactChannel(
+                        'youtube',
+                        'YouTube',
+                   FaYoutube,
+                        '#ff0000',
+                        'https://youtube.com/@channel'
                       )}
                     </Box>
                 )}
