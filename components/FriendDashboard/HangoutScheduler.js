@@ -14,6 +14,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Popover,
   FormControl,
   InputLabel,
   Select,
@@ -21,6 +22,9 @@ import {
   ToggleButtonGroup,
   ToggleButton,
 } from '@mui/material';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
 import {
   Calendar,
   Users,
@@ -592,6 +596,7 @@ export default function HangoutScheduler({
   onSaveHangout = null,
   pois = [],
   onPlanEvent = null,
+  onSetGroupLastContactDate = null,
 }) {
 
   /**
@@ -632,6 +637,9 @@ export default function HangoutScheduler({
   // Group delete confirmation dialog state
   const [groupDeleteOpen, setGroupDeleteOpen] = useState(false);
   const [groupDeleteTarget, setGroupDeleteTarget] = useState(null);
+  const [groupContactDateOpen, setGroupContactDateOpen] = useState(false);
+  const [groupContactDateTarget, setGroupContactDateTarget] = useState(null);
+  const [groupContactDate, setGroupContactDate] = useState(dayjs());
 
   // Ref to track if we're currently populating form fields from editingHangout
   // (prevents re-entrant useEffect calls)
@@ -717,6 +725,27 @@ export default function HangoutScheduler({
   const [groupName, setGroupName] = useState('');
   const [groupNotes, setGroupNotes] = useState('');
   const [groupMemberIds, setGroupMemberIds] = useState([]);
+
+  const openGroupContactDate = (group) => {
+    setGroupContactDateTarget(group);
+    setGroupContactDate(dayjs());
+    setGroupContactDateOpen(true);
+  };
+
+  const closeGroupContactDate = () => {
+    setGroupContactDateOpen(false);
+    setGroupContactDateTarget(null);
+  };
+
+  const saveGroupContactDate = () => {
+    if (!groupContactDateTarget || !onSetGroupLastContactDate) return;
+    onSetGroupLastContactDate(
+      groupContactDateTarget.id,
+      groupContactDate.format('YYYY-MM-DD'),
+      groupContactDateTarget.memberIds || [],
+    );
+    closeGroupContactDate();
+  };
 
   // Format date nicely
   const formatDate = (dateStr) => {
@@ -1221,6 +1250,19 @@ export default function HangoutScheduler({
 
                 return (
                   <Paper key={group.id} variant="outlined" sx={{ p: 2, borderRadius: 2, backgroundColor: '#FBFBF9', position: 'relative' }}>
+                    {onSetGroupLastContactDate && (
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openGroupContactDate(group);
+                        }}
+                        sx={{ position: 'absolute', top: 8, right: 56, color: '#9B988C', '&:hover': { color: '#5A5A40' } }}
+                        title="Set contact date for all group members"
+                      >
+                        <Calendar size={12} />
+                      </IconButton>
+                    )}
                     {(onEditGroup || onAddGroup) && (
                       <IconButton
                         size="small"
@@ -1595,6 +1637,32 @@ export default function HangoutScheduler({
             </Button>
           </DialogActions>
         </>)}
+      </Dialog>
+
+      <Dialog
+        open={groupContactDateOpen}
+        onClose={closeGroupContactDate}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
+        <DialogTitle sx={{ fontWeight: 700 }}>
+          Set group contact date
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary' }}>
+            Set the contact date for all members of {groupContactDateTarget?.name || 'this group'}.
+          </Typography>
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <DateCalendar value={groupContactDate} onChange={setGroupContactDate} />
+          </LocalizationProvider>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+          <Button onClick={closeGroupContactDate}>Cancel</Button>
+          <Button onClick={saveGroupContactDate} variant="contained" sx={{ backgroundColor: '#5A5A40', '&:hover': { backgroundColor: '#434330' } }}>
+            Set Date
+          </Button>
+        </DialogActions>
       </Dialog>
 
       {/* Group Delete Confirmation Dialog */}

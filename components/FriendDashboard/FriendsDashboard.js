@@ -22,7 +22,7 @@ import PoiIdeasPicker from './PoiIdeasPicker';
 import CreateHangoutDialog from './CreateHangoutDialog';
 import HangoutList from './HangoutList';
 import { getFriends as getFriendsService, getUserPoIs, recordContact as recordContactApi, setLastContactDate as setLastContactDateApi, updateFriend, togglePlaceIdeaTopLevel as toggleFriendPlaceIdeaTopLevel } from '../../lib/friendService';
-import { getGroups, addGroup as addGroupApi, updateGroup, togglePlaceIdeaTopLevel as toggleGroupPlaceIdeaTopLevel } from '../../lib/groupService';
+import { getGroups, addGroup as addGroupApi, updateGroup, setGroupMembersLastContactDate, togglePlaceIdeaTopLevel as toggleGroupPlaceIdeaTopLevel } from '../../lib/groupService';
 import { getHangouts, createHangout as createHangoutApi, completeHangout, updateHangout as updateHangoutApi, deleteHangout as deleteHangoutApi } from '../../lib/hangoutService';
 import {
   deleteFriendWithCascades,
@@ -329,6 +329,22 @@ export default function FriendsDashboard({ onSignOut }) {
           }
         }
        }, [user, loadData]);
+
+  const handleSetGroupLastContactDate = useCallback(async (groupId, dateStr, memberIds) => {
+    if (!user || !groupId || !dateStr || !Array.isArray(memberIds) || memberIds.length === 0) return;
+
+    try {
+      await setGroupMembersLastContactDate(user.uid, groupId, dateStr, memberIds);
+      await loadData(user);
+    } catch (err) {
+      console.error('Error setting group last contact date:', err);
+      if (isAuthError(err)) {
+        setAuthError('Session expired. Please sign in again.');
+      } else {
+        setError('Failed to set group contact date.');
+      }
+    }
+  }, [user, loadData]);
 
         // Legacy handler kept as fallback — now uses cascade deletion instead of old deleteFriend
     const handleDeleteFriend = useCallback(async (friendId) => {
@@ -947,6 +963,7 @@ export default function FriendsDashboard({ onSignOut }) {
               pois={pois}
               onPlanEvent={handlePlanEvent}
               onOpenGroupPlaceIdeasPicker={openGroupPlaceIdeasPicker}
+              onSetGroupLastContactDate={handleSetGroupLastContactDate}
                />
              </Grid>
          </Grid>
