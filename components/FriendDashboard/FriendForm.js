@@ -458,7 +458,20 @@ export default function FriendForm({ onSave, onClose, editFriend = null }) {
 
      try {
        if (editFriend) {
-         await updateFriend(user.uid, editFriend.id, friendData);
+         await updateFriend(user.uid, editFriend.id, {
+            // Always write the full nested objects on update. updateDoc() replaces
+            // each top-level field with the value you pass (no deep-merge), so
+            // writing them back — even when empty — PURGES any values the user
+            // cleared (home / temporary location, pickup point, planning notes,
+            // top-level notes). Omitting them (as the lean friendData does) would
+            // leave stale fields behind, because updateDoc() only modifies present
+            // keys. Fields not listed here (e.g. placeIdeas) are left untouched.
+            ...friendData,
+            location: locationObj,
+            logistics: logisticsObj,
+            planning: planningObj,
+            notes: formData.notes?.trim() || '',
+          });
          toast.success('Friend updated successfully!');
           } else {
          await saveFriend(user.uid, friendData);
